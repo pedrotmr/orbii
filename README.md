@@ -1,33 +1,26 @@
 # Orbii
 
-Personal habit app: many habits in your Orbit, a small focus set each day.
+Habit app that separates *habits you want in your life* from *what deserves attention today*.
 
-## Status
+Many habits live in your **Orbit**. Each day Orbii offers a small set; you pick what you can manage, commit, and complete — success is “Today’s Orbit complete,” not a giant checklist score.
 
-V1 spec approved. Monorepo bootstrap + vertical slice in progress — see `docs/STATUS.md`.
+## In this repo
 
 | Path | Role |
 |------|------|
-| `apps/mobile` | Expo app (daily ritual slice) |
-| `packages/backend` | Ritual domain + Convex functions |
-| `packages/tokens` | Shared design tokens |
-| `design-ideas/` | Throwaway visual prototype |
-| `specs/` | Approved V1 design |
+| `specs/` | Approved V1 product & technical design |
+| `design-ideas/` | Visual exploration and clickable Vite prototype (not the production app) |
 
-## Setup
+Production monorepo (Expo + Convex) lands via pull requests.
 
-```bash
-pnpm install
-pnpm test                 # ritual unit tests
-pnpm --filter @orbii/mobile dev
-```
-
-Convex (optional for now — slice persists on-device):
+## Design prototype
 
 ```bash
-pnpm --filter @orbii/backend dev
+cd design-ideas
+npm install
+npm run dev
 ```
 
-## Agents
+## Spec
 
-Read `AGENTS.md` (symlinked as `CLAUDE.md`).
+See [`specs/2026-08-24-orbii-v1-design.md`](./specs/2026-08-24-orbii-v1-design.md).
