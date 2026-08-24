@@ -1,0 +1,21 @@
+{
+  "name": "orbii",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "echo \"lint: not configured yet\"",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.4",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20.20.0"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

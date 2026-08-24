@@ -1,0 +1,11 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@orbii/backend": ["../../packages/backend/src/index.ts"],
+      "@orbii/tokens": ["../../packages/tokens/src/native.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
