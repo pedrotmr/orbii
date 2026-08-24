@@ -1,8 +1,12 @@
 # Orbii V1 — Product & technical design
 
-**Status:** Awaiting approval  
+**Status:** Approved 2026-08-24  
 **Date:** 2026-08-24  
 **Audience:** Product + engineering (co-found gate)
+
+### Addendum 2026-08-24 — Slice identity
+
+Vertical-slice identity uses a device-local `clientUserId` (AsyncStorage) so the stack runs before Clerk keys exist. Production V1 still targets Clerk per the architecture section; replace identity without changing ritual tables. See `docs/DECISIONS.md`.
 
 ---
 
