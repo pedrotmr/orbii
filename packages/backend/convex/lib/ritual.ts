@@ -1,8 +1,4 @@
-import {
-  clampCapacity,
-  offerSizeFor,
-  type Habit,
-} from "./habits";
+import { clampCapacity, offerSizeFor, type Habit } from "./habits";
 
 export type DayPhase = "idle" | "reveal" | "active" | "complete";
 

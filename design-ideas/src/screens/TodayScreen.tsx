@@ -31,7 +31,10 @@ export function TodayScreen() {
       <div className="screen">
         <div className="empty-panel" style={{ marginTop: "20%" }}>
           <h2>Your Orbit is empty</h2>
-          <p>Add habits you care about. Orbii will rotate a small focus set each day.</p>
+          <p>
+            Add habits you care about. Orbii will rotate a small focus set each
+            day.
+          </p>
           <Button fullWidth onClick={() => navigate("/orbit/setup")}>
             Build your Orbit
           </Button>
@@ -49,12 +52,15 @@ export function TodayScreen() {
               <span className="brand-mark__orb" />
               Orbii
             </p>
-            <h1 className="screen-title display-title" style={{ marginTop: "1.25rem" }}>
+            <h1
+              className="screen-title display-title"
+              style={{ marginTop: "1.25rem" }}
+            >
               Ready for today’s Orbit?
             </h1>
             <p className="screen-sub">
-              We’ll offer {Math.min(state.offerSize, state.habits.length)} options. Pick up to{" "}
-              {state.capacity} you can actually do.
+              We’ll offer {Math.min(state.offerSize, state.habits.length)}{" "}
+              options. Pick up to {state.capacity} you can actually do.
             </p>
           </div>
         </header>
@@ -89,10 +95,12 @@ export function TodayScreen() {
         <header className="screen-header">
           <div>
             <p className="eyebrow">Today’s offer</p>
-            <h1 className="screen-title display-title">What can you take on?</h1>
+            <h1 className="screen-title display-title">
+              What can you take on?
+            </h1>
             <p className="screen-sub">
-              Pick up to {state.capacity}. Traveling, sore, low energy — just don’t choose what
-              won’t work today.
+              Pick up to {state.capacity}. Traveling, sore, low energy — just
+              don’t choose what won’t work today.
             </p>
           </div>
           <span className="chip chip--primary">
@@ -123,7 +131,9 @@ export function TodayScreen() {
             onClick={commitToday}
           >
             Start today
-            {state.selectedIds.length > 0 ? ` · ${state.selectedIds.length}` : ""}
+            {state.selectedIds.length > 0
+              ? ` · ${state.selectedIds.length}`
+              : ""}
           </Button>
           <Button variant="ghost" fullWidth onClick={resetDay}>
             Not now
@@ -135,7 +145,10 @@ export function TodayScreen() {
 
   if (state.phase === "complete") {
     return (
-      <div className="screen" style={{ justifyContent: "center", textAlign: "center" }}>
+      <div
+        className="screen"
+        style={{ justifyContent: "center", textAlign: "center" }}
+      >
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -146,9 +159,13 @@ export function TodayScreen() {
             <span className="complete-burst__mark">✓</span>
           </div>
           <h1 className="screen-title display-title">Today’s Orbit complete</h1>
-          <p className="screen-sub" style={{ margin: "0.75rem auto 0", maxWidth: "26ch" }}>
-            {committedHabits.length} habit{committedHabits.length === 1 ? "" : "s"} done. The rest
-            stayed in orbit — that’s success.
+          <p
+            className="screen-sub"
+            style={{ margin: "0.75rem auto 0", maxWidth: "26ch" }}
+          >
+            {committedHabits.length} habit
+            {committedHabits.length === 1 ? "" : "s"} done. The rest stayed in
+            orbit — that’s success.
           </p>
           <div style={{ marginTop: "2rem" }}>
             <MetricRow>
@@ -183,7 +200,10 @@ export function TodayScreen() {
             <span className="brand-mark__orb" />
             Orbii
           </p>
-          <h1 className="screen-title display-title" style={{ marginTop: "1rem" }}>
+          <h1
+            className="screen-title display-title"
+            style={{ marginTop: "1rem" }}
+          >
             Today’s Orbit
           </h1>
           <p className="screen-sub">

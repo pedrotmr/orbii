@@ -15,7 +15,8 @@ export function OrbitScreen() {
           <p className="eyebrow">All habits</p>
           <h1 className="screen-title">Your Orbit</h1>
           <p className="screen-sub">
-            Everything you care about stays here. Only a few come into focus each day.
+            Everything you care about stays here. Only a few come into focus
+            each day.
           </p>
         </div>
         <button
@@ -31,7 +32,10 @@ export function OrbitScreen() {
       {state.habits.length === 0 ? (
         <div className="empty-panel">
           <h2>Nothing in orbit yet</h2>
-          <p>Add the habits you want to keep in your life — not a daily checklist.</p>
+          <p>
+            Add the habits you want to keep in your life — not a daily
+            checklist.
+          </p>
           <Button fullWidth onClick={() => navigate("/orbit/setup")}>
             Add habits
           </Button>
@@ -39,13 +43,12 @@ export function OrbitScreen() {
       ) : (
         <div className="stack">
           {state.habits.map((habit) => (
-            <div key={habit.id} style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
+            <div
+              key={habit.id}
+              style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}
+            >
               <div style={{ flex: 1 }}>
-                <HabitRow
-                  habit={habit}
-                  mode="static"
-                  meta={habit.category}
-                />
+                <HabitRow habit={habit} mode="static" meta={habit.category} />
               </div>
               <button
                 type="button"
@@ -62,7 +65,11 @@ export function OrbitScreen() {
       )}
 
       <div className="bottom-bar">
-        <Button variant="secondary" fullWidth onClick={() => navigate("/orbit/setup")}>
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={() => navigate("/orbit/setup")}
+        >
           Edit Orbit
         </Button>
       </div>

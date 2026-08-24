@@ -16,16 +16,23 @@ import {
 async function requireUser(ctx: { db: any }, clientUserId: string) {
   const user = await ctx.db
     .query("users")
-    .withIndex("by_clientUserId", (q: any) => q.eq("clientUserId", clientUserId))
+    .withIndex("by_clientUserId", (q: any) =>
+      q.eq("clientUserId", clientUserId),
+    )
     .unique();
   if (!user) throw new Error("User not found — call users.ensure first");
   return user;
 }
 
-async function listHabits(ctx: { db: any }, clientUserId: string): Promise<Habit[]> {
+async function listHabits(
+  ctx: { db: any },
+  clientUserId: string,
+): Promise<Habit[]> {
   const rows = await ctx.db
     .query("habits")
-    .withIndex("by_clientUserId", (q: any) => q.eq("clientUserId", clientUserId))
+    .withIndex("by_clientUserId", (q: any) =>
+      q.eq("clientUserId", clientUserId),
+    )
     .collect();
   return rows.map((row: any) => ({
     id: row.habitKey,
@@ -74,7 +81,9 @@ export const get = query({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clientUserId", (q) => q.eq("clientUserId", args.clientUserId))
+      .withIndex("by_clientUserId", (q) =>
+        q.eq("clientUserId", args.clientUserId),
+      )
       .unique();
     if (!user) return null;
     const stats = applyMissedDayGap(
@@ -103,7 +112,11 @@ export const startRevealMutation = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx, args.clientUserId);
     const habits = await listHabits(ctx, args.clientUserId);
-    const existing = await getSessionDoc(ctx, args.clientUserId, args.localDate);
+    const existing = await getSessionDoc(
+      ctx,
+      args.clientUserId,
+      args.localDate,
+    );
     if (existing?.phase === "complete") {
       throw new Error("Day already complete");
     }

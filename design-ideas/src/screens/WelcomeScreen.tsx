@@ -32,8 +32,8 @@ export function WelcomeScreen() {
           <span>Few in focus.</span>
         </h1>
         <p className="welcome-screen__sub">
-          Everything you care about stays in orbit. Each day, only a small set comes close —
-          enough to finish, not enough to drown in.
+          Everything you care about stays in orbit. Each day, only a small set
+          comes close — enough to finish, not enough to drown in.
         </p>
       </motion.div>
 

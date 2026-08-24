@@ -5,7 +5,8 @@ import { useOrbit } from "@/state/orbitStore";
 
 function moodForPath(pathname: string, phase: string) {
   if (phase === "reveal") return "reveal" as const;
-  if (phase === "complete" && pathname.startsWith("/today")) return "celebrate" as const;
+  if (phase === "complete" && pathname.startsWith("/today"))
+    return "celebrate" as const;
   return "default" as const;
 }
 
@@ -21,7 +22,11 @@ export function AppShell() {
     <div className="app-stage">
       <aside className="demo-rail" aria-label="Prototype navigation">
         <span className="demo-rail__label">Jump</span>
-        <NavLink to="/" className={({ isActive }) => `demo-link${isActive ? " is-on" : ""}`} end>
+        <NavLink
+          to="/"
+          className={({ isActive }) => `demo-link${isActive ? " is-on" : ""}`}
+          end
+        >
           Welcome
         </NavLink>
         <NavLink

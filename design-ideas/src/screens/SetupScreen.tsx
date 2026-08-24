@@ -30,7 +30,9 @@ export function SetupScreen() {
       <header className="screen-header">
         <div>
           <p className="eyebrow">Your Orbit</p>
-          <h1 className="screen-title">What do you want to keep in your life?</h1>
+          <h1 className="screen-title">
+            What do you want to keep in your life?
+          </h1>
           <p className="screen-sub">
             Add freely. You won’t do all of these every day — that’s the point.
           </p>
@@ -76,7 +78,11 @@ export function SetupScreen() {
               }}
               style={{ flex: 1 }}
             />
-            <Button variant="secondary" onClick={addCustom} disabled={!customName.trim()}>
+            <Button
+              variant="secondary"
+              onClick={addCustom}
+              disabled={!customName.trim()}
+            >
               Add
             </Button>
           </div>
@@ -84,7 +90,14 @@ export function SetupScreen() {
       </div>
 
       <div className="bottom-bar">
-        <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--muted)", textAlign: "center" }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--text-sm)",
+            color: "var(--muted)",
+            textAlign: "center",
+          }}
+        >
           {state.habits.length} in Orbit
         </p>
         <Button

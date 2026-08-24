@@ -49,9 +49,19 @@ function PrimaryButton({
   );
 }
 
-function GhostButton({ label, onPress }: { label: string; onPress: () => void }) {
+function GhostButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.ghostBtn}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={styles.ghostBtn}
+    >
       <Text style={styles.ghostBtnText}>{label}</Text>
     </Pressable>
   );
@@ -117,7 +127,8 @@ export default function App() {
             <View style={styles.block}>
               <Text style={styles.title}>Build your Orbit</Text>
               <Text style={styles.sub}>
-                Seed a few easy habits so you can always pick something manageable.
+                Seed a few easy habits so you can always pick something
+                manageable.
               </Text>
               <PrimaryButton
                 label="Seed starter Orbit"
@@ -130,8 +141,8 @@ export default function App() {
             <View style={styles.block}>
               <Text style={styles.title}>Ready for today’s Orbit?</Text>
               <Text style={styles.sub}>
-                We’ll offer {Math.min(OFFER_SIZE, state.habits.length)} options. Pick up
-                to {state.capacity} you can actually do.
+                We’ll offer {Math.min(OFFER_SIZE, state.habits.length)} options.
+                Pick up to {state.capacity} you can actually do.
               </Text>
               <View style={styles.metrics}>
                 <Metric label="In Orbit" value={String(state.habits.length)} />
@@ -150,8 +161,8 @@ export default function App() {
               <Text style={styles.eyebrow}>Today’s offer</Text>
               <Text style={styles.title}>What can you take on?</Text>
               <Text style={styles.sub}>
-                Pick up to {state.capacity}. Low energy — just don’t choose what won’t
-                work today.
+                Pick up to {state.capacity}. Low energy — just don’t choose what
+                won’t work today.
               </Text>
               <Text style={styles.chip}>
                 {state.session.selectedIds.length}/{state.capacity}
@@ -163,7 +174,9 @@ export default function App() {
                   return (
                     <Pressable
                       key={habit.id}
-                      onPress={() => void run(() => doToggleSelect(state, habit.id))}
+                      onPress={() =>
+                        void run(() => doToggleSelect(state, habit.id))
+                      }
                       style={[styles.row, selected && styles.rowSelected]}
                     >
                       <Text style={styles.glyph}>{habit.glyph}</Text>
@@ -195,10 +208,14 @@ export default function App() {
                   return (
                     <Pressable
                       key={habit.id}
-                      onPress={() => void run(() => doToggleComplete(state, habit.id))}
+                      onPress={() =>
+                        void run(() => doToggleComplete(state, habit.id))
+                      }
                       style={[styles.row, done && styles.rowDone]}
                     >
-                      <Text style={styles.glyph}>{done ? "✓" : habit.glyph}</Text>
+                      <Text style={styles.glyph}>
+                        {done ? "✓" : habit.glyph}
+                      </Text>
                       <Text style={styles.rowLabel}>{habit.name}</Text>
                     </Pressable>
                   );
@@ -216,7 +233,8 @@ export default function App() {
               <Text style={styles.eyebrow}>Done</Text>
               <Text style={styles.title}>Today’s Orbit complete</Text>
               <Text style={styles.sub}>
-                Streak {state.stats.streak} · {state.stats.daysCompleted} days completed
+                Streak {state.stats.streak} · {state.stats.daysCompleted} days
+                completed
               </Text>
               <View style={styles.list}>
                 {committedHabits.map((habit) =>
@@ -352,6 +370,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   ghostBtn: { paddingVertical: space[3], alignItems: "center" },
-  ghostBtnText: { color: colors.muted, fontSize: fontSize.sm, fontWeight: "600" },
+  ghostBtnText: {
+    color: colors.muted,
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+  },
   error: { color: colors.primaryDeep, fontSize: fontSize.sm },
 });
