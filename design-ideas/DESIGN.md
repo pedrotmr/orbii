@@ -19,14 +19,14 @@ The prototype visual system supports a daily loop: reveal options → commit →
 
 ## Colors (OKLCH)
 
-| Token | Role |
-|-------|------|
-| `--bg` / `--bg-mid` / `--bg-deep` | Cool mist stage + in-phone wash |
-| `--surface` / `--surface-raised` | Panels, rows, frosted controls |
-| `--ink` / `--muted` | Primary and secondary text |
-| `--primary` | Coral commitment / completion |
-| `--accent` | Teal secondary (chips, orbit accents) |
-| `--success` | Soft done state wash |
+| Token                             | Role                                  |
+| --------------------------------- | ------------------------------------- |
+| `--bg` / `--bg-mid` / `--bg-deep` | Cool mist stage + in-phone wash       |
+| `--surface` / `--surface-raised`  | Panels, rows, frosted controls        |
+| `--ink` / `--muted`               | Primary and secondary text            |
+| `--primary`                       | Coral commitment / completion         |
+| `--accent`                        | Teal secondary (chips, orbit accents) |
+| `--success`                       | Soft done state wash                  |
 
 Accent usage ≤10% except on reveal/complete climaxes.
 
@@ -59,11 +59,11 @@ Accent usage ≤10% except on reveal/complete climaxes.
 
 ## Prototype routes
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Welcome |
-| `/orbit/setup` | Build Orbit |
-| `/today` | Daily loop |
-| `/orbit` | Full Orbit list |
-| `/settings` | Capacity, offer size, demo reset |
-| `/design-system` | Token & component lab |
+| Route            | Purpose                          |
+| ---------------- | -------------------------------- |
+| `/`              | Welcome                          |
+| `/orbit/setup`   | Build Orbit                      |
+| `/today`         | Daily loop                       |
+| `/orbit`         | Full Orbit list                  |
+| `/settings`      | Capacity, offer size, demo reset |
+| `/design-system` | Token & component lab            |

@@ -18,7 +18,9 @@ export function OrbitHero() {
         className="orbit-hero__ring orbit-hero__ring--outer"
         animate={reduce ? undefined : { rotate: 360 }}
         transition={
-          reduce ? undefined : { duration: 48, ease: "linear", repeat: Infinity }
+          reduce
+            ? undefined
+            : { duration: 48, ease: "linear", repeat: Infinity }
         }
       >
         {SATELLITES.map((s) => (
@@ -38,7 +40,9 @@ export function OrbitHero() {
         className="orbit-hero__ring orbit-hero__ring--mid"
         animate={reduce ? undefined : { rotate: -360 }}
         transition={
-          reduce ? undefined : { duration: 32, ease: "linear", repeat: Infinity }
+          reduce
+            ? undefined
+            : { duration: 32, ease: "linear", repeat: Infinity }
         }
       />
       <motion.div
@@ -46,14 +50,19 @@ export function OrbitHero() {
         animate={
           reduce
             ? undefined
-            : { scale: [1, 1.04, 1], boxShadow: [
-                "0 0 0 0 oklch(0.64 0.175 38 / 0.0)",
-                "0 0 0 18px oklch(0.64 0.175 38 / 0.12)",
-                "0 0 0 0 oklch(0.64 0.175 38 / 0.0)",
-              ] }
+            : {
+                scale: [1, 1.04, 1],
+                boxShadow: [
+                  "0 0 0 0 oklch(0.64 0.175 38 / 0.0)",
+                  "0 0 0 18px oklch(0.64 0.175 38 / 0.12)",
+                  "0 0 0 0 oklch(0.64 0.175 38 / 0.0)",
+                ],
+              }
         }
         transition={
-          reduce ? undefined : { duration: 3.2, ease: "easeInOut", repeat: Infinity }
+          reduce
+            ? undefined
+            : { duration: 3.2, ease: "easeInOut", repeat: Infinity }
         }
       />
       <span className="orbit-hero__focus" />

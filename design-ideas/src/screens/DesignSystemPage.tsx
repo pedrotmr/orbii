@@ -44,23 +44,36 @@ export function DesignSystemPage() {
         <h1 className="screen-title" style={{ fontSize: "var(--text-3xl)" }}>
           Design system
         </h1>
-        <p className="screen-sub" style={{ maxWidth: "50ch", marginBottom: "2rem" }}>
-          Cool mist atmosphere, coral commitment. Ritual list is the home chrome; reveal is the
-          action state.
+        <p
+          className="screen-sub"
+          style={{ maxWidth: "50ch", marginBottom: "2rem" }}
+        >
+          Cool mist atmosphere, coral commitment. Ritual list is the home
+          chrome; reveal is the action state.
         </p>
         <p style={{ marginBottom: "2.5rem" }}>
-          <Link to="/today" className="demo-link" style={{ display: "inline-block" }}>
+          <Link
+            to="/today"
+            className="demo-link"
+            style={{ display: "inline-block" }}
+          >
             ← Back to prototype
           </Link>
         </p>
 
         <section className="ds-section">
           <h2>Color</h2>
-          <p>OKLCH tokens. Primary carries warmth; surfaces stay cool and soft — never blank white.</p>
+          <p>
+            OKLCH tokens. Primary carries warmth; surfaces stay cool and soft —
+            never blank white.
+          </p>
           <div className="swatch-grid">
             {swatches.map((s) => (
               <div key={s.name} className="swatch">
-                <div className="swatch__chip" style={{ background: `var(${s.varName})` }} />
+                <div
+                  className="swatch__chip"
+                  style={{ background: `var(${s.varName})` }}
+                />
                 <div className="swatch__meta">
                   <strong>{s.name}</strong>
                   <span style={{ color: "var(--muted)" }}>{s.varName}</span>
@@ -76,27 +89,57 @@ export function DesignSystemPage() {
           <div className="type-specimen component-lab">
             <div className="type-row">
               <span>3xl</span>
-              <p style={{ margin: 0, fontSize: "var(--text-3xl)", fontWeight: 700, letterSpacing: "-0.03em" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--text-3xl)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                }}
+              >
                 Today’s Orbit
               </p>
             </div>
             <div className="type-row">
               <span>2xl</span>
-              <p style={{ margin: 0, fontSize: "var(--text-2xl)", fontWeight: 700, letterSpacing: "-0.03em" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--text-2xl)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.03em",
+                }}
+              >
                 What can you take on?
               </p>
             </div>
             <div className="type-row">
               <span>lg</span>
-              <p style={{ margin: 0, fontSize: "var(--text-lg)", fontWeight: 600 }}>Meditate</p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--text-lg)",
+                  fontWeight: 600,
+                }}
+              >
+                Meditate
+              </p>
             </div>
             <div className="type-row">
               <span>md</span>
-              <p style={{ margin: 0 }}>Body copy for short supporting sentences.</p>
+              <p style={{ margin: 0 }}>
+                Body copy for short supporting sentences.
+              </p>
             </div>
             <div className="type-row">
               <span>sm</span>
-              <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--muted)" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--text-sm)",
+                  color: "var(--muted)",
+                }}
+              >
                 Completing these means you succeeded.
               </p>
             </div>
@@ -105,7 +148,9 @@ export function DesignSystemPage() {
 
         <section className="ds-section">
           <h2>Buttons</h2>
-          <p>Primary coral for commit/complete. Secondary for quieter actions.</p>
+          <p>
+            Primary coral for commit/complete. Secondary for quieter actions.
+          </p>
           <div className="component-lab" style={{ maxWidth: "24rem" }}>
             <Button fullWidth>Start today</Button>
             <Button variant="secondary" fullWidth>
@@ -146,7 +191,9 @@ export function DesignSystemPage() {
 
         <section className="ds-section">
           <h2>Offer card (reveal)</h2>
-          <p>Action state — probe D energy. Ceremonial selection before the list.</p>
+          <p>
+            Action state — probe D energy. Ceremonial selection before the list.
+          </p>
           <div className="component-lab" style={{ maxWidth: "24rem" }}>
             {STARTER_HABITS.slice(0, 3).map((habit, i) => (
               <OfferCard
@@ -184,8 +231,9 @@ export function DesignSystemPage() {
         <section className="ds-section">
           <h2>Motion notes</h2>
           <p>
-            Reveal cards stagger in (~50ms). Completion uses a short spring. List checks animate
-            layout. All respect prefers-reduced-motion via zeroed duration tokens.
+            Reveal cards stagger in (~50ms). Completion uses a short spring.
+            List checks animate layout. All respect prefers-reduced-motion via
+            zeroed duration tokens.
           </p>
         </section>
       </div>

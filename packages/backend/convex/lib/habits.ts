@@ -24,7 +24,12 @@ export const STARTER_HABITS: Habit[] = [
 ];
 
 /** Easy seeds suggested first in setup. */
-export const EASY_STARTER_IDS = ["walk", "stretch", "water", "meditate"] as const;
+export const EASY_STARTER_IDS = [
+  "walk",
+  "stretch",
+  "water",
+  "meditate",
+] as const;
 
 export function clampCapacity(n: number, orbitSize: number): number {
   const capped = Math.max(MIN_CAPACITY, Math.min(MAX_CAPACITY, Math.floor(n)));

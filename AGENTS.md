@@ -8,23 +8,23 @@ Instructions for AI coding agents in this repository.
 
 **Source of truth is GitHub Issues — not markdown trees in this repo.**
 
-| Artifact | Where |
-|----------|--------|
-| Canonical V1 spec + locked decisions | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15) |
-| Wayfinder map / frontier | [Wayfinder: path to trusted-user V1](https://github.com/pedrotmr/orbii/issues/1) |
-| Work tickets | Issues labelled `ready-for-agent` (claim with assignee) |
-| Visual reference only | `design-ideas/` (not production code) |
+| Artifact                             | Where                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------- |
+| Canonical V1 spec + locked decisions | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15)         |
+| Wayfinder map / frontier             | [Wayfinder: path to trusted-user V1](https://github.com/pedrotmr/orbii/issues/1) |
+| Work tickets                         | Issues labelled `ready-for-agent` (claim with assignee)                          |
+| Visual reference only                | `design-ideas/` (not production code)                                            |
 
 ## Architecture
 
 Turborepo + pnpm. Mobile-only V1 (no web app).
 
-| Path | Role |
-|------|------|
-| `apps/mobile` | Expo app + Convex client |
+| Path               | Role                                    |
+| ------------------ | --------------------------------------- |
+| `apps/mobile`      | Expo app + Convex client                |
 | `packages/backend` | Convex schema, ritual mutations, Vitest |
-| `packages/tokens` | Shared color/type/spacing for RN |
-| `design-ideas/` | Throwaway Vite prototype |
+| `packages/tokens`  | Shared color/type/spacing for RN        |
+| `design-ideas/`    | Throwaway Vite prototype                |
 
 ## Invariants
 
@@ -42,6 +42,8 @@ pnpm install
 pnpm dev              # turbo: convex + expo
 pnpm test             # backend Vitest
 pnpm typecheck
+pnpm format           # prettier --write
+pnpm format:check
 ```
 
 ## Conventions

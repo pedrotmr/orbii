@@ -68,7 +68,9 @@ export function seedEasyOrbit(state: SliceState): SliceState {
     (EASY_STARTER_IDS as readonly string[]).includes(h.id),
   );
   // Also add a couple richer ones so offer has variety
-  const extra = STARTER_HABITS.filter((h) => h.id === "read" || h.id === "journal");
+  const extra = STARTER_HABITS.filter(
+    (h) => h.id === "read" || h.id === "journal",
+  );
   const merged = [...habits, ...extra];
   return { ...state, habits: merged };
 }
@@ -94,7 +96,10 @@ export function doCommit(state: SliceState): SliceState {
   return { ...state, session: ritualCommit(state.session) };
 }
 
-export function doToggleComplete(state: SliceState, habitId: string): SliceState {
+export function doToggleComplete(
+  state: SliceState,
+  habitId: string,
+): SliceState {
   const before = state.session;
   const session = ritualToggleComplete(before, habitId);
   let stats = state.stats;

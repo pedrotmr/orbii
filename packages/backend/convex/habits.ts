@@ -7,7 +7,9 @@ export const list = query({
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("habits")
-      .withIndex("by_clientUserId", (q) => q.eq("clientUserId", args.clientUserId))
+      .withIndex("by_clientUserId", (q) =>
+        q.eq("clientUserId", args.clientUserId),
+      )
       .collect();
     return rows.map((row) => ({
       id: row.habitKey,

@@ -28,12 +28,20 @@ function RowInner({
         {meta ? <p className="habit-row__meta">{meta}</p> : null}
       </span>
       {mode === "check" ? (
-        <span className="habit-check" data-on={done ? "true" : "false"} aria-hidden>
+        <span
+          className="habit-check"
+          data-on={done ? "true" : "false"}
+          aria-hidden
+        >
           {done ? <Check size={14} strokeWidth={3} /> : null}
         </span>
       ) : null}
       {mode === "select" ? (
-        <span className="habit-check" data-on={selected ? "true" : "false"} aria-hidden>
+        <span
+          className="habit-check"
+          data-on={selected ? "true" : "false"}
+          aria-hidden
+        >
           {selected ? <Check size={14} strokeWidth={3} /> : null}
         </span>
       ) : null}
@@ -58,7 +66,13 @@ export function HabitRow({
   if (!onClick) {
     return (
       <div {...shared} role="group">
-        <RowInner habit={habit} done={done} selected={selected} meta={meta} mode={mode} />
+        <RowInner
+          habit={habit}
+          done={done}
+          selected={selected}
+          meta={meta}
+          mode={mode}
+        />
       </div>
     );
   }
@@ -78,7 +92,13 @@ export function HabitRow({
             : habit.name
       }
     >
-      <RowInner habit={habit} done={done} selected={selected} meta={meta} mode={mode} />
+      <RowInner
+        habit={habit}
+        done={done}
+        selected={selected}
+        meta={meta}
+        mode={mode}
+      />
     </motion.button>
   );
 }

@@ -74,7 +74,13 @@ describe("daily ritual", () => {
   });
 
   test("rereveal blocked after complete", () => {
-    const { session: revealed } = startReveal(habits, 2, [], "2026-08-24", () => 0);
+    const { session: revealed } = startReveal(
+      habits,
+      2,
+      [],
+      "2026-08-24",
+      () => 0,
+    );
     let session = toggleSelect(revealed, revealed.offeredIds[0]!, 2);
     session = commit(session);
     session = toggleComplete(session, session.committedIds[0]!);
@@ -83,12 +89,7 @@ describe("daily ritual", () => {
   });
 
   test("pickOffer prefers underserved ids", () => {
-    const ids = pickOfferIds(
-      ["a", "b", "c", "d", "e"],
-      3,
-      ["e", "d"],
-      () => 0,
-    );
+    const ids = pickOfferIds(["a", "b", "c", "d", "e"], 3, ["e", "d"], () => 0);
     expect(ids[0]).toBe("e");
     expect(ids[1]).toBe("d");
   });

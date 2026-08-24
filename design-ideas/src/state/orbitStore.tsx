@@ -50,10 +50,16 @@ function shuffle<T>(items: T[]): T[] {
   return next;
 }
 
-function pickOffer(habits: Habit[], offerSize: number, preferIds: HabitId[] = []): HabitId[] {
+function pickOffer(
+  habits: Habit[],
+  offerSize: number,
+  preferIds: HabitId[] = [],
+): HabitId[] {
   if (habits.length === 0) return [];
   const preferred = preferIds.filter((id) => habits.some((h) => h.id === id));
-  const rest = shuffle(habits.map((h) => h.id).filter((id) => !preferred.includes(id)));
+  const rest = shuffle(
+    habits.map((h) => h.id).filter((id) => !preferred.includes(id)),
+  );
   return [...preferred, ...rest].slice(0, Math.min(offerSize, habits.length));
 }
 
@@ -96,7 +102,10 @@ function reducer(state: State, action: Action): State {
     case "SET_CAPACITY":
       return { ...state, capacity: Math.max(1, Math.min(5, action.capacity)) };
     case "SET_OFFER_SIZE":
-      return { ...state, offerSize: Math.max(2, Math.min(8, action.offerSize)) };
+      return {
+        ...state,
+        offerSize: Math.max(2, Math.min(8, action.offerSize)),
+      };
     case "START_REVEAL": {
       if (state.habits.length === 0) return state;
       const underserved = state.habits
@@ -105,7 +114,11 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         phase: "reveal",
-        offeredIds: pickOffer(state.habits, state.offerSize, underserved.slice(0, 2)),
+        offeredIds: pickOffer(
+          state.habits,
+          state.offerSize,
+          underserved.slice(0, 2),
+        ),
         selectedIds: [],
         committedIds: [],
         completedIds: [],
@@ -146,7 +159,9 @@ function reducer(state: State, action: Action): State {
         return { ...state, completedIds };
       }
       const today = todayKey();
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86400000)
+        .toISOString()
+        .slice(0, 10);
       const alreadyCountedToday = state.lastCompletedDate === today;
       let streak = state.streak;
       if (!alreadyCountedToday) {
@@ -156,7 +171,9 @@ function reducer(state: State, action: Action): State {
         ...state,
         completedIds,
         phase: "complete",
-        daysCompleted: alreadyCountedToday ? state.daysCompleted : state.daysCompleted + 1,
+        daysCompleted: alreadyCountedToday
+          ? state.daysCompleted
+          : state.daysCompleted + 1,
         streak,
         lastCompletedDate: today,
       };
@@ -228,7 +245,8 @@ export function OrbitProvider({ children }: { children: ReactNode }) {
       addHabit: (habit) => dispatch({ type: "ADD_HABIT", habit }),
       removeHabit: (id) => dispatch({ type: "REMOVE_HABIT", id }),
       setCapacity: (capacity) => dispatch({ type: "SET_CAPACITY", capacity }),
-      setOfferSize: (offerSize) => dispatch({ type: "SET_OFFER_SIZE", offerSize }),
+      setOfferSize: (offerSize) =>
+        dispatch({ type: "SET_OFFER_SIZE", offerSize }),
       startReveal: () => dispatch({ type: "START_REVEAL" }),
       toggleSelect: (id) => dispatch({ type: "TOGGLE_SELECT", id }),
       commitToday: () => dispatch({ type: "COMMIT_TODAY" }),
@@ -238,7 +256,9 @@ export function OrbitProvider({ children }: { children: ReactNode }) {
     [state, habitsById, offeredHabits, committedHabits],
   );
 
-  return <OrbitContext.Provider value={value}>{children}</OrbitContext.Provider>;
+  return (
+    <OrbitContext.Provider value={value}>{children}</OrbitContext.Provider>
+  );
 }
 
 export function useOrbit() {

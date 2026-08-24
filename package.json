@@ -7,6 +7,8 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "echo \"lint: not configured yet\"",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" \"!**/.agents/**\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" \"!**/.agents/**\" --ignore-path .gitignore",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

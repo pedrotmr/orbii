@@ -6,13 +6,13 @@ The real product will be an Expo + Convex monorepo at the repository root. This 
 
 ## What’s here
 
-| Path | Purpose |
-|------|---------|
-| `PRODUCT.md` | Product principles / audience |
-| `DESIGN.md` | Visual direction & tokens notes |
-| `src/` | Interactive Vite + React prototype |
-| `design-probes/` | Early direction images |
-| `screenshots/` | Capture dumps from prototyping |
+| Path             | Purpose                            |
+| ---------------- | ---------------------------------- |
+| `PRODUCT.md`     | Product principles / audience      |
+| `DESIGN.md`      | Visual direction & tokens notes    |
+| `src/`           | Interactive Vite + React prototype |
+| `design-probes/` | Early direction images             |
+| `screenshots/`   | Capture dumps from prototyping     |
 
 ## Run
 
@@ -25,11 +25,11 @@ Open the URL Vite prints. Desktop shows a jump rail; the phone shell is the prot
 
 ## Prototype routes
 
-| Route | What |
-|-------|------|
-| `/` | Welcome |
-| `/orbit/setup` | Build Orbit |
-| `/today` | Daily loop |
-| `/orbit` | Full Orbit |
-| `/settings` | Capacity / offer size |
-| `/design-system` | Tokens & components |
+| Route            | What                  |
+| ---------------- | --------------------- |
+| `/`              | Welcome               |
+| `/orbit/setup`   | Build Orbit           |
+| `/today`         | Daily loop            |
+| `/orbit`         | Full Orbit            |
+| `/settings`      | Capacity / offer size |
+| `/design-system` | Tokens & components   |
