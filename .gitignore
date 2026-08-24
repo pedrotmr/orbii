@@ -1,0 +1,31 @@
+# Dependencies & build
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+.turbo/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.local
+
+# Expo / mobile
+.expo/
+ios/Pods/
+android/.gradle/
+*.jks
+
+# Convex
+.convex/
+packages/backend/convex/_generated/
+
+# Prototype noise
+.playwright-mcp/
+design-ideas/node_modules/
+design-ideas/dist/
+apps/mobile/.claude/
