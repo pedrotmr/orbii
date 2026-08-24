@@ -3,6 +3,7 @@ node_modules/
 dist/
 .vite/
 *.tsbuildinfo
+.turbo/
 
 # Env / secrets
 .env
@@ -13,16 +14,18 @@ dist/
 .DS_Store
 *.local
 
-# Expo / mobile (future monorepo)
+# Expo / mobile
 .expo/
 ios/Pods/
 android/.gradle/
 *.jks
 
-# Convex (future)
+# Convex
 .convex/
+packages/backend/convex/_generated/
 
 # Prototype noise
 .playwright-mcp/
 design-ideas/node_modules/
 design-ideas/dist/
+apps/mobile/.claude/

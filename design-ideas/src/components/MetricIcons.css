@@ -1,0 +1,57 @@
+.metric-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.metric-icon {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.metric-icon__glyph {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.15rem;
+}
+
+.metric-icon__glyph svg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.metric-icon__value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.metric-icon__label {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.fire-icon--live {
+  filter: drop-shadow(0 4px 10px oklch(0.6 0.18 38 / 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fire-icon--live {
+    filter: none;
+  }
+}
