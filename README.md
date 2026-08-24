@@ -1,33 +1,37 @@
 # Orbii
 
-Personal habit app: many habits in your Orbit, a small focus set each day.
+Habit app that separates *habits you want in your life* from *what deserves attention today*.
 
-## Status
+Many habits live in your **Orbit**. Each day Orbii offers a small set; you pick what you can manage, commit, and complete — success is “Today’s Orbit complete,” not a giant checklist score.
 
-V1 spec approved. Monorepo bootstrap + vertical slice in progress — see `docs/STATUS.md`.
+## Source of truth
+
+| What | Where |
+|------|--------|
+| V1 product & technical design | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15) |
+| Work & wayfinding | [GitHub Issues](https://github.com/pedrotmr/orbii/issues) · [Wayfinder map](https://github.com/pedrotmr/orbii/issues/1) |
+
+## Repo layout
 
 | Path | Role |
 |------|------|
-| `apps/mobile` | Expo app (daily ritual slice) |
-| `packages/backend` | Ritual domain + Convex functions |
+| `apps/mobile` | Expo app |
+| `packages/backend` | Ritual domain + Convex |
 | `packages/tokens` | Shared design tokens |
-| `design-ideas/` | Throwaway visual prototype |
-| `specs/` | Approved V1 design |
+| `design-ideas/` | Visual exploration / Vite prototype (not production) |
 
-## Setup
+## Design prototype
+
+```bash
+cd design-ideas
+npm install
+npm run dev
+```
+
+## App (monorepo)
 
 ```bash
 pnpm install
-pnpm test                 # ritual unit tests
+pnpm test
 pnpm --filter @orbii/mobile dev
 ```
-
-Convex (optional for now — slice persists on-device):
-
-```bash
-pnpm --filter @orbii/backend dev
-```
-
-## Agents
-
-Read `AGENTS.md` (symlinked as `CLAUDE.md`).
