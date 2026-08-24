@@ -1,0 +1,14 @@
+{
+  "name": "@orbii/tokens",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/native.ts",
+  "types": "src/native.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .turbo"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
