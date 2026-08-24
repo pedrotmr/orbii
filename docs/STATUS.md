@@ -2,37 +2,37 @@
 
 Updated: 2026-08-24
 
+## Tracker
+
+Public repo: https://github.com/pedrotmr/orbii  
+Wayfinder map: https://github.com/pedrotmr/orbii/issues/1
+
 ## Done
 
-- [x] Discovery + consensus; V1 spec approved (`specs/2026-08-24-orbii-v1-design.md`)
-- [x] Agent artifacts: `AGENTS.md`, `CLAUDE.md` → symlink, `docs/DECISIONS.md`, `docs/STATUS.md`
-- [x] Mira-shaped monorepo: `apps/mobile`, `packages/backend`, `packages/tokens`
-- [x] Pure ritual domain + 14 Vitest tests (offer/pick/commit/complete/streak B)
-- [x] Convex schema + `users` / `habits` / `day` functions (needs `convex dev` for `_generated`)
-- [x] Mobile vertical slice: seed Orbit → reveal → pick → commit → complete (AsyncStorage)
+- [x] V1 spec approved
+- [x] Full `design-ideas/` on `main`
+- [x] Public GitHub repo + labels
+- [x] Wayfinder map + build issues (#1–#12)
+- [x] PRs for existing work: #13 (artifacts), #14 (monorepo slice)
 
 ## In flight
 
-- (none)
+- [ ] Merge PR #13 / issue #6
+- [ ] Merge PR #14 / issue #7
 
-## Next
+## Frontier (HITL — clear fog)
 
-- [ ] Run `pnpm --filter @orbii/backend exec convex dev` and point mobile at deployment URL
-- [ ] Replace device-local user id with Clerk
-- [ ] Expo Router screens (Today / Orbit / Settings) matching design-ideas
-- [ ] Wire mobile to Convex mutations instead of AsyncStorage slice store
+- #2 AFK agent claim loop
+- #3 Provision Convex
+- #4 Clerk timing
+- #5 Mira tooling PR sequence (confirm)
 
-## Queued (V1 remainder)
+## Next AFK after merges
 
-- Capacity settings UI (1–5)
-- Same-day rereveal polish
-- Trusted-user TestFlight / Expo Go invite
+- #8 Prettier → #9 ESLint → #10 CI (separate PRs)
+- #11 Convex wire (after #3)
+- #12 Clerk (after #4 + #11)
 
-## Blocked
-
-- Convex deployment (user login): `pnpm --filter @orbii/backend dev`
-- Clerk keys (deferred per DECISIONS)
-
-## Spec pointer
+## Spec
 
 `specs/2026-08-24-orbii-v1-design.md`
