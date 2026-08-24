@@ -4,14 +4,21 @@ Habit app that separates *habits you want in your life* from *what deserves atte
 
 Many habits live in your **Orbit**. Each day Orbii offers a small set; you pick what you can manage, commit, and complete — success is “Today’s Orbit complete,” not a giant checklist score.
 
-## In this repo
+## Source of truth
+
+| What | Where |
+|------|--------|
+| V1 product & technical design | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15) |
+| Work & wayfinding | [GitHub Issues](https://github.com/pedrotmr/orbii/issues) · [Wayfinder map](https://github.com/pedrotmr/orbii/issues/1) |
+
+## Repo layout
 
 | Path | Role |
 |------|------|
-| `specs/` | Approved V1 product & technical design |
-| `design-ideas/` | Visual exploration and clickable Vite prototype (not the production app) |
-
-Production monorepo (Expo + Convex) lands via pull requests.
+| `apps/mobile` | Expo app |
+| `packages/backend` | Ritual domain + Convex |
+| `packages/tokens` | Shared design tokens |
+| `design-ideas/` | Visual exploration / Vite prototype (not production) |
 
 ## Design prototype
 
@@ -21,6 +28,10 @@ npm install
 npm run dev
 ```
 
-## Spec
+## App (monorepo)
 
-See [`specs/2026-08-24-orbii-v1-design.md`](./specs/2026-08-24-orbii-v1-design.md).
+```bash
+pnpm install
+pnpm test
+pnpm --filter @orbii/mobile dev
+```
