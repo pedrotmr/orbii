@@ -40,7 +40,9 @@ export const add = mutation({
         q.eq("clientUserId", args.clientUserId).eq("habitKey", args.habitKey),
       )
       .unique();
-    if (existing) return existing._id;
+    if (existing) {
+      return existing._id;
+    }
     return await ctx.db.insert("habits", {
       clientUserId: args.clientUserId,
       habitKey: args.habitKey,
@@ -63,7 +65,9 @@ export const remove = mutation({
         q.eq("clientUserId", args.clientUserId).eq("habitKey", args.habitKey),
       )
       .unique();
-    if (existing) await ctx.db.delete(existing._id);
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
   },
 });
 
@@ -75,14 +79,18 @@ export const seedStarters = mutation({
   handler: async (ctx, args) => {
     for (const key of args.habitKeys) {
       const starter = STARTER_HABITS.find((h) => h.id === key);
-      if (!starter) continue;
+      if (!starter) {
+        continue;
+      }
       const existing = await ctx.db
         .query("habits")
         .withIndex("by_clientUserId_habitKey", (q) =>
           q.eq("clientUserId", args.clientUserId).eq("habitKey", starter.id),
         )
         .unique();
-      if (existing) continue;
+      if (existing) {
+        continue;
+      }
       await ctx.db.insert("habits", {
         clientUserId: args.clientUserId,
         habitKey: starter.id,

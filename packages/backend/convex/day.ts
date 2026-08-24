@@ -13,56 +13,58 @@ import {
   type Habit,
 } from "./lib/ritual";
 
-async function requireUser(ctx: { db: any }, clientUserId: string) {
+const requireUser = async (ctx: { db: any }, clientUserId: string) => {
   const user = await ctx.db
     .query("users")
     .withIndex("by_clientUserId", (q: any) =>
       q.eq("clientUserId", clientUserId),
     )
     .unique();
-  if (!user) throw new Error("User not found — call users.ensure first");
+  if (!user) {
+    throw new Error("User not found — call users.ensure first");
+  }
   return user;
-}
+};
 
-async function listHabits(
-  ctx: { db: any },
-  clientUserId: string,
-): Promise<Habit[]> {
+const listHabits = async (ctx: { db: any }, clientUserId: string) => {
   const rows = await ctx.db
     .query("habits")
     .withIndex("by_clientUserId", (q: any) =>
       q.eq("clientUserId", clientUserId),
     )
     .collect();
-  return rows.map((row: any) => ({
-    id: row.habitKey,
-    name: row.name,
-    glyph: row.glyph,
-    category: row.category,
-  }));
-}
+  return rows.map(
+    (row: any) =>
+      ({
+        id: row.habitKey,
+        name: row.name,
+        glyph: row.glyph,
+        category: row.category,
+      }) satisfies Habit,
+  );
+};
 
-async function getSessionDoc(
+const getSessionDoc = async (
   ctx: { db: any },
   clientUserId: string,
   localDate: string,
-) {
+) => {
   return await ctx.db
     .query("daySessions")
     .withIndex("by_clientUserId_localDate", (q: any) =>
       q.eq("clientUserId", clientUserId).eq("localDate", localDate),
     )
     .unique();
-}
+};
 
-function sessionFromDoc(doc: {
+const sessionFromDoc = (doc: {
   localDate: string;
   phase: DaySession["phase"];
   offeredIds: string[];
   selectedIds: string[];
   committedIds: string[];
   completedIds: string[];
-}): DaySession {
+}) => {
   return {
     localDate: doc.localDate,
     phase: doc.phase,
@@ -70,8 +72,8 @@ function sessionFromDoc(doc: {
     selectedIds: doc.selectedIds,
     committedIds: doc.committedIds,
     completedIds: doc.completedIds,
-  };
-}
+  } satisfies DaySession;
+};
 
 export const get = query({
   args: {
@@ -85,7 +87,9 @@ export const get = query({
         q.eq("clientUserId", args.clientUserId),
       )
       .unique();
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
     const stats = applyMissedDayGap(
       {
         streak: user.streak,
@@ -160,7 +164,9 @@ export const toggleSelect = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx, args.clientUserId);
     const doc = await getSessionDoc(ctx, args.clientUserId, args.localDate);
-    if (!doc) throw new Error("No day session");
+    if (!doc) {
+      throw new Error("No day session");
+    }
     const next = ritualToggleSelect(
       sessionFromDoc(doc),
       args.habitId,
@@ -178,7 +184,9 @@ export const commit = mutation({
   handler: async (ctx, args) => {
     await requireUser(ctx, args.clientUserId);
     const doc = await getSessionDoc(ctx, args.clientUserId, args.localDate);
-    if (!doc) throw new Error("No day session");
+    if (!doc) {
+      throw new Error("No day session");
+    }
     const next = ritualCommit(sessionFromDoc(doc));
     await ctx.db.patch(doc._id, next);
   },
@@ -193,7 +201,9 @@ export const toggleComplete = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx, args.clientUserId);
     const doc = await getSessionDoc(ctx, args.clientUserId, args.localDate);
-    if (!doc) throw new Error("No day session");
+    if (!doc) {
+      throw new Error("No day session");
+    }
     const before = sessionFromDoc(doc);
     const next = ritualToggleComplete(before, args.habitId);
     await ctx.db.patch(doc._id, next);
@@ -224,7 +234,9 @@ export const rereveal = mutation({
     const user = await requireUser(ctx, args.clientUserId);
     const habits = await listHabits(ctx, args.clientUserId);
     const doc = await getSessionDoc(ctx, args.clientUserId, args.localDate);
-    if (!doc) throw new Error("No day session");
+    if (!doc) {
+      throw new Error("No day session");
+    }
     const next = ritualRereveal(habits, user.capacity, sessionFromDoc(doc));
     await ctx.db.patch(doc._id, next);
   },
