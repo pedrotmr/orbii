@@ -15,7 +15,9 @@ export const ensure = mutation({
         q.eq("clientUserId", args.clientUserId),
       )
       .unique();
-    if (existing) return existing._id;
+    if (existing) {
+      return existing._id;
+    }
     return await ctx.db.insert("users", {
       clientUserId: args.clientUserId,
       capacity: DEFAULT_CAPACITY,
@@ -36,7 +38,9 @@ export const get = query({
         q.eq("clientUserId", args.clientUserId),
       )
       .unique();
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
     return user;
   },
 });
@@ -53,7 +57,9 @@ export const setCapacity = mutation({
         q.eq("clientUserId", args.clientUserId),
       )
       .unique();
-    if (!user) throw new Error("User not found");
+    if (!user) {
+      throw new Error("User not found");
+    }
     const capacity = Math.max(
       MIN_CAPACITY,
       Math.min(MAX_CAPACITY, Math.floor(args.capacity)),
@@ -74,7 +80,9 @@ export const stats = query({
         q.eq("clientUserId", args.clientUserId),
       )
       .unique();
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
     const adjusted = applyMissedDayGap(
       {
         streak: user.streak,

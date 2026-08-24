@@ -1,3 +1,6 @@
+import { OFFER_SIZE } from "@orbii/backend";
+import { colors, fontSize, radius, space } from "@orbii/tokens";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,9 +11,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
-import { OFFER_SIZE } from "@orbii/backend";
-import { colors, fontSize, radius, space } from "@orbii/tokens";
 import {
   doCommit,
   doRereveal,
@@ -84,14 +84,18 @@ export default function App() {
   }, []);
 
   const offeredHabits = useMemo(() => {
-    if (!state) return [];
+    if (!state) {
+      return [];
+    }
     return state.session.offeredIds
       .map((id) => state.habits.find((h) => h.id === id))
       .filter(Boolean);
   }, [state]);
 
   const committedHabits = useMemo(() => {
-    if (!state) return [];
+    if (!state) {
+      return [];
+    }
     return state.session.committedIds
       .map((id) => state.habits.find((h) => h.id === id))
       .filter(Boolean);
@@ -169,7 +173,9 @@ export default function App() {
               </Text>
               <View style={styles.list}>
                 {offeredHabits.map((habit) => {
-                  if (!habit) return null;
+                  if (!habit) {
+                    return null;
+                  }
                   const selected = state.session.selectedIds.includes(habit.id);
                   return (
                     <Pressable
@@ -203,7 +209,9 @@ export default function App() {
               <Text style={styles.title}>Finish these to succeed</Text>
               <View style={styles.list}>
                 {committedHabits.map((habit) => {
-                  if (!habit) return null;
+                  if (!habit) {
+                    return null;
+                  }
                   const done = state.session.completedIds.includes(habit.id);
                   return (
                     <Pressable
