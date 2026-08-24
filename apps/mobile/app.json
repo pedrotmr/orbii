@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Orbii",
+    "slug": "orbii",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4F7FA"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.orbii.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F4F7FA",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "package": "app.orbii.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@orbii/backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Convex backend + pure ritual helpers for Orbii",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "dev": "convex dev",
+    "setup": "convex dev --until-success",
+    "deploy": "convex deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json --pretty false",
+    "clean": "rm -rf .turbo .convex"
+  },
+  "dependencies": {
+    "convex": "^1.25.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.0",
+    "convex-test": "^0.0.36",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
