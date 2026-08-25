@@ -14,6 +14,8 @@ Convex functions (`users`, `habits`, `day`) persist the same ritual against the 
 | Dashboard      | https://dashboard.convex.dev/t/pedrotr/orbii/posh-otter-652 |
 | Client URL     | `https://posh-otter-652.convex.cloud`                       |
 
+Mobile reads the same URL via `EXPO_PUBLIC_CONVEX_URL` and calls generated `api` from `@orbii/backend`. Commit `convex/_generated/` so clients typecheck without a live CLI session.
+
 ### Env layout
 
 | File                            | Committed? | Purpose                                                      |

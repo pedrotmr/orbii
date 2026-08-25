@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Habit } from "./lib/habits";
 import { mutation, query } from "./_generated/server";
 import {
   applyCompletionStats,
@@ -10,7 +11,6 @@ import {
   toggleComplete as ritualToggleComplete,
   toggleSelect as ritualToggleSelect,
   type DaySession,
-  type Habit,
 } from "./lib/ritual";
 
 const requireUser = async (ctx: { db: any }, clientUserId: string) => {

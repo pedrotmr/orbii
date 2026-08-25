@@ -1,7 +1,8 @@
-import { OFFER_SIZE } from "@orbii/backend";
+import { api, EASY_STARTER_IDS, OFFER_SIZE } from "@orbii/backend";
 import { colors, fontSize, radius, space } from "@orbii/tokens";
+import { useMutation, useQuery } from "convex/react";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,17 +13,13 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import {
-  doCommit,
-  doRereveal,
-  doStartReveal,
-  doToggleComplete,
-  doToggleSelect,
-  loadSlice,
-  resetDemo,
-  saveSlice,
-  seedEasyOrbit,
-  type SliceState,
-} from "./src/sliceStore";
+  deviceTimezone,
+  loadOrCreateClientUserId,
+  rotateClientUserId,
+  todayLocal,
+} from "./src/clientIdentity";
+
+const SEED_HABIT_KEYS = [...EASY_STARTER_IDS, "read", "journal"];
 
 function PrimaryButton({
   label,
@@ -67,58 +64,114 @@ function GhostButton({
   );
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  );
+}
+
 export default function App() {
-  const [state, setState] = useState<SliceState | null>(null);
+  const [clientUserId, setClientUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const localDate = todayLocal();
+
+  const ensureUser = useMutation(api.users.ensure);
+  const seedStarters = useMutation(api.habits.seedStarters);
+  const startReveal = useMutation(api.day.startRevealMutation);
+  const toggleSelect = useMutation(api.day.toggleSelect);
+  const commit = useMutation(api.day.commit);
+  const toggleComplete = useMutation(api.day.toggleComplete);
+  const rereveal = useMutation(api.day.rereveal);
 
   useEffect(() => {
     void (async () => {
-      const loaded = await loadSlice();
-      setState(loaded);
+      try {
+        const id = await loadOrCreateClientUserId();
+        await ensureUser({
+          clientUserId: id,
+          timezone: deviceTimezone(),
+        });
+        setClientUserId(id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to connect");
+      }
     })();
-  }, []);
+  }, [ensureUser]);
 
-  const persist = useCallback(async (next: SliceState) => {
-    setState(next);
-    await saveSlice(next);
-  }, []);
+  const day = useQuery(
+    api.day.get,
+    clientUserId ? { clientUserId, localDate } : "skip",
+  );
+  const habits = useQuery(
+    api.habits.list,
+    clientUserId ? { clientUserId } : "skip",
+  );
 
   const offeredHabits = useMemo(() => {
-    if (!state) {
+    if (!day || !habits) {
       return [];
     }
-    return state.session.offeredIds
-      .map((id) => state.habits.find((h) => h.id === id))
+
+    return day.session.offeredIds
+      .map((id) => habits.find((h) => h.id === id))
       .filter(Boolean);
-  }, [state]);
+  }, [day, habits]);
 
   const committedHabits = useMemo(() => {
-    if (!state) {
+    if (!day || !habits) {
       return [];
     }
-    return state.session.committedIds
-      .map((id) => state.habits.find((h) => h.id === id))
+
+    return day.session.committedIds
+      .map((id) => habits.find((h) => h.id === id))
       .filter(Boolean);
-  }, [state]);
+  }, [day, habits]);
 
-  if (!state) {
-    return (
-      <View style={styles.boot}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-
-  const run = async (fn: () => SliceState) => {
+  const run = async (fn: () => Promise<unknown>) => {
     try {
       setError(null);
-      await persist(fn());
+      await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     }
   };
 
-  const phase = state.session.phase;
+  const resetDemo = async () => {
+    const id = await rotateClientUserId();
+    await ensureUser({
+      clientUserId: id,
+      timezone: deviceTimezone(),
+    });
+    await seedStarters({
+      clientUserId: id,
+      habitKeys: SEED_HABIT_KEYS,
+    });
+    setClientUserId(id);
+  };
+
+  if (!clientUserId || day === undefined || habits === undefined) {
+    return (
+      <View style={styles.boot}>
+        <ActivityIndicator color={colors.primary} />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </View>
+    );
+  }
+
+  if (day === null) {
+    return (
+      <View style={styles.boot}>
+        <Text style={styles.error}>
+          {error ?? "User not ready — try Reset demo data"}
+        </Text>
+      </View>
+    );
+  }
+
+  const phase = day.session.phase;
 
   return (
     <SafeAreaProvider>
@@ -127,7 +180,7 @@ export default function App() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.brand}>Orbii</Text>
 
-          {state.habits.length === 0 ? (
+          {habits.length === 0 ? (
             <View style={styles.block}>
               <Text style={styles.title}>Build your Orbit</Text>
               <Text style={styles.sub}>
@@ -136,26 +189,35 @@ export default function App() {
               </Text>
               <PrimaryButton
                 label="Seed starter Orbit"
-                onPress={() => void run(() => seedEasyOrbit(state))}
+                onPress={() =>
+                  void run(() =>
+                    seedStarters({
+                      clientUserId,
+                      habitKeys: SEED_HABIT_KEYS,
+                    }),
+                  )
+                }
               />
             </View>
           ) : null}
 
-          {state.habits.length > 0 && phase === "idle" ? (
+          {habits.length > 0 && phase === "idle" ? (
             <View style={styles.block}>
               <Text style={styles.title}>Ready for today’s Orbit?</Text>
               <Text style={styles.sub}>
-                We’ll offer {Math.min(OFFER_SIZE, state.habits.length)} options.
-                Pick up to {state.capacity} you can actually do.
+                We’ll offer {Math.min(OFFER_SIZE, habits.length)} options. Pick
+                up to {day.capacity} you can actually do.
               </Text>
               <View style={styles.metrics}>
-                <Metric label="In Orbit" value={String(state.habits.length)} />
-                <Metric label="Day streak" value={String(state.stats.streak)} />
-                <Metric label="Capacity" value={String(state.capacity)} />
+                <Metric label="In Orbit" value={String(habits.length)} />
+                <Metric label="Day streak" value={String(day.streak)} />
+                <Metric label="Capacity" value={String(day.capacity)} />
               </View>
               <PrimaryButton
                 label="See today’s options"
-                onPress={() => void run(() => doStartReveal(state))}
+                onPress={() =>
+                  void run(() => startReveal({ clientUserId, localDate }))
+                }
               />
             </View>
           ) : null}
@@ -165,23 +227,30 @@ export default function App() {
               <Text style={styles.eyebrow}>Today’s offer</Text>
               <Text style={styles.title}>What can you take on?</Text>
               <Text style={styles.sub}>
-                Pick up to {state.capacity}. Low energy — just don’t choose what
+                Pick up to {day.capacity}. Low energy — just don’t choose what
                 won’t work today.
               </Text>
               <Text style={styles.chip}>
-                {state.session.selectedIds.length}/{state.capacity}
+                {day.session.selectedIds.length}/{day.capacity}
               </Text>
               <View style={styles.list}>
                 {offeredHabits.map((habit) => {
                   if (!habit) {
                     return null;
                   }
-                  const selected = state.session.selectedIds.includes(habit.id);
+
+                  const selected = day.session.selectedIds.includes(habit.id);
                   return (
                     <Pressable
                       key={habit.id}
                       onPress={() =>
-                        void run(() => doToggleSelect(state, habit.id))
+                        void run(() =>
+                          toggleSelect({
+                            clientUserId,
+                            localDate,
+                            habitId: habit.id,
+                          }),
+                        )
                       }
                       style={[styles.row, selected && styles.rowSelected]}
                     >
@@ -193,12 +262,16 @@ export default function App() {
               </View>
               <PrimaryButton
                 label="Start today"
-                disabled={state.session.selectedIds.length === 0}
-                onPress={() => void run(() => doCommit(state))}
+                disabled={day.session.selectedIds.length === 0}
+                onPress={() =>
+                  void run(() => commit({ clientUserId, localDate }))
+                }
               />
               <GhostButton
                 label="Shuffle offer"
-                onPress={() => void run(() => doRereveal(state))}
+                onPress={() =>
+                  void run(() => rereveal({ clientUserId, localDate }))
+                }
               />
             </View>
           ) : null}
@@ -212,12 +285,19 @@ export default function App() {
                   if (!habit) {
                     return null;
                   }
-                  const done = state.session.completedIds.includes(habit.id);
+
+                  const done = day.session.completedIds.includes(habit.id);
                   return (
                     <Pressable
                       key={habit.id}
                       onPress={() =>
-                        void run(() => doToggleComplete(state, habit.id))
+                        void run(() =>
+                          toggleComplete({
+                            clientUserId,
+                            localDate,
+                            habitId: habit.id,
+                          }),
+                        )
                       }
                       style={[styles.row, done && styles.rowDone]}
                     >
@@ -231,7 +311,9 @@ export default function App() {
               </View>
               <GhostButton
                 label="Release & reshuffle"
-                onPress={() => void run(() => doRereveal(state))}
+                onPress={() =>
+                  void run(() => rereveal({ clientUserId, localDate }))
+                }
               />
             </View>
           ) : null}
@@ -241,18 +323,21 @@ export default function App() {
               <Text style={styles.eyebrow}>Done</Text>
               <Text style={styles.title}>Today’s Orbit complete</Text>
               <Text style={styles.sub}>
-                Streak {state.stats.streak} · {state.stats.daysCompleted} days
-                completed
+                Streak {day.streak} · {day.daysCompleted} days completed
               </Text>
               <View style={styles.list}>
-                {committedHabits.map((habit) =>
-                  habit ? (
+                {committedHabits.map((habit) => {
+                  if (!habit) {
+                    return null;
+                  }
+
+                  return (
                     <View key={habit.id} style={[styles.row, styles.rowDone]}>
                       <Text style={styles.glyph}>✓</Text>
                       <Text style={styles.rowLabel}>{habit.name}</Text>
                     </View>
-                  ) : null,
-                )}
+                  );
+                })}
               </View>
             </View>
           ) : null}
@@ -269,21 +354,14 @@ export default function App() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   boot: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.bg,
+    gap: space[3],
+    padding: space[6],
   },
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: {
@@ -383,5 +461,9 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
-  error: { color: colors.primaryDeep, fontSize: fontSize.sm },
+  error: {
+    color: colors.primaryDeep,
+    fontSize: fontSize.sm,
+    textAlign: "center",
+  },
 });
