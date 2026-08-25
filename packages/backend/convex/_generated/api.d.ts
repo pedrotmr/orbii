@@ -10,6 +10,7 @@
 
 import type * as day from "../day.js";
 import type * as habits from "../habits.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as lib_habits from "../lib/habits.js";
 import type * as lib_index from "../lib/index.js";
 import type * as lib_ritual from "../lib/ritual.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   day: typeof day;
   habits: typeof habits;
+  "lib/auth": typeof lib_auth;
   "lib/habits": typeof lib_habits;
   "lib/index": typeof lib_index;
   "lib/ritual": typeof lib_ritual;

@@ -3,16 +3,16 @@ import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    clientUserId: v.string(),
+    clerkUserId: v.string(),
     capacity: v.number(),
     timezone: v.string(),
     streak: v.number(),
     daysCompleted: v.number(),
     lastCompletedLocalDate: v.union(v.string(), v.null()),
-  }).index("by_clientUserId", ["clientUserId"]),
+  }).index("by_clerkUserId", ["clerkUserId"]),
 
   habits: defineTable({
-    clientUserId: v.string(),
+    clerkUserId: v.string(),
     habitKey: v.string(),
     name: v.string(),
     glyph: v.string(),
@@ -23,11 +23,11 @@ export default defineSchema({
       v.literal("life"),
     ),
   })
-    .index("by_clientUserId", ["clientUserId"])
-    .index("by_clientUserId_habitKey", ["clientUserId", "habitKey"]),
+    .index("by_clerkUserId", ["clerkUserId"])
+    .index("by_clerkUserId_habitKey", ["clerkUserId", "habitKey"]),
 
   daySessions: defineTable({
-    clientUserId: v.string(),
+    clerkUserId: v.string(),
     localDate: v.string(),
     phase: v.union(
       v.literal("idle"),
@@ -39,5 +39,5 @@ export default defineSchema({
     selectedIds: v.array(v.string()),
     committedIds: v.array(v.string()),
     completedIds: v.array(v.string()),
-  }).index("by_clientUserId_localDate", ["clientUserId", "localDate"]),
+  }).index("by_clerkUserId_localDate", ["clerkUserId", "localDate"]),
 });
