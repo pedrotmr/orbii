@@ -25,6 +25,7 @@ export default function RitualScreen() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
+  const [actionBusy, setActionBusy] = useState(false);
   const localDate = todayLocal();
 
   const ensureUser = useMutation(api.users.ensure);
@@ -71,11 +72,27 @@ export default function RitualScreen() {
   }, [day, habits]);
 
   const run = async (fn: () => Promise<unknown>) => {
+    if (actionBusy) {
+      return;
+    }
+
     try {
+      setActionBusy(true);
       setError(null);
       await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      setError(null);
+      await signOut();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sign out failed");
     }
   };
 
@@ -93,7 +110,10 @@ export default function RitualScreen() {
               label="Try again"
               onPress={() => setBootAttempt((n) => n + 1)}
             />
-            <GhostButton label="Sign out" onPress={() => void signOut()} />
+            <GhostButton
+              label="Sign out"
+              onPress={() => void handleSignOut()}
+            />
           </>
         ) : (
           <ActivityIndicator color={colors.primary} />
@@ -106,7 +126,7 @@ export default function RitualScreen() {
     return (
       <View style={styles.boot}>
         <Text style={styles.error}>{error ?? "User not ready"}</Text>
-        <GhostButton label="Sign out" onPress={() => void signOut()} />
+        <GhostButton label="Sign out" onPress={() => void handleSignOut()} />
       </View>
     );
   }
@@ -129,6 +149,7 @@ export default function RitualScreen() {
               </Text>
               <PrimaryButton
                 label="Seed starter Orbit"
+                disabled={actionBusy}
                 onPress={() =>
                   void run(() => seedStarters({ habitKeys: SEED_HABIT_KEYS }))
                 }
@@ -150,6 +171,7 @@ export default function RitualScreen() {
               </View>
               <PrimaryButton
                 label="See today’s options"
+                disabled={actionBusy}
                 onPress={() => void run(() => startReveal({ localDate }))}
               />
             </View>
@@ -176,6 +198,7 @@ export default function RitualScreen() {
                   return (
                     <Pressable
                       key={habit.id}
+                      disabled={actionBusy}
                       onPress={() =>
                         void run(() =>
                           toggleSelect({
@@ -184,7 +207,11 @@ export default function RitualScreen() {
                           }),
                         )
                       }
-                      style={[styles.row, selected && styles.rowSelected]}
+                      style={[
+                        styles.row,
+                        selected && styles.rowSelected,
+                        actionBusy && styles.rowDisabled,
+                      ]}
                     >
                       <Text style={styles.glyph}>{habit.glyph}</Text>
                       <Text style={styles.rowLabel}>{habit.name}</Text>
@@ -194,11 +221,12 @@ export default function RitualScreen() {
               </View>
               <PrimaryButton
                 label="Start today"
-                disabled={day.session.selectedIds.length === 0}
+                disabled={actionBusy || day.session.selectedIds.length === 0}
                 onPress={() => void run(() => commit({ localDate }))}
               />
               <GhostButton
                 label="Shuffle offer"
+                disabled={actionBusy}
                 onPress={() => void run(() => rereveal({ localDate }))}
               />
             </View>
@@ -218,6 +246,7 @@ export default function RitualScreen() {
                   return (
                     <Pressable
                       key={habit.id}
+                      disabled={actionBusy}
                       onPress={() =>
                         void run(() =>
                           toggleComplete({
@@ -226,7 +255,11 @@ export default function RitualScreen() {
                           }),
                         )
                       }
-                      style={[styles.row, done && styles.rowDone]}
+                      style={[
+                        styles.row,
+                        done && styles.rowDone,
+                        actionBusy && styles.rowDisabled,
+                      ]}
                     >
                       <Text style={styles.glyph}>
                         {done ? "✓" : habit.glyph}
@@ -238,6 +271,7 @@ export default function RitualScreen() {
               </View>
               <GhostButton
                 label="Release & reshuffle"
+                disabled={actionBusy}
                 onPress={() => void run(() => rereveal({ localDate }))}
               />
             </View>
@@ -271,9 +305,10 @@ export default function RitualScreen() {
 
           <GhostButton
             label="Reseed starter Orbit"
+            disabled={actionBusy}
             onPress={() => void run(() => reseed())}
           />
-          <GhostButton label="Sign out" onPress={() => void signOut()} />
+          <GhostButton label="Sign out" onPress={() => void handleSignOut()} />
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -351,6 +386,9 @@ const styles = StyleSheet.create({
   rowDone: {
     borderColor: colors.success,
     backgroundColor: colors.successSoft,
+  },
+  rowDisabled: {
+    opacity: 0.5,
   },
   glyph: { fontSize: fontSize.lg, width: 28, textAlign: "center" },
   rowLabel: { fontSize: fontSize.lg, fontWeight: "600", color: colors.ink },
