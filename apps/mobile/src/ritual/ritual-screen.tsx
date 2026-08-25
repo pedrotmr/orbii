@@ -24,6 +24,7 @@ export default function RitualScreen() {
   const { signOut } = useAuth();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bootAttempt, setBootAttempt] = useState(0);
   const localDate = todayLocal();
 
   const ensureUser = useMutation(api.users.ensure);
@@ -37,13 +38,14 @@ export default function RitualScreen() {
   useEffect(() => {
     void (async () => {
       try {
+        setError(null);
         await ensureUser({ timezone: deviceTimezone() });
         setReady(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to connect");
       }
     })();
-  }, [ensureUser]);
+  }, [ensureUser, bootAttempt]);
 
   const day = useQuery(api.day.get, ready ? { localDate } : "skip");
   const habits = useQuery(api.habits.list, ready ? {} : "skip");
@@ -84,8 +86,18 @@ export default function RitualScreen() {
   if (!ready || day === undefined || habits === undefined) {
     return (
       <View style={styles.boot}>
-        <ActivityIndicator color={colors.primary} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <>
+            <Text style={styles.error}>{error}</Text>
+            <PrimaryButton
+              label="Try again"
+              onPress={() => setBootAttempt((n) => n + 1)}
+            />
+            <GhostButton label="Sign out" onPress={() => void signOut()} />
+          </>
+        ) : (
+          <ActivityIndicator color={colors.primary} />
+        )}
       </View>
     );
   }

@@ -4,12 +4,19 @@ import { Pressable, StyleSheet, Text } from "react-native";
 interface GhostButtonProps {
   label: string;
   onPress: () => void;
+  disabled?: boolean;
 }
 
-export default function GhostButton({ label, onPress }: GhostButtonProps) {
+export default function GhostButton({
+  label,
+  onPress,
+  disabled,
+}: GhostButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: disabled ?? false }}
+      disabled={disabled}
       onPress={onPress}
       style={styles.ghostBtn}
     >

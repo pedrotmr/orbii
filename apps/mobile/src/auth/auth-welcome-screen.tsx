@@ -72,6 +72,7 @@ export default function AuthWelcomeScreen() {
       />
       <GhostButton
         label="Email instead"
+        disabled={busy}
         onPress={() => void runHosted("sign-in")}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
