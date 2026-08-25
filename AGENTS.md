@@ -57,7 +57,7 @@ pnpm --filter @orbii/backend typecheck
 pnpm --filter @orbii/mobile start
 ```
 
-**Before finishing any work:** run `pnpm typecheck`, `pnpm lint`, `pnpm format:check` (and `pnpm test` when backend changed). One concern per PR — tooling (prettier/eslint/CI) never rides along with product PRs.
+**Before finishing any work:** run `pnpm typecheck`, `pnpm lint`, `pnpm format:check` (and `pnpm test` when backend changed). GitHub Actions CI runs the same gates on PRs and `main`. One concern per PR — tooling never rides along with product PRs.
 
 ## Architecture
 
