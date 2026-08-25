@@ -22,7 +22,6 @@ android/.gradle/
 
 # Convex
 .convex/
-packages/backend/convex/_generated/
 
 # Prototype noise
 .playwright-mcp/

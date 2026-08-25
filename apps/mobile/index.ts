@@ -1,4 +1,4 @@
 import { registerRootComponent } from "expo";
-import App from "./App";
+import ConvexAppRoot from "./src/convex-app-root";
 
-registerRootComponent(App);
+registerRootComponent(ConvexAppRoot);
