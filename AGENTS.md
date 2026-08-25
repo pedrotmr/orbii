@@ -62,6 +62,7 @@ pnpm --filter @orbii/mobile start
 ## Architecture
 
 - **Backend:** schema in `packages/backend/convex/schema.ts`; feature modules beside it; pure ritual helpers in `convex/lib/`; tests in `packages/backend/tests/*.test.ts`.
+- **Convex project:** team `pedrotr`, project `orbii`, dev deployment `posh-otter-652` (`https://posh-otter-652.convex.cloud`). Local secrets in `packages/backend/.env.local` and `apps/mobile/.env.local` (see `packages/backend/README.md`). Never commit those files.
 - **Clients:** import `@orbii/backend` helpers / generated `api` when Convex is wired. Mutations are the write source of truth.
 - **Tokens:** never hardcode colors, radii, or shadows in apps — import `@orbii/tokens`.
 
