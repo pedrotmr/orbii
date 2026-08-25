@@ -6,22 +6,22 @@ Convex functions (`users`, `habits`, `day`) persist the same ritual against the 
 
 ### Project
 
-| | |
-|---|---|
-| Team | `pedrotr` |
-| Project | `orbii` |
-| Dev deployment | `posh-otter-652` (`dev/pedrotr`) |
-| Dashboard | https://dashboard.convex.dev/t/pedrotr/orbii/posh-otter-652 |
-| Client URL | `https://posh-otter-652.convex.cloud` |
+|                |                                                             |
+| -------------- | ----------------------------------------------------------- |
+| Team           | `pedrotr`                                                   |
+| Project        | `orbii`                                                     |
+| Dev deployment | `posh-otter-652` (`dev/pedrotr`)                            |
+| Dashboard      | https://dashboard.convex.dev/t/pedrotr/orbii/posh-otter-652 |
+| Client URL     | `https://posh-otter-652.convex.cloud`                       |
 
 ### Env layout
 
-| File | Committed? | Purpose |
-|------|------------|---------|
-| `packages/backend/.env.local` | no | `CONVEX_DEPLOYMENT`, `CONVEX_URL`, `CONVEX_SITE_URL` for CLI |
-| `packages/backend/.env.example` | yes | empty template |
-| `apps/mobile/.env.local` | no | `EXPO_PUBLIC_CONVEX_URL` for Expo |
-| `apps/mobile/.env.example` | yes | empty template |
+| File                            | Committed? | Purpose                                                      |
+| ------------------------------- | ---------- | ------------------------------------------------------------ |
+| `packages/backend/.env.local`   | no         | `CONVEX_DEPLOYMENT`, `CONVEX_URL`, `CONVEX_SITE_URL` for CLI |
+| `packages/backend/.env.example` | yes        | empty template                                               |
+| `apps/mobile/.env.local`        | no         | `EXPO_PUBLIC_CONVEX_URL` for Expo                            |
+| `apps/mobile/.env.example`      | yes        | empty template                                               |
 
 Deploy keys / GitHub secrets are deferred until CI deploys Convex. Clerk env waits for identity cutover.
 
