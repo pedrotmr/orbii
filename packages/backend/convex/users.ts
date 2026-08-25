@@ -1,25 +1,26 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireClerkUserId } from "./lib/auth";
 import { DEFAULT_CAPACITY, MAX_CAPACITY, MIN_CAPACITY } from "./lib/habits";
 import { applyMissedDayGap } from "./lib/ritual";
 
 export const ensure = mutation({
   args: {
-    clientUserId: v.string(),
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_clientUserId", (q) =>
-        q.eq("clientUserId", args.clientUserId),
-      )
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
       .unique();
+
     if (existing) {
       return existing._id;
     }
+
     return await ctx.db.insert("users", {
-      clientUserId: args.clientUserId,
+      clerkUserId,
       capacity: DEFAULT_CAPACITY,
       timezone: args.timezone ?? "UTC",
       streak: 0,
@@ -30,36 +31,37 @@ export const ensure = mutation({
 });
 
 export const get = query({
-  args: { clientUserId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const clerkUserId = await requireClerkUserId(ctx);
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clientUserId", (q) =>
-        q.eq("clientUserId", args.clientUserId),
-      )
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
       .unique();
+
     if (!user) {
       return null;
     }
+
     return user;
   },
 });
 
 export const setCapacity = mutation({
   args: {
-    clientUserId: v.string(),
     capacity: v.number(),
   },
   handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clientUserId", (q) =>
-        q.eq("clientUserId", args.clientUserId),
-      )
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
       .unique();
+
     if (!user) {
       throw new Error("User not found");
     }
+
     const capacity = Math.max(
       MIN_CAPACITY,
       Math.min(MAX_CAPACITY, Math.floor(args.capacity)),
@@ -70,19 +72,19 @@ export const setCapacity = mutation({
 
 export const stats = query({
   args: {
-    clientUserId: v.string(),
     localDate: v.string(),
   },
   handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clientUserId", (q) =>
-        q.eq("clientUserId", args.clientUserId),
-      )
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
       .unique();
+
     if (!user) {
       return null;
     }
+
     const adjusted = applyMissedDayGap(
       {
         streak: user.streak,

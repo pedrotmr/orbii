@@ -2,6 +2,7 @@
   "expo": {
     "name": "Orbii",
     "slug": "orbii",
+    "scheme": "orbii",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,6 +25,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": ["expo-secure-store", "expo-web-browser", "@clerk/expo"]
   }
 }

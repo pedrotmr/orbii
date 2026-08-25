@@ -3,3 +3,6 @@ packages:
   - "packages/*"
 
 nodeLinker: hoisted
+
+overrides:
+  react-dom: 19.2.3

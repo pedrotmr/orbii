@@ -18,14 +18,16 @@ Mobile reads the same URL via `EXPO_PUBLIC_CONVEX_URL` and calls generated `api`
 
 ### Env layout
 
-| File                            | Committed? | Purpose                                                      |
-| ------------------------------- | ---------- | ------------------------------------------------------------ |
-| `packages/backend/.env.local`   | no         | `CONVEX_DEPLOYMENT`, `CONVEX_URL`, `CONVEX_SITE_URL` for CLI |
-| `packages/backend/.env.example` | yes        | empty template                                               |
-| `apps/mobile/.env.local`        | no         | `EXPO_PUBLIC_CONVEX_URL` for Expo                            |
-| `apps/mobile/.env.example`      | yes        | empty template                                               |
+| File                            | Committed? | Purpose                                                       |
+| ------------------------------- | ---------- | ------------------------------------------------------------- |
+| `packages/backend/.env.local`   | no         | `CONVEX_DEPLOYMENT`, `CONVEX_URL`, `CONVEX_SITE_URL` for CLI  |
+| `packages/backend/.env.example` | yes        | empty template                                                |
+| `apps/mobile/.env.local`        | no         | `EXPO_PUBLIC_CONVEX_URL`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` |
+| `apps/mobile/.env.example`      | yes        | empty template                                                |
 
-Deploy keys / GitHub secrets are deferred until CI deploys Convex. Clerk env waits for identity cutover.
+Deploy keys / GitHub secrets are deferred until CI deploys Convex.
+
+**Identity:** Clerk is required (hard gate). Convex functions use `ctx.auth`; documents key on `clerkUserId` (Clerk `subject`). Vertical-slice `clientUserId` data is discarded — no migration. Mobile: `clerk env pull` from `apps/mobile`; enable Native API at https://dashboard.clerk.com/~/native-applications; Convex JWT via Clerk’s Convex integration + `CLERK_JWT_ISSUER_DOMAIN` on the deployment.
 
 ### Local commands
 
