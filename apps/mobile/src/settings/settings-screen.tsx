@@ -1,22 +1,20 @@
 import { colors, fontSize, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.block}>
-          <Text style={styles.brand}>Orbii</Text>
-          <Text style={styles.eyebrow}>Settings</Text>
-          <Text style={styles.title}>Capacity and account</Text>
-          <Text style={styles.sub}>
-            Capacity, timezone, and sign out move here next. Sign out remains on
-            Today until then.
-          </Text>
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.block}>
+        <Text style={styles.brand}>Orbii</Text>
+        <Text style={styles.eyebrow}>Settings</Text>
+        <Text style={styles.title}>Capacity and account</Text>
+        <Text style={styles.sub}>
+          Capacity, timezone, and sign out move here next. Sign out remains on
+          Today until then.
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }
 

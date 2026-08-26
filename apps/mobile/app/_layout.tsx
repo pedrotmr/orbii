@@ -3,6 +3,7 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { convex } from "../src/convexClient";
 import { discardSliceClientUserId } from "../src/discard-slice-identity";
 
@@ -22,12 +23,14 @@ export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="welcome" />
-          <Stack.Screen name="setup" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
+        <SafeAreaProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="welcome" />
+            <Stack.Screen name="setup" />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </SafeAreaProvider>
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );

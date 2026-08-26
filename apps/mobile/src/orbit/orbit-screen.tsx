@@ -1,22 +1,20 @@
 import { colors, fontSize, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OrbitScreen() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.block}>
-          <Text style={styles.brand}>Orbii</Text>
-          <Text style={styles.eyebrow}>Orbit</Text>
-          <Text style={styles.title}>Your full habit set</Text>
-          <Text style={styles.sub}>
-            List, add, and remove habits land in the next slice. Today still
-            runs from your current Orbit.
-          </Text>
-        </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.block}>
+        <Text style={styles.brand}>Orbii</Text>
+        <Text style={styles.eyebrow}>Orbit</Text>
+        <Text style={styles.title}>Your full habit set</Text>
+        <Text style={styles.sub}>
+          List, add, and remove habits land in the next slice. Today still runs
+          from your current Orbit.
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
