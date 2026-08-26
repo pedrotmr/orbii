@@ -49,6 +49,11 @@ export const fontSize = {
 } as const;
 
 export const fonts = {
-  ui: "Outfit",
-  display: "Outfit",
+  /** Loaded via `@expo-google-fonts/outfit` in the mobile root layout. */
+  regular: "Outfit_400Regular",
+  medium: "Outfit_500Medium",
+  semiBold: "Outfit_600SemiBold",
+  bold: "Outfit_700Bold",
+  ui: "Outfit_400Regular",
+  display: "Outfit_700Bold",
 } as const;

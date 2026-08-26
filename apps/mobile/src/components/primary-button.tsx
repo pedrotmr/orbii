@@ -1,4 +1,4 @@
-import { colors, fontSize, radius, space } from "@orbii/tokens";
+import { colors, fonts, fontSize, radius, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 interface PrimaryButtonProps {
@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnDisabled: { opacity: 0.4 },
   primaryBtnText: {
+    fontFamily: fonts.bold,
     color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: "700",

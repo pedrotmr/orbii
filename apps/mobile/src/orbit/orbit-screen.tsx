@@ -11,6 +11,8 @@ import {
   Text,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BrandMark from "../components/brand-mark";
+import ScreenAtmosphere from "../components/screen-atmosphere";
 import { useTodayLocal } from "../local-date";
 import OrbitAddHabitForm from "./add/orbit-add-habit-form";
 import OrbitHabitList from "./list/orbit-habit-list";
@@ -107,28 +109,30 @@ export default function OrbitScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.brand}>Orbii</Text>
-        <Text style={styles.eyebrow}>Orbit</Text>
-        <Text style={styles.title}>Habits you keep in life</Text>
-        <Text style={styles.sub}>
-          Add freely. You won’t do all of these every day — that’s the point.
-        </Text>
+    <ScreenAtmosphere>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="dark" />
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <BrandMark />
+          <Text style={styles.eyebrow}>Orbit</Text>
+          <Text style={styles.title}>Habits you keep in life</Text>
+          <Text style={styles.sub}>
+            Add freely. You won’t do all of these every day — that’s the point.
+          </Text>
 
-        <Text style={styles.count}>{habits.length} in Orbit</Text>
+          <Text style={styles.count}>{habits.length} in Orbit</Text>
 
-        <OrbitHabitList habits={habits} busy={busy} onRemove={handleRemove} />
+          <OrbitHabitList habits={habits} busy={busy} onRemove={handleRemove} />
 
-        <OrbitAddHabitForm busy={busy} onAdd={handleAdd} />
+          <OrbitAddHabitForm busy={busy} onAdd={handleAdd} />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </ScrollView>
-    </SafeAreaView>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenAtmosphere>
   );
 }
 
@@ -139,17 +143,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.bg,
   },
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: "transparent" },
   scroll: {
     padding: space[6],
     paddingBottom: space[12],
     gap: space[3],
-  },
-  brand: {
-    fontSize: fontSize.lg,
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.3,
   },
   eyebrow: {
     fontSize: fontSize.xs,

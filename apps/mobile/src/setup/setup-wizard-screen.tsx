@@ -12,7 +12,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BrandMark from "../components/brand-mark";
 import GhostButton from "../components/ghost-button";
+import ScreenAtmosphere from "../components/screen-atmosphere";
 import SetupCapacityStep from "./capacity/setup-capacity-step";
 import SetupSeedAddStep from "./seed-add/setup-seed-add-step";
 import SetupWelcomeStep from "./welcome/setup-welcome-step";
@@ -81,45 +83,47 @@ export default function SetupWizardScreen({
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.brand}>Orbii</Text>
-        <Text style={styles.progress}>{stepNumber} of 3</Text>
+    <ScreenAtmosphere>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="dark" />
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <BrandMark />
+          <Text style={styles.progress}>{stepNumber} of 3</Text>
 
-        {step === "welcome" ? (
-          <SetupWelcomeStep onContinue={() => setStep("seed-add")} />
-        ) : null}
+          {step === "welcome" ? (
+            <SetupWelcomeStep onContinue={() => setStep("seed-add")} />
+          ) : null}
 
-        {step === "seed-add" ? (
-          <SetupSeedAddStep
-            habits={habits}
-            busy={busy}
-            run={run}
-            onContinue={() => setStep("capacity")}
+          {step === "seed-add" ? (
+            <SetupSeedAddStep
+              habits={habits}
+              busy={busy}
+              run={run}
+              onContinue={() => setStep("capacity")}
+            />
+          ) : null}
+
+          {step === "capacity" ? (
+            <SetupCapacityStep busy={busy} onFinish={handleFinish} />
+          ) : null}
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <GhostButton
+            label="Sign out"
+            disabled={busy}
+            onPress={() =>
+              void run(async () => {
+                await signOut();
+              })
+            }
           />
-        ) : null}
-
-        {step === "capacity" ? (
-          <SetupCapacityStep busy={busy} onFinish={handleFinish} />
-        ) : null}
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <GhostButton
-          label="Sign out"
-          disabled={busy}
-          onPress={() =>
-            void run(async () => {
-              await signOut();
-            })
-          }
-        />
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenAtmosphere>
   );
 }
 
@@ -130,18 +134,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.bg,
   },
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: "transparent" },
   scroll: {
     padding: space[6],
     paddingBottom: space[12],
     gap: space[4],
     flexGrow: 1,
-  },
-  brand: {
-    fontSize: fontSize.lg,
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.3,
   },
   progress: {
     fontSize: fontSize.sm,

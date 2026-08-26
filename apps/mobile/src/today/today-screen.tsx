@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { TodayHabit } from "./today-habit";
+import BrandMark from "../components/brand-mark";
+import ScreenAtmosphere from "../components/screen-atmosphere";
 import { useTodayLocal } from "../local-date";
 import TodayActivePhase from "./active/today-active-phase";
 import TodayCompletePhase from "./complete/today-complete-phase";
@@ -111,61 +113,73 @@ export default function TodayScreen() {
   const phase = day.session.phase;
   const orbitEmpty = habits.length === 0;
 
+  let mood: "default" | "reveal" | "celebrate" = "default";
+
+  if (phase === "reveal") {
+    mood = "reveal";
+  }
+
+  if (phase === "complete") {
+    mood = "celebrate";
+  }
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.brand}>Orbii</Text>
+    <ScreenAtmosphere mood={mood}>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="dark" />
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <BrandMark />
 
-        {orbitEmpty ? <TodayEmptyOrbit /> : null}
+          {orbitEmpty ? <TodayEmptyOrbit /> : null}
 
-        {!orbitEmpty && phase === "idle" ? (
-          <TodayIdlePhase
-            habitCount={habits.length}
-            capacity={day.capacity}
-            streak={day.streak}
-            busy={actionBusy}
-            onReveal={() => void run(() => startReveal({ localDate }))}
-          />
-        ) : null}
+          {!orbitEmpty && phase === "idle" ? (
+            <TodayIdlePhase
+              habitCount={habits.length}
+              capacity={day.capacity}
+              streak={day.streak}
+              busy={actionBusy}
+              onReveal={() => void run(() => startReveal({ localDate }))}
+            />
+          ) : null}
 
-        {phase === "reveal" ? (
-          <TodayRevealPhase
-            capacity={day.capacity}
-            selectedIds={day.session.selectedIds}
-            offeredHabits={offeredHabits}
-            busy={actionBusy}
-            onToggle={(habitId) =>
-              void run(() => toggleSelect({ localDate, habitId }))
-            }
-            onCommit={() => void run(() => commit({ localDate }))}
-            onShuffle={() => void run(() => rereveal({ localDate }))}
-          />
-        ) : null}
+          {phase === "reveal" ? (
+            <TodayRevealPhase
+              capacity={day.capacity}
+              selectedIds={day.session.selectedIds}
+              offeredHabits={offeredHabits}
+              busy={actionBusy}
+              onToggle={(habitId) =>
+                void run(() => toggleSelect({ localDate, habitId }))
+              }
+              onCommit={() => void run(() => commit({ localDate }))}
+              onShuffle={() => void run(() => rereveal({ localDate }))}
+            />
+          ) : null}
 
-        {phase === "active" ? (
-          <TodayActivePhase
-            committedHabits={committedHabits}
-            completedIds={day.session.completedIds}
-            busy={actionBusy}
-            onToggle={(habitId) =>
-              void run(() => toggleComplete({ localDate, habitId }))
-            }
-            onReshuffle={() => void run(() => rereveal({ localDate }))}
-          />
-        ) : null}
+          {phase === "active" ? (
+            <TodayActivePhase
+              committedHabits={committedHabits}
+              completedIds={day.session.completedIds}
+              busy={actionBusy}
+              onToggle={(habitId) =>
+                void run(() => toggleComplete({ localDate, habitId }))
+              }
+              onReshuffle={() => void run(() => rereveal({ localDate }))}
+            />
+          ) : null}
 
-        {phase === "complete" ? (
-          <TodayCompletePhase
-            streak={day.streak}
-            daysCompleted={day.daysCompleted}
-            committedHabits={committedHabits}
-          />
-        ) : null}
+          {phase === "complete" ? (
+            <TodayCompletePhase
+              streak={day.streak}
+              daysCompleted={day.daysCompleted}
+              committedHabits={committedHabits}
+            />
+          ) : null}
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </ScrollView>
-    </SafeAreaView>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenAtmosphere>
   );
 }
 
@@ -178,17 +192,11 @@ const styles = StyleSheet.create({
     gap: space[3],
     padding: space[6],
   },
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: "transparent" },
   scroll: {
     padding: space[6],
     paddingBottom: space[12],
     gap: space[4],
-  },
-  brand: {
-    fontSize: fontSize.lg,
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.3,
   },
   error: {
     color: colors.primaryDeep,
