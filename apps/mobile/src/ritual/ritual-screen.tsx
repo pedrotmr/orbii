@@ -1,9 +1,9 @@
 import { useAuth } from "@clerk/expo";
-import { api, EASY_STARTER_IDS, OFFER_SIZE } from "@orbii/backend";
+import { api, OFFER_SIZE } from "@orbii/backend";
 import { colors, fontSize, radius, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -16,40 +16,22 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import GhostButton from "../components/ghost-button";
 import Metric from "../components/metric";
 import PrimaryButton from "../components/primary-button";
-import { deviceTimezone, useTodayLocal } from "../local-date";
-
-const SEED_HABIT_KEYS = [...EASY_STARTER_IDS, "read", "journal"];
+import { useTodayLocal } from "../local-date";
 
 export default function RitualScreen() {
   const { signOut } = useAuth();
-  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [bootAttempt, setBootAttempt] = useState(0);
   const [actionBusy, setActionBusy] = useState(false);
   const localDate = useTodayLocal();
 
-  const ensureUser = useMutation(api.users.ensure);
-  const seedStarters = useMutation(api.habits.seedStarters);
   const startReveal = useMutation(api.day.startRevealMutation);
   const toggleSelect = useMutation(api.day.toggleSelect);
   const commit = useMutation(api.day.commit);
   const toggleComplete = useMutation(api.day.toggleComplete);
   const rereveal = useMutation(api.day.rereveal);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        setError(null);
-        await ensureUser({ timezone: deviceTimezone() });
-        setReady(true);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to connect");
-      }
-    })();
-  }, [ensureUser, bootAttempt]);
-
-  const day = useQuery(api.day.get, ready ? { localDate } : "skip");
-  const habits = useQuery(api.habits.list, ready ? {} : "skip");
+  const day = useQuery(api.day.get, { localDate });
+  const habits = useQuery(api.habits.list, {});
 
   const offeredHabits = useMemo(() => {
     if (!day || !habits) {
@@ -96,28 +78,10 @@ export default function RitualScreen() {
     }
   };
 
-  const reseed = async () => {
-    await seedStarters({ habitKeys: SEED_HABIT_KEYS });
-  };
-
-  if (!ready || day === undefined || habits === undefined) {
+  if (day === undefined || habits === undefined) {
     return (
       <View style={styles.boot}>
-        {error ? (
-          <>
-            <Text style={styles.error}>{error}</Text>
-            <PrimaryButton
-              label="Try again"
-              onPress={() => setBootAttempt((n) => n + 1)}
-            />
-            <GhostButton
-              label="Sign out"
-              onPress={() => void handleSignOut()}
-            />
-          </>
-        ) : (
-          <ActivityIndicator color={colors.primary} />
-        )}
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -132,6 +96,8 @@ export default function RitualScreen() {
   }
 
   const phase = day.session.phase;
+  const orbitEmpty = habits.length === 0;
+  const canReveal = !orbitEmpty && !actionBusy;
 
   return (
     <SafeAreaProvider>
@@ -140,24 +106,16 @@ export default function RitualScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.brand}>Orbii</Text>
 
-          {habits.length === 0 ? (
+          {orbitEmpty ? (
             <View style={styles.block}>
-              <Text style={styles.title}>Build your Orbit</Text>
+              <Text style={styles.title}>Your Orbit is empty</Text>
               <Text style={styles.sub}>
-                Seed a few easy habits so you can always pick something
-                manageable.
+                Reveal stays closed until you add at least one habit.
               </Text>
-              <PrimaryButton
-                label="Seed starter Orbit"
-                disabled={actionBusy}
-                onPress={() =>
-                  void run(() => seedStarters({ habitKeys: SEED_HABIT_KEYS }))
-                }
-              />
             </View>
           ) : null}
 
-          {habits.length > 0 && phase === "idle" ? (
+          {!orbitEmpty && phase === "idle" ? (
             <View style={styles.block}>
               <Text style={styles.title}>Ready for today’s Orbit?</Text>
               <Text style={styles.sub}>
@@ -171,7 +129,7 @@ export default function RitualScreen() {
               </View>
               <PrimaryButton
                 label="See today’s options"
-                disabled={actionBusy}
+                disabled={!canReveal}
                 onPress={() => void run(() => startReveal({ localDate }))}
               />
             </View>
@@ -303,11 +261,6 @@ export default function RitualScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <GhostButton
-            label="Reseed starter Orbit"
-            disabled={actionBusy}
-            onPress={() => void run(() => reseed())}
-          />
           <GhostButton label="Sign out" onPress={() => void handleSignOut()} />
         </ScrollView>
       </SafeAreaView>

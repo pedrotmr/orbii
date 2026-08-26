@@ -3,8 +3,8 @@ import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import AuthWelcomeScreen from "./src/auth/auth-welcome-screen";
+import AuthenticatedApp from "./src/authenticated-app";
 import { discardSliceClientUserId } from "./src/discard-slice-identity";
-import RitualScreen from "./src/ritual/ritual-screen";
 
 export default function App() {
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function App() {
         <AuthWelcomeScreen />
       </Unauthenticated>
       <Authenticated>
-        <RitualScreen />
+        <AuthenticatedApp />
       </Authenticated>
     </>
   );
