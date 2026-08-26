@@ -88,9 +88,9 @@ Scan the QR code with **Expo Go** (Camera on iOS; Expo Go app on Android).
 | Symptom                                      | Likely fix                                                                                       |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | App crashes on boot about missing env        | Ensure `apps/mobile/.env.local` exists and Expo was restarted after editing                      |
-| Clerk sign-in opens then fails redirect      | Confirm Native API + `orbii://oauth-callback` in Clerk                                           |
+| Clerk sign-in opens then fails redirect      | Allowlist Expo Go `exp://…/--/oauth-callback` (and `orbii://oauth-callback` for a future client) |
 | Signed in but UI stuck / “Not authenticated” | Convex JWT template `convex` missing, or `CLERK_JWT_ISSUER_DOMAIN` unset on the deployment       |
-| Stale bundle / weird UI                      | Shake device → Reload; or stop Expo and `pnpm --filter @orbii/mobile start -c`                   |
+| Stale bundle / weird UI                      | Shake device → Reload; or stop Expo and `pnpm --filter @orbii/mobile start -- -c`                |
 | Wrong data / empty after schema change       | Dev deployment may have been reset; re-run Setup                                                 |
 | Fonts flash system default                   | Expected briefly until Outfit loads; if permanent, check network / Expo Go can fetch font assets |
 
