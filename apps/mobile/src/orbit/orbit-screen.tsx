@@ -3,7 +3,13 @@ import { colors, fontSize, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTodayLocal } from "../local-date";
 import OrbitAddHabitForm from "./add/orbit-add-habit-form";
@@ -73,9 +79,22 @@ export default function OrbitScreen() {
   };
 
   const handleRemove = (habitKey: string) => {
-    void run(async () => {
-      await removeHabit({ habitKey, localDate });
-    });
+    Alert.alert(
+      "Remove habit",
+      "Remove this habit from your Orbit? If it is in today’s session, it will be scrubbed.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            void run(async () => {
+              await removeHabit({ habitKey, localDate });
+            });
+          },
+        },
+      ],
+    );
   };
 
   return (
