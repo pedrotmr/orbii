@@ -30,7 +30,8 @@ const slugify = (name: string) => {
 };
 
 export default function OrbitScreen() {
-  const localDate = useTodayLocal();
+  const user = useQuery(api.users.get, {});
+  const localDate = useTodayLocal(user?.timezone);
   const habits = useQuery(api.habits.list, {});
   const addHabit = useMutation(api.habits.add);
   const removeHabit = useMutation(api.habits.remove);
@@ -55,10 +56,18 @@ export default function OrbitScreen() {
     }
   };
 
-  if (habits === undefined) {
+  if (habits === undefined || user === undefined) {
     return (
       <SafeAreaView style={styles.boot}>
         <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (user === null) {
+    return (
+      <SafeAreaView style={styles.boot}>
+        <Text style={styles.error}>User not ready</Text>
       </SafeAreaView>
     );
   }

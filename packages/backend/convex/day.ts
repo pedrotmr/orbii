@@ -182,14 +182,14 @@ export const commit = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    await requireUser(ctx, clerkUserId);
+    const user = await requireUser(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
     if (!doc) {
       throw new Error("No day session");
     }
 
-    const next = ritualCommit(sessionFromDoc(doc));
+    const next = ritualCommit(sessionFromDoc(doc), user.capacity);
     await ctx.db.patch(doc._id, next);
   },
 });
