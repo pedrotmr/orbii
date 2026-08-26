@@ -17,6 +17,7 @@ import {
   startReveal,
   toggleComplete,
   toggleSelect,
+  scrubHabitFromSession,
 } from "../convex/lib/ritual";
 
 const habits: Habit[] = [
@@ -175,5 +176,51 @@ describe("streak rule B", () => {
       "2026-08-24",
     );
     expect(stillHot.streak).toBe(4);
+  });
+});
+
+describe("scrubHabitFromSession", () => {
+  test("removes committed habit and stays active when others remain", () => {
+    const session = {
+      localDate: "2026-08-26",
+      phase: "active" as const,
+      offeredIds: ["a", "b"],
+      selectedIds: ["a", "b"],
+      committedIds: ["a", "b"],
+      completedIds: ["a"],
+    };
+    const next = scrubHabitFromSession(session, "a");
+    expect(next.phase).toBe("active");
+    expect(next.committedIds).toEqual(["b"]);
+    expect(next.completedIds).toEqual([]);
+  });
+
+  test("empty active commit resets to idle", () => {
+    const session = {
+      localDate: "2026-08-26",
+      phase: "active" as const,
+      offeredIds: ["a"],
+      selectedIds: ["a"],
+      committedIds: ["a"],
+      completedIds: [],
+    };
+    const next = scrubHabitFromSession(session, "a");
+    expect(next.phase).toBe("idle");
+    expect(next.committedIds).toEqual([]);
+  });
+
+  test("completes day when remaining committed are done", () => {
+    const session = {
+      localDate: "2026-08-26",
+      phase: "active" as const,
+      offeredIds: ["a", "b"],
+      selectedIds: ["a", "b"],
+      committedIds: ["a", "b"],
+      completedIds: ["b"],
+    };
+    const next = scrubHabitFromSession(session, "a");
+    expect(next.phase).toBe("complete");
+    expect(next.committedIds).toEqual(["b"]);
+    expect(next.completedIds).toEqual(["b"]);
   });
 });

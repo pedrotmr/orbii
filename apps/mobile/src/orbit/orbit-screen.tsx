@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTodayLocal } from "../local-date";
 import OrbitAddHabitForm from "./add/orbit-add-habit-form";
 import OrbitHabitList from "./list/orbit-habit-list";
 
@@ -23,6 +24,7 @@ const slugify = (name: string) => {
 };
 
 export default function OrbitScreen() {
+  const localDate = useTodayLocal();
   const habits = useQuery(api.habits.list, {});
   const addHabit = useMutation(api.habits.add);
   const removeHabit = useMutation(api.habits.remove);
@@ -40,6 +42,7 @@ export default function OrbitScreen() {
       await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
+      throw e;
     } finally {
       setBusy(false);
     }
@@ -53,14 +56,14 @@ export default function OrbitScreen() {
     );
   }
 
-  const handleAdd = (input: {
+  const handleAdd = async (input: {
     name: string;
     glyph: string;
     category: HabitCategory;
   }) => {
-    void run(async () => {
+    await run(async () => {
       await addHabit({
-        habitKey: `custom-${slugify(input.name)}-${Date.now()}`,
+        habitKey: `custom-${slugify(input.name)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         name: input.name,
         glyph: input.glyph,
         category: input.category,
@@ -70,7 +73,7 @@ export default function OrbitScreen() {
 
   const handleRemove = (habitKey: string) => {
     void run(async () => {
-      await removeHabit({ habitKey });
+      await removeHabit({ habitKey, localDate });
     });
   };
 

@@ -10,7 +10,7 @@ interface OrbitAddHabitFormProps {
     name: string;
     glyph: string;
     category: HabitCategory;
-  }) => void;
+  }) => Promise<void>;
 }
 
 const CATEGORIES: HabitCategory[] = ["body", "mind", "learn", "life"];
@@ -30,12 +30,16 @@ export default function OrbitAddHabitForm({
       return;
     }
 
-    onAdd({
-      name: trimmed,
-      glyph: glyph.trim() || "●",
-      category,
-    });
-    setName("");
+    void (async () => {
+      await onAdd({
+        name: trimmed,
+        glyph: glyph.trim() || "●",
+        category,
+      });
+      setName("");
+      setGlyph("●");
+      setCategory("life");
+    })();
   };
 
   return (
@@ -51,6 +55,7 @@ export default function OrbitAddHabitForm({
         editable={!busy}
         onSubmitEditing={handleAdd}
         returnKeyType="done"
+        maxLength={50}
       />
       <View style={styles.row}>
         <TextInput

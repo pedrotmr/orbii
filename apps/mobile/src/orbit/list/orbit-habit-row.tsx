@@ -15,7 +15,9 @@ export default function OrbitHabitRow({
 }: OrbitHabitRowProps) {
   return (
     <View style={styles.row}>
-      <Text style={styles.glyph}>{habit.glyph}</Text>
+      <Text style={styles.glyph} numberOfLines={1}>
+        {habit.glyph}
+      </Text>
       <View style={styles.meta}>
         <Text style={styles.name}>{habit.name}</Text>
         <Text style={styles.category}>{habit.category}</Text>
@@ -25,7 +27,7 @@ export default function OrbitHabitRow({
         accessibilityLabel={`Remove ${habit.name}`}
         disabled={busy}
         onPress={() => onRemove(habit.id)}
-        style={styles.remove}
+        style={[styles.remove, busy && styles.removeBusy]}
       >
         <Text style={styles.removeText}>Remove</Text>
       </Pressable>
@@ -56,6 +58,9 @@ const styles = StyleSheet.create({
   remove: {
     paddingHorizontal: space[2],
     paddingVertical: space[1],
+  },
+  removeBusy: {
+    opacity: 0.5,
   },
   removeText: {
     fontSize: fontSize.sm,
