@@ -33,16 +33,17 @@ export default function OrbitScreen() {
 
   const run = async (fn: () => Promise<unknown>) => {
     if (busy) {
-      return;
+      return false;
     }
 
     try {
       setBusy(true);
       setError(null);
       await fn();
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
-      throw e;
+      return false;
     } finally {
       setBusy(false);
     }
@@ -61,7 +62,7 @@ export default function OrbitScreen() {
     glyph: string;
     category: HabitCategory;
   }) => {
-    await run(async () => {
+    return await run(async () => {
       await addHabit({
         habitKey: `custom-${slugify(input.name)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         name: input.name,

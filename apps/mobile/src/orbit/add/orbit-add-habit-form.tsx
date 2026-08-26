@@ -10,7 +10,7 @@ interface OrbitAddHabitFormProps {
     name: string;
     glyph: string;
     category: HabitCategory;
-  }) => Promise<void>;
+  }) => Promise<boolean>;
 }
 
 const CATEGORIES: HabitCategory[] = ["body", "mind", "learn", "life"];
@@ -31,11 +31,16 @@ export default function OrbitAddHabitForm({
     }
 
     void (async () => {
-      await onAdd({
+      const ok = await onAdd({
         name: trimmed,
         glyph: glyph.trim() || "●",
         category,
       });
+
+      if (!ok) {
+        return;
+      }
+
       setName("");
       setGlyph("●");
       setCategory("life");
