@@ -23,9 +23,10 @@ export const todayLocal = () => todayLocalInTimezone(deviceTimezone());
 const msUntilNextLocalMidnight = (timeZone: string) => {
   const now = Date.now();
   const today = todayLocalInTimezone(timeZone);
+  const nextMinute = now - (now % 60_000) + 60_000;
 
-  for (let minute = 1; minute <= 60 * 26; minute += 1) {
-    const candidate = now + minute * 60_000;
+  for (let minute = 0; minute < 60 * 26; minute += 1) {
+    const candidate = nextMinute + minute * 60_000;
     const date = new Intl.DateTimeFormat("en-CA", {
       timeZone,
       year: "numeric",
@@ -34,7 +35,7 @@ const msUntilNextLocalMidnight = (timeZone: string) => {
     }).format(new Date(candidate));
 
     if (date !== today) {
-      return minute * 60_000;
+      return candidate - now;
     }
   }
 
