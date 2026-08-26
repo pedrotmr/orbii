@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import { STARTER_HABITS } from "./lib/habits";
+import { applyCompletionStats, scrubHabitFromSession } from "./lib/ritual";
 
 export const list = query({
   args: {},
@@ -58,6 +59,7 @@ export const add = mutation({
 export const remove = mutation({
   args: {
     habitKey: v.string(),
+    localDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
@@ -70,6 +72,61 @@ export const remove = mutation({
 
     if (existing) {
       await ctx.db.delete(existing._id);
+    }
+
+    if (!args.localDate) {
+      return;
+    }
+
+    const sessionDoc = await ctx.db
+      .query("daySessions")
+      .withIndex("by_clerkUserId_localDate", (q) =>
+        q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate!),
+      )
+      .unique();
+
+    if (!sessionDoc) {
+      return;
+    }
+
+    const wasComplete = sessionDoc.phase === "complete";
+    const scrubbed = scrubHabitFromSession(
+      {
+        localDate: sessionDoc.localDate,
+        phase: sessionDoc.phase,
+        offeredIds: sessionDoc.offeredIds,
+        selectedIds: sessionDoc.selectedIds,
+        committedIds: sessionDoc.committedIds,
+        completedIds: sessionDoc.completedIds,
+      },
+      args.habitKey,
+    );
+
+    await ctx.db.patch(sessionDoc._id, {
+      phase: scrubbed.phase,
+      offeredIds: scrubbed.offeredIds,
+      selectedIds: scrubbed.selectedIds,
+      committedIds: scrubbed.committedIds,
+      completedIds: scrubbed.completedIds,
+    });
+
+    if (!wasComplete && scrubbed.phase === "complete") {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+        .unique();
+
+      if (user) {
+        const nextStats = applyCompletionStats(
+          {
+            streak: user.streak,
+            daysCompleted: user.daysCompleted,
+            lastCompletedLocalDate: user.lastCompletedLocalDate,
+          },
+          args.localDate,
+        );
+        await ctx.db.patch(user._id, nextStats);
+      }
     }
   },
 });

@@ -176,6 +176,46 @@ export const rereveal = (
   return next;
 };
 
+/** Drop a habit from an open day session so Today cannot get stuck. */
+export const scrubHabitFromSession = (session: DaySession, habitId: string) => {
+  if (session.phase === "complete" || session.phase === "idle") {
+    return session;
+  }
+
+  const without = (ids: string[]) => {
+    return ids.filter((id) => id !== habitId);
+  };
+
+  const next = {
+    ...session,
+    offeredIds: without(session.offeredIds),
+    selectedIds: without(session.selectedIds),
+    committedIds: without(session.committedIds),
+    completedIds: without(session.completedIds),
+  } satisfies DaySession;
+
+  if (next.phase === "reveal" && next.offeredIds.length === 0) {
+    return emptyDay(session.localDate);
+  }
+
+  if (next.phase === "active" && next.committedIds.length === 0) {
+    return emptyDay(session.localDate);
+  }
+
+  if (
+    next.phase === "active" &&
+    next.committedIds.length > 0 &&
+    next.committedIds.every((id) => next.completedIds.includes(id))
+  ) {
+    return {
+      ...next,
+      phase: "complete" as const,
+    } satisfies DaySession;
+  }
+
+  return next;
+};
+
 /** Previous local calendar date as YYYY-MM-DD (UTC date math on the string’s Y-M-D). */
 export const previousLocalDate = (localDate: string) => {
   const [y, m, d] = localDate.split("-").map(Number);
