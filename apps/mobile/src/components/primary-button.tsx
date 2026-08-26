@@ -41,6 +41,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     color: colors.onPrimary,
     fontSize: fontSize.md,
-    fontWeight: "700",
   },
 });

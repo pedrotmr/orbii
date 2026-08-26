@@ -40,7 +40,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     color: colors.muted,
     fontSize: fontSize.sm,
-    fontWeight: "600",
   },
   ghostBtnTextDisabled: {
     color: colors.line,

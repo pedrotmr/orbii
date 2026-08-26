@@ -27,7 +27,6 @@ const styles = StyleSheet.create({
   metricValue: {
     fontFamily: fonts.bold,
     fontSize: fontSize.xl,
-    fontWeight: "700",
     color: colors.ink,
   },
   metricLabel: {
