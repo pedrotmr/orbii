@@ -123,6 +123,8 @@ export default function SetupSeedAddStep({
             return (
               <Pressable
                 key={item}
+                accessibilityRole="button"
+                accessibilityState={{ selected, disabled: busy }}
                 disabled={busy}
                 onPress={() => setCategory(item)}
                 style={[styles.catChip, selected && styles.catChipSelected]}

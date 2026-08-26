@@ -39,6 +39,15 @@ export default function AuthenticatedApp() {
     }
   }, [habits]);
 
+  const handleSignOut = async () => {
+    try {
+      setError(null);
+      await signOut();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sign out failed");
+    }
+  };
+
   if (!ready || habits === undefined) {
     return (
       <View style={styles.boot}>
@@ -49,7 +58,10 @@ export default function AuthenticatedApp() {
               label="Try again"
               onPress={() => setBootAttempt((n) => n + 1)}
             />
-            <GhostButton label="Sign out" onPress={() => void signOut()} />
+            <GhostButton
+              label="Sign out"
+              onPress={() => void handleSignOut()}
+            />
           </>
         ) : (
           <ActivityIndicator color={colors.primary} />

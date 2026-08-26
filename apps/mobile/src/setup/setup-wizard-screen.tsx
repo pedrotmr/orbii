@@ -60,12 +60,12 @@ export default function SetupWizardScreen({
 
   const handleFinish = (capacity: number) => {
     void run(async () => {
-      await setCapacity({ capacity });
-
       if (habits.length === 0) {
-        throw new Error("Add at least one habit before opening Today");
+        setStep("seed-add");
+        return;
       }
 
+      await setCapacity({ capacity });
       onComplete();
     });
   };
