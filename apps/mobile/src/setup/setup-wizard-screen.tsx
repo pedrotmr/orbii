@@ -113,7 +113,11 @@ export default function SetupWizardScreen({
           <GhostButton
             label="Sign out"
             disabled={busy}
-            onPress={() => void signOut()}
+            onPress={() =>
+              void run(async () => {
+                await signOut();
+              })
+            }
           />
         </ScrollView>
       </SafeAreaView>
