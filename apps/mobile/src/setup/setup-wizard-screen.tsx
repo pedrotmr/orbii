@@ -81,7 +81,10 @@ export default function SetupWizardScreen({
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe}>
         <StatusBar style="dark" />
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.brand}>Orbii</Text>
           <Text style={styles.progress}>{stepNumber} of 3</Text>
 

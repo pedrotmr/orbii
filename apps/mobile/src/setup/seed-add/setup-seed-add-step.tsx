@@ -105,6 +105,8 @@ export default function SetupSeedAddStep({
         onChangeText={setName}
         style={styles.input}
         editable={!busy}
+        onSubmitEditing={handleAdd}
+        returnKeyType="done"
       />
       <View style={styles.row}>
         <TextInput
@@ -113,7 +115,7 @@ export default function SetupSeedAddStep({
           onChangeText={setGlyph}
           style={[styles.input, styles.glyphInput]}
           editable={!busy}
-          maxLength={2}
+          maxLength={10}
         />
         <View style={styles.categories}>
           {CATEGORIES.map((item) => {
