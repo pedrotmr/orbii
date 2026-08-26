@@ -17,8 +17,8 @@ export default function TodayOfferRow({
 }: TodayOfferRowProps) {
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected, disabled }}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected, disabled }}
       disabled={disabled}
       onPress={onToggle}
       style={[

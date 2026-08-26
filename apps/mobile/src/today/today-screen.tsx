@@ -2,7 +2,7 @@ import { api } from "@orbii/backend";
 import { colors, fontSize, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -22,6 +22,7 @@ import TodayEmptyOrbit from "./states/today-empty-orbit";
 export default function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
+  const busyRef = useRef(false);
   const user = useQuery(api.users.get, {});
   const localDate = useTodayLocal(user?.timezone);
 
@@ -33,15 +34,17 @@ export default function TodayScreen() {
 
   const day = useQuery(api.day.get, { localDate });
   const habits = useQuery(api.habits.list, {});
+  const offeredIds = day?.session.offeredIds;
+  const committedIds = day?.session.committedIds;
 
   const offeredHabits = useMemo(() => {
-    if (!day || !habits) {
+    if (!offeredIds || !habits) {
       return [] as TodayHabit[];
     }
 
     const next: TodayHabit[] = [];
 
-    for (const id of day.session.offeredIds) {
+    for (const id of offeredIds) {
       const habit = habits.find((h) => h.id === id);
 
       if (habit) {
@@ -50,16 +53,16 @@ export default function TodayScreen() {
     }
 
     return next;
-  }, [day, habits]);
+  }, [offeredIds, habits]);
 
   const committedHabits = useMemo(() => {
-    if (!day || !habits) {
+    if (!committedIds || !habits) {
       return [] as TodayHabit[];
     }
 
     const next: TodayHabit[] = [];
 
-    for (const id of day.session.committedIds) {
+    for (const id of committedIds) {
       const habit = habits.find((h) => h.id === id);
 
       if (habit) {
@@ -68,12 +71,14 @@ export default function TodayScreen() {
     }
 
     return next;
-  }, [day, habits]);
+  }, [committedIds, habits]);
 
   const run = async (fn: () => Promise<unknown>) => {
-    if (actionBusy) {
+    if (busyRef.current) {
       return;
     }
+
+    busyRef.current = true;
 
     try {
       setActionBusy(true);
@@ -82,6 +87,7 @@ export default function TodayScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
+      busyRef.current = false;
       setActionBusy(false);
     }
   };

@@ -17,8 +17,8 @@ export default function TodayCommittedRow({
 }: TodayCommittedRowProps) {
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: done, disabled }}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: done, disabled }}
       disabled={disabled}
       onPress={onToggle}
       style={[
