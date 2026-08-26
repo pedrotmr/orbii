@@ -27,7 +27,9 @@ Mobile reads the same URL via `EXPO_PUBLIC_CONVEX_URL` and calls generated `api`
 
 Deploy keys / GitHub secrets are deferred until CI deploys Convex.
 
-**Identity:** Clerk is required (hard gate). Convex functions use `ctx.auth`; documents key on `clerkUserId` (Clerk `subject`). Vertical-slice `clientUserId` data is discarded — no migration. Mobile: `clerk env pull` from `apps/mobile`; enable Native API at https://dashboard.clerk.com/~/native-applications; Convex JWT via Clerk’s Convex integration + `CLERK_JWT_ISSUER_DOMAIN` on the deployment.
+**Identity:** Clerk is required (hard gate). Convex functions use `ctx.auth`; documents key on `clerkUserId` (Clerk `subject`). Vertical-slice `clientUserId` data is discarded — no migration. Before pushing the Clerk schema to a deployment that still has slice docs, clear `users`, `habits`, and `daySessions` in the dashboard (or reset the deployment); otherwise Convex schema validation rejects the push.
+
+Mobile: `clerk env pull` from `apps/mobile`; enable Native API at https://dashboard.clerk.com/~/native-applications; allow redirect URL `orbii://oauth-callback` for Google/Apple SSO; Convex JWT via Clerk’s Convex integration + `CLERK_JWT_ISSUER_DOMAIN` on the deployment (`npx convex env set`) and mirrored in `packages/backend/.env.local` when you keep a local copy.
 
 ### Local commands
 

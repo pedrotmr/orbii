@@ -16,7 +16,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import GhostButton from "../components/ghost-button";
 import Metric from "../components/metric";
 import PrimaryButton from "../components/primary-button";
-import { deviceTimezone, todayLocal } from "../local-date";
+import { deviceTimezone, useTodayLocal } from "../local-date";
 
 const SEED_HABIT_KEYS = [...EASY_STARTER_IDS, "read", "journal"];
 
@@ -26,7 +26,7 @@ export default function RitualScreen() {
   const [error, setError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
   const [actionBusy, setActionBusy] = useState(false);
-  const localDate = todayLocal();
+  const localDate = useTodayLocal();
 
   const ensureUser = useMutation(api.users.ensure);
   const seedStarters = useMutation(api.habits.seedStarters);
