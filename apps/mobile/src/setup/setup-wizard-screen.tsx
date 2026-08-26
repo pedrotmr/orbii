@@ -1,3 +1,4 @@
+import { useAuth } from "@clerk/expo";
 import { api } from "@orbii/backend";
 import { colors, fontSize, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
@@ -11,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import GhostButton from "../components/ghost-button";
 import SetupCapacityStep from "./capacity/setup-capacity-step";
 import SetupSeedAddStep from "./seed-add/setup-seed-add-step";
 import SetupWelcomeStep from "./welcome/setup-welcome-step";
@@ -24,6 +26,7 @@ interface SetupWizardScreenProps {
 export default function SetupWizardScreen({
   onComplete,
 }: SetupWizardScreenProps) {
+  const { signOut } = useAuth();
   const [step, setStep] = useState<SetupStep>("welcome");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -106,6 +109,12 @@ export default function SetupWizardScreen({
           ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <GhostButton
+            label="Sign out"
+            disabled={busy}
+            onPress={() => void signOut()}
+          />
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
