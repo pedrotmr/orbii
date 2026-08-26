@@ -1,4 +1,3 @@
-import { useAuth } from "@clerk/expo";
 import { api, OFFER_SIZE } from "@orbii/backend";
 import { colors, fontSize, radius, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
@@ -19,7 +18,6 @@ import PrimaryButton from "../components/primary-button";
 import { useTodayLocal } from "../local-date";
 
 export default function RitualScreen() {
-  const { signOut } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const localDate = useTodayLocal();
@@ -69,15 +67,6 @@ export default function RitualScreen() {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      setError(null);
-      await signOut();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Sign out failed");
-    }
-  };
-
   if (day === undefined || habits === undefined) {
     return (
       <View style={styles.boot}>
@@ -90,7 +79,6 @@ export default function RitualScreen() {
     return (
       <View style={styles.boot}>
         <Text style={styles.error}>{error ?? "User not ready"}</Text>
-        <GhostButton label="Sign out" onPress={() => void handleSignOut()} />
       </View>
     );
   }
@@ -257,8 +245,6 @@ export default function RitualScreen() {
         ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <GhostButton label="Sign out" onPress={() => void handleSignOut()} />
       </ScrollView>
     </SafeAreaView>
   );

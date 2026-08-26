@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import { DEFAULT_CAPACITY, MAX_CAPACITY, MIN_CAPACITY } from "./lib/habits";
 import { applyMissedDayGap } from "./lib/ritual";
+import { normalizeTimezone } from "./lib/timezone";
 
 export const ensure = mutation({
   args: {
@@ -22,7 +23,7 @@ export const ensure = mutation({
     return await ctx.db.insert("users", {
       clerkUserId,
       capacity: DEFAULT_CAPACITY,
-      timezone: args.timezone ?? "UTC",
+      timezone: normalizeTimezone(args.timezone ?? "UTC"),
       streak: 0,
       daysCompleted: 0,
       lastCompletedLocalDate: null,
@@ -67,6 +68,27 @@ export const setCapacity = mutation({
       Math.min(MAX_CAPACITY, Math.floor(args.capacity)),
     );
     await ctx.db.patch(user._id, { capacity });
+  },
+});
+
+export const setTimezone = mutation({
+  args: {
+    timezone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, {
+      timezone: normalizeTimezone(args.timezone),
+    });
   },
 });
 
