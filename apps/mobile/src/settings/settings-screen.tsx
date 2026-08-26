@@ -6,6 +6,8 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BrandMark from "../components/brand-mark";
+import ScreenAtmosphere from "../components/screen-atmosphere";
 import { deviceTimezone } from "../local-date";
 import SettingsSignOutSection from "./account/settings-sign-out-section";
 import SettingsCapacitySection from "./capacity/settings-capacity-section";
@@ -77,38 +79,40 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.brand}>Orbii</Text>
-        <Text style={styles.eyebrow}>Settings</Text>
-        <Text style={styles.title}>Capacity and account</Text>
-        <Text style={styles.sub}>
-          Tune daily focus size and where midnight falls for your streak.
-        </Text>
+    <ScreenAtmosphere>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="dark" />
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <BrandMark />
+          <Text style={styles.eyebrow}>Settings</Text>
+          <Text style={styles.title}>Capacity and account</Text>
+          <Text style={styles.sub}>
+            Tune daily focus size and where midnight falls for your streak.
+          </Text>
 
-        <SettingsCapacitySection
-          capacity={user.capacity}
-          busy={busy}
-          onChange={handleCapacity}
-        />
+          <SettingsCapacitySection
+            capacity={user.capacity}
+            busy={busy}
+            onChange={handleCapacity}
+          />
 
-        <SettingsTimezoneSection
-          key={user.timezone}
-          timezone={user.timezone}
-          deviceTimezone={deviceTz}
-          busy={busy}
-          onSave={handleTimezone}
-        />
+          <SettingsTimezoneSection
+            key={user.timezone}
+            timezone={user.timezone}
+            deviceTimezone={deviceTz}
+            busy={busy}
+            onSave={handleTimezone}
+          />
 
-        <SettingsSignOutSection busy={busy} onSignOut={handleSignOut} />
+          <SettingsSignOutSection busy={busy} onSignOut={handleSignOut} />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </ScrollView>
-    </SafeAreaView>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenAtmosphere>
   );
 }
 
@@ -121,17 +125,11 @@ const styles = StyleSheet.create({
     gap: space[3],
     padding: space[6],
   },
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: "transparent" },
   scroll: {
     padding: space[6],
     paddingBottom: space[12],
     gap: space[5],
-  },
-  brand: {
-    fontSize: fontSize.lg,
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.3,
   },
   eyebrow: {
     fontSize: fontSize.xs,

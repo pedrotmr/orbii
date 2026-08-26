@@ -1,4 +1,4 @@
-import { colors, fontSize, space } from "@orbii/tokens";
+import { colors, fonts, fontSize, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 interface GhostButtonProps {
@@ -37,9 +37,9 @@ const styles = StyleSheet.create({
   ghostBtn: { paddingVertical: space[3], alignItems: "center" },
   ghostBtnDisabled: { opacity: 0.4 },
   ghostBtnText: {
+    fontFamily: fonts.semiBold,
     color: colors.muted,
     fontSize: fontSize.sm,
-    fontWeight: "600",
   },
   ghostBtnTextDisabled: {
     color: colors.line,

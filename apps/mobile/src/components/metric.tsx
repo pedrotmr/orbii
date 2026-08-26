@@ -1,4 +1,4 @@
-import { colors, fontSize, radius, space } from "@orbii/tokens";
+import { colors, fonts, fontSize, radius, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 
 interface MetricProps {
@@ -25,9 +25,14 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   metricValue: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xl,
-    fontWeight: "700",
     color: colors.ink,
   },
-  metricLabel: { fontSize: fontSize.xs, color: colors.muted, marginTop: 2 },
+  metricLabel: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    color: colors.muted,
+    marginTop: 2,
+  },
 });
