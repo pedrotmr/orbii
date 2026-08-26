@@ -2,21 +2,19 @@ import { useAuth } from "@clerk/expo";
 import { api } from "@orbii/backend";
 import { colors, fontSize, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
+import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import GhostButton from "./components/ghost-button";
-import PrimaryButton from "./components/primary-button";
-import { deviceTimezone } from "./local-date";
-import RitualScreen from "./ritual/ritual-screen";
-import SetupWizardScreen from "./setup/setup-wizard-screen";
+import { StyleSheet, Text, View } from "react-native";
+import { deviceTimezone } from "../local-date";
+import BootSpinner from "./boot-spinner";
+import GhostButton from "./ghost-button";
+import PrimaryButton from "./primary-button";
 
-export default function AuthenticatedApp() {
+export default function AuthenticatedRedirect() {
   const { signOut } = useAuth();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
-  const [inSetup, setInSetup] = useState(false);
-
   const ensureUser = useMutation(api.users.ensure);
 
   useEffect(() => {
@@ -33,12 +31,6 @@ export default function AuthenticatedApp() {
 
   const habits = useQuery(api.habits.list, ready ? {} : "skip");
 
-  useEffect(() => {
-    if (habits !== undefined && habits.length === 0) {
-      setInSetup(true);
-    }
-  }, [habits]);
-
   const handleSignOut = async () => {
     try {
       setError(null);
@@ -49,38 +41,27 @@ export default function AuthenticatedApp() {
   };
 
   if (!ready || habits === undefined) {
-    return (
-      <View style={styles.boot}>
-        {error ? (
-          <>
-            <Text style={styles.error}>{error}</Text>
-            <PrimaryButton
-              label="Try again"
-              onPress={() => setBootAttempt((n) => n + 1)}
-            />
-            <GhostButton
-              label="Sign out"
-              onPress={() => void handleSignOut()}
-            />
-          </>
-        ) : (
-          <ActivityIndicator color={colors.primary} />
-        )}
-      </View>
-    );
+    if (error) {
+      return (
+        <View style={styles.boot}>
+          <Text style={styles.error}>{error}</Text>
+          <PrimaryButton
+            label="Try again"
+            onPress={() => setBootAttempt((n) => n + 1)}
+          />
+          <GhostButton label="Sign out" onPress={() => void handleSignOut()} />
+        </View>
+      );
+    }
+
+    return <BootSpinner />;
   }
 
-  if (inSetup || habits.length === 0) {
-    return (
-      <SetupWizardScreen
-        onComplete={() => {
-          setInSetup(false);
-        }}
-      />
-    );
+  if (habits.length === 0) {
+    return <Redirect href="/setup" />;
   }
 
-  return <RitualScreen />;
+  return <Redirect href="/(tabs)/today" />;
 }
 
 const styles = StyleSheet.create({

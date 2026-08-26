@@ -26,6 +26,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store", "expo-web-browser", "@clerk/expo"]
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser",
+      "@clerk/expo",
+      "expo-router"
+    ]
   }
 }

@@ -1,8 +1,10 @@
 import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import App from "../App";
-import { convex } from "./convexClient";
+import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { convex } from "../src/convexClient";
+import { discardSliceClientUserId } from "../src/discard-slice-identity";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -12,11 +14,20 @@ if (!publishableKey) {
   );
 }
 
-export default function ConvexAppRoot() {
+export default function RootLayout() {
+  useEffect(() => {
+    void discardSliceClientUserId();
+  }, []);
+
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <App />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="setup" />
+          <Stack.Screen name="(tabs)" />
+        </Stack>
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );
