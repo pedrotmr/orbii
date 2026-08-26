@@ -34,5 +34,7 @@ npm run dev
 pnpm install
 pnpm lint
 pnpm test
-pnpm --filter @orbii/mobile dev
+pnpm --filter @orbii/mobile start
 ```
+
+**Trusted-user Expo Go install:** see [`apps/mobile/README.md`](apps/mobile/README.md).
