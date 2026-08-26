@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import GhostButton from "../components/ghost-button";
 import SetupCapacityStep from "./capacity/setup-capacity-step";
 import SetupSeedAddStep from "./seed-add/setup-seed-add-step";
@@ -81,47 +81,45 @@ export default function SetupWizardScreen({
   }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="dark" />
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.brand}>Orbii</Text>
-          <Text style={styles.progress}>{stepNumber} of 3</Text>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.brand}>Orbii</Text>
+        <Text style={styles.progress}>{stepNumber} of 3</Text>
 
-          {step === "welcome" ? (
-            <SetupWelcomeStep onContinue={() => setStep("seed-add")} />
-          ) : null}
+        {step === "welcome" ? (
+          <SetupWelcomeStep onContinue={() => setStep("seed-add")} />
+        ) : null}
 
-          {step === "seed-add" ? (
-            <SetupSeedAddStep
-              habits={habits}
-              busy={busy}
-              run={run}
-              onContinue={() => setStep("capacity")}
-            />
-          ) : null}
-
-          {step === "capacity" ? (
-            <SetupCapacityStep busy={busy} onFinish={handleFinish} />
-          ) : null}
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <GhostButton
-            label="Sign out"
-            disabled={busy}
-            onPress={() =>
-              void run(async () => {
-                await signOut();
-              })
-            }
+        {step === "seed-add" ? (
+          <SetupSeedAddStep
+            habits={habits}
+            busy={busy}
+            run={run}
+            onContinue={() => setStep("capacity")}
           />
-        </ScrollView>
-      </SafeAreaView>
-    </SafeAreaProvider>
+        ) : null}
+
+        {step === "capacity" ? (
+          <SetupCapacityStep busy={busy} onFinish={handleFinish} />
+        ) : null}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <GhostButton
+          label="Sign out"
+          disabled={busy}
+          onPress={() =>
+            void run(async () => {
+              await signOut();
+            })
+          }
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
