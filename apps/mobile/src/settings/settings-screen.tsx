@@ -71,14 +71,9 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    void (async () => {
-      try {
-        setError(null);
-        await signOut();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Sign out failed");
-      }
-    })();
+    void run(async () => {
+      await signOut();
+    });
   };
 
   return (

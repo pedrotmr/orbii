@@ -20,7 +20,8 @@ import { useTodayLocal } from "../local-date";
 export default function RitualScreen() {
   const [error, setError] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
-  const localDate = useTodayLocal();
+  const user = useQuery(api.users.get, {});
+  const localDate = useTodayLocal(user?.timezone);
 
   const startReveal = useMutation(api.day.startRevealMutation);
   const toggleSelect = useMutation(api.day.toggleSelect);
@@ -67,7 +68,7 @@ export default function RitualScreen() {
     }
   };
 
-  if (day === undefined || habits === undefined) {
+  if (day === undefined || habits === undefined || user === undefined) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator color={colors.primary} />
@@ -75,7 +76,7 @@ export default function RitualScreen() {
     );
   }
 
-  if (day === null) {
+  if (day === null || user === null) {
     return (
       <View style={styles.boot}>
         <Text style={styles.error}>{error ?? "User not ready"}</Text>

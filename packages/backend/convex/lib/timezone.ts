@@ -11,5 +11,11 @@ export const normalizeTimezone = (value: string) => {
     throw new Error("Timezone is too long");
   }
 
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: trimmed });
+  } catch {
+    throw new Error("Invalid timezone");
+  }
+
   return trimmed;
 };

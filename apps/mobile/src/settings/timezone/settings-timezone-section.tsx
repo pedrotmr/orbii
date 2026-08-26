@@ -57,8 +57,13 @@ export default function SettingsTimezoneSection({
           label="Use device"
           disabled={busy || deviceTimezone === draft.trim()}
           onPress={() => {
-            setDraft(deviceTimezone);
-            void onSave(deviceTimezone);
+            void (async () => {
+              const success = await onSave(deviceTimezone);
+
+              if (success) {
+                setDraft(deviceTimezone);
+              }
+            })();
           }}
         />
       </View>

@@ -1,14 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
-export const todayLocal = () => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-};
-
 export const deviceTimezone = () => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -17,22 +9,51 @@ export const deviceTimezone = () => {
   }
 };
 
-const msUntilNextLocalMidnight = () => {
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(24, 0, 0, 0);
-  return next.getTime() - now.getTime();
+export const todayLocalInTimezone = (timeZone: string) => {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 };
 
-/** Calendar date that advances on foreground resume and at local midnight. */
-export const useTodayLocal = () => {
-  const [localDate, setLocalDate] = useState(todayLocal);
+export const todayLocal = () => todayLocalInTimezone(deviceTimezone());
+
+const msUntilNextLocalMidnight = (timeZone: string) => {
+  const now = Date.now();
+  const today = todayLocalInTimezone(timeZone);
+
+  for (let minute = 1; minute <= 60 * 26; minute += 1) {
+    const candidate = now + minute * 60_000;
+    const date = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(candidate));
+
+    if (date !== today) {
+      return minute * 60_000;
+    }
+  }
+
+  return 60_000;
+};
+
+/** Calendar date that advances on foreground resume and at timezone midnight. */
+export const useTodayLocal = (timeZone?: string | null) => {
+  const tz =
+    timeZone && timeZone.trim().length > 0 ? timeZone.trim() : deviceTimezone();
+  const [localDate, setLocalDate] = useState(() => todayLocalInTimezone(tz));
 
   useEffect(() => {
     const sync = () => {
-      const next = todayLocal();
+      const next = todayLocalInTimezone(tz);
       setLocalDate((prev) => (prev === next ? prev : next));
     };
+
+    sync();
 
     const onAppState = (state: AppStateStatus) => {
       if (state === "active") {
@@ -48,7 +69,7 @@ export const useTodayLocal = () => {
       timeoutId = setTimeout(() => {
         sync();
         scheduleMidnight();
-      }, msUntilNextLocalMidnight());
+      }, msUntilNextLocalMidnight(tz));
     };
 
     scheduleMidnight();
@@ -60,7 +81,7 @@ export const useTodayLocal = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, []);
+  }, [tz]);
 
   return localDate;
 };

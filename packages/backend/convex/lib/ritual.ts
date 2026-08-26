@@ -115,7 +115,7 @@ export const toggleSelect = (
   return { ...session, selectedIds: [...session.selectedIds, habitId] };
 };
 
-export const commit = (session: DaySession) => {
+export const commit = (session: DaySession, capacity: number) => {
   if (session.phase !== "reveal") {
     throw new Error("Can only commit during reveal");
   }
@@ -123,10 +123,17 @@ export const commit = (session: DaySession) => {
   if (session.selectedIds.length === 0) {
     throw new Error("Select at least one habit");
   }
+
+  const committedIds = session.selectedIds.slice(0, Math.max(0, capacity));
+
+  if (committedIds.length === 0) {
+    throw new Error("Select at least one habit");
+  }
+
   return {
     ...session,
     phase: "active" as const,
-    committedIds: [...session.selectedIds],
+    committedIds,
     completedIds: [] as string[],
   } satisfies DaySession;
 };

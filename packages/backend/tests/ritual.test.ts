@@ -60,7 +60,7 @@ describe("daily ritual", () => {
     session = toggleSelect(session, revealed.offeredIds[1]!, 2);
     expect(session.selectedIds).toHaveLength(2);
 
-    session = commit(session);
+    session = commit(session, 2);
     expect(session.phase).toBe("active");
 
     session = toggleComplete(session, session.committedIds[0]!);
@@ -71,7 +71,24 @@ describe("daily ritual", () => {
 
   test("cannot commit with zero selected", () => {
     const { session } = startReveal(habits, 2, [], "2026-08-24", () => 0);
-    expect(() => commit(session)).toThrow(/at least one/i);
+    expect(() => commit(session, 2)).toThrow(/at least one/i);
+  });
+
+  test("commit trims selection to current capacity", () => {
+    const { session: revealed } = startReveal(
+      habits,
+      5,
+      [],
+      "2026-08-24",
+      () => 0,
+    );
+    let session = toggleSelect(revealed, revealed.offeredIds[0]!, 5);
+    session = toggleSelect(session, revealed.offeredIds[1]!, 5);
+    session = toggleSelect(session, revealed.offeredIds[2]!, 5);
+    expect(session.selectedIds).toHaveLength(3);
+
+    session = commit(session, 1);
+    expect(session.committedIds).toEqual([revealed.offeredIds[0]!]);
   });
 
   test("rereveal blocked after complete", () => {
@@ -83,7 +100,7 @@ describe("daily ritual", () => {
       () => 0,
     );
     let session = toggleSelect(revealed, revealed.offeredIds[0]!, 2);
-    session = commit(session);
+    session = commit(session, 2);
     session = toggleComplete(session, session.committedIds[0]!);
     expect(session.phase).toBe("complete");
     expect(() => rereveal(habits, 2, session, () => 0)).toThrow(/complete/i);

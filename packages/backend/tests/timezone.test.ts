@@ -17,4 +17,10 @@ describe("normalizeTimezone", () => {
       "Timezone is too long",
     );
   });
+
+  test("rejects invalid timezone names", () => {
+    expect(() => normalizeTimezone("America/Invalid")).toThrow(
+      "Invalid timezone",
+    );
+  });
 });
