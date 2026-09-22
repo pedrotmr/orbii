@@ -1,9 +1,10 @@
-import { colors, fontSize, radius, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import type { TodayHabit } from "../today-habit";
 import GhostButton from "../../components/ghost-button";
 import PrimaryButton from "../../components/primary-button";
-import { todayHabitStyles } from "../today-habit-styles";
+import { useThemedStyles } from "../../theme/use-theme";
 import TodayOfferRow from "./today-offer-row";
 
 interface TodayRevealPhaseProps {
@@ -25,76 +26,77 @@ export default function TodayRevealPhase({
   onCommit,
   onShuffle,
 }: TodayRevealPhaseProps) {
-  const selectedCount = selectedIds.length;
-  const atCap = selectedCount >= capacity;
-  const commitLabel =
-    selectedCount > 0 ? `Start today · ${selectedCount}` : "Start today";
-
+  const styles = useThemedStyles(createStyles);
+  const count = selectedIds.length;
   return (
-    <View style={styles.block}>
-      <Text style={styles.eyebrow}>Today’s offer</Text>
-      <Text style={styles.title}>What can you take on?</Text>
+    <Animated.View
+      entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
+      style={styles.block}
+    >
+      <Text accessibilityRole="header" style={styles.title}>
+        What fits today?
+      </Text>
       <Text style={styles.sub}>
-        Pick up to {capacity}. Low energy — just don’t choose what won’t work
-        today.
+        Choose up to {capacity}. Even one is a good place to start.
       </Text>
-      <Text style={styles.chip}>
-        {selectedCount}/{capacity}
-      </Text>
-      <View style={todayHabitStyles.list}>
-        {offeredHabits.map((habit) => {
-          const selected = selectedIds.includes(habit.id);
-          const disabled = busy || (atCap && !selected);
-          return (
-            <TodayOfferRow
-              key={habit.id}
-              habit={habit}
-              selected={selected}
-              disabled={disabled}
-              onToggle={() => onToggle(habit.id)}
-            />
-          );
-        })}
+      <View style={styles.selection} accessibilityLiveRegion="polite">
+        <Text style={styles.selectionText}>
+          {count === 0 ? "Your options" : `${count} selected`}
+        </Text>
+        <Text style={styles.limit}>Up to {capacity}</Text>
       </View>
-      <PrimaryButton
-        label={commitLabel}
-        disabled={busy || selectedCount === 0}
-        onPress={onCommit}
-      />
-      <GhostButton label="Shuffle offer" disabled={busy} onPress={onShuffle} />
-    </View>
+      <View style={styles.list}>
+        {offeredHabits.map((habit) => (
+          <TodayOfferRow
+            key={habit.id}
+            habit={habit}
+            selected={selectedIds.includes(habit.id)}
+            disabled={
+              busy || (count >= capacity && !selectedIds.includes(habit.id))
+            }
+            onToggle={() => onToggle(habit.id)}
+          />
+        ))}
+      </View>
+      <View style={styles.actions}>
+        <PrimaryButton
+          label={
+            count > 0
+              ? `Start with ${count} ${count === 1 ? "habit" : "habits"}`
+              : "Choose your focus"
+          }
+          disabled={busy || count === 0}
+          onPress={onCommit}
+        />
+        <GhostButton
+          label="Try other options"
+          disabled={busy}
+          onPress={onShuffle}
+        />
+      </View>
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  block: { gap: space[3] },
-  eyebrow: {
-    fontSize: fontSize.xs,
-    fontWeight: "600",
-    color: colors.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: fontSize["2xl"],
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.6,
-  },
-  sub: {
-    fontSize: fontSize.md,
-    color: colors.muted,
-    lineHeight: 22,
-  },
-  chip: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.primarySoft,
-    color: colors.primaryDeep,
-    overflow: "hidden",
-    paddingHorizontal: space[3],
-    paddingVertical: space[1],
-    borderRadius: radius.full,
-    fontWeight: "700",
-    fontSize: fontSize.sm,
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    block: { gap: space[3], flexGrow: 1 },
+    title: {
+      fontSize: 32,
+      lineHeight: 38,
+      fontWeight: "700",
+      color: colors.ink,
+      letterSpacing: -0.8,
+    },
+    sub: { fontSize: 16, lineHeight: 24, color: colors.muted },
+    selection: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 8,
+      marginTop: space[4],
+      marginBottom: space[1],
+    },
+    selectionText: { fontSize: 14, fontWeight: "600", color: colors.ink },
+    limit: { fontSize: 14, color: colors.muted },
+    list: { gap: space[2] },
+    actions: { gap: space[1], paddingTop: space[4], marginTop: "auto" },
+  });

@@ -1,45 +1,69 @@
-import { colors, fonts, fontSize, radius, space } from "@orbii/tokens";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Button, Host, Text, type ButtonVariant } from "@expo/ui";
+import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
+import { frame } from "@expo/ui/swift-ui/modifiers";
+import { fontSize } from "@orbii/tokens";
+import { StyleSheet, useWindowDimensions } from "react-native";
+import { useTheme } from "../theme/use-theme";
+import { selectionFeedback } from "./controls/feedback";
 
 interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  variant?: ButtonVariant;
 }
 
 export default function PrimaryButton({
   label,
   onPress,
-  disabled,
+  disabled = false,
+  variant = "filled",
 }: PrimaryButtonProps) {
+  const { colors, scheme } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const labelSize =
+    process.env.EXPO_OS === "ios" ? fontSize.md * fontScale : fontSize.md;
+  const filledIOS = process.env.EXPO_OS === "ios" && variant === "filled";
+  const tint = filledIOS ? colors.buttonFill : colors.primary;
+  let labelColor = colors.primary;
+  if (variant === "filled") {
+    labelColor = filledIOS ? colors.onButton : colors.onPrimary;
+  }
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.primaryBtn,
-        disabled && styles.primaryBtnDisabled,
-        pressed && !disabled && { opacity: 0.9 },
-      ]}
+    <Host
+      ignoreSafeArea="all"
+      colorScheme={scheme}
+      seedColor={tint}
+      matchContents={{ vertical: true }}
+      style={styles.host}
     >
-      <Text style={styles.primaryBtnText}>{label}</Text>
-    </Pressable>
+      <Button
+        variant={variant}
+        disabled={disabled}
+        onPress={() => {
+          selectionFeedback();
+          onPress();
+        }}
+      >
+        <Text
+          modifiers={
+            process.env.EXPO_OS === "ios"
+              ? [frame({ maxWidth: Infinity })]
+              : [fillMaxWidth()]
+          }
+          textStyle={{
+            fontSize: labelSize,
+            color: disabled ? undefined : labelColor,
+            fontWeight: "600",
+            textAlign: "center",
+          }}
+          style={{ paddingVertical: 10, paddingHorizontal: 16 }}
+        >
+          {label}
+        </Text>
+      </Button>
+    </Host>
   );
 }
 
-const styles = StyleSheet.create({
-  primaryBtn: {
-    marginTop: space[2],
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: space[4],
-    alignItems: "center",
-  },
-  primaryBtnDisabled: { opacity: 0.4 },
-  primaryBtnText: {
-    fontFamily: fonts.bold,
-    color: colors.onPrimary,
-    fontSize: fontSize.md,
-  },
-});
+const styles = StyleSheet.create({ host: { width: "100%", minHeight: 52 } });

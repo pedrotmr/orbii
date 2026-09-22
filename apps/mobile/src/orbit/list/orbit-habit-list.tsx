@@ -1,6 +1,7 @@
 import { type Habit } from "@orbii/backend";
-import { space } from "@orbii/tokens";
+import { type Palette, radius } from "@orbii/tokens";
 import { StyleSheet, View } from "react-native";
+import { useThemedStyles } from "../../theme/use-theme";
 import OrbitHabitRow from "./orbit-habit-row";
 
 interface OrbitHabitListProps {
@@ -14,20 +15,28 @@ export default function OrbitHabitList({
   busy,
   onRemove,
 }: OrbitHabitListProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.list}>
-      {habits.map((habit) => (
-        <OrbitHabitRow
-          key={habit.id}
-          habit={habit}
-          busy={busy}
-          onRemove={onRemove}
-        />
+      {habits.map((habit, i) => (
+        <View key={habit.id}>
+          {i > 0 ? <View style={styles.separator} /> : null}
+          <OrbitHabitRow habit={habit} busy={busy} onRemove={onRemove} />
+        </View>
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  list: { gap: space[2] },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    list: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      overflow: "hidden",
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.line,
+      marginLeft: 72,
+    },
+  });

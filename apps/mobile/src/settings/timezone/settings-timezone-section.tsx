@@ -1,8 +1,10 @@
-import { colors, fontSize, radius, space } from "@orbii/tokens";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { type Palette, radius, space } from "@orbii/tokens";
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import GhostButton from "../../components/ghost-button";
 import PrimaryButton from "../../components/primary-button";
+import { useTheme, useThemedStyles } from "../../theme/use-theme";
 
 interface SettingsTimezoneSectionProps {
   timezone: string;
@@ -17,81 +19,124 @@ export default function SettingsTimezoneSection({
   busy,
   onSave,
 }: SettingsTimezoneSectionProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(timezone);
   const dirty = draft.trim() !== timezone;
-
-  const handleSave = () => {
-    if (busy || !dirty) {
+  const save = async (value: string) => {
+    if (busy) {
       return;
     }
-
-    void onSave(draft);
+    const ok = await onSave(value.trim());
+    if (ok) {
+      setDraft(value.trim());
+      setEditing(false);
+    }
   };
-
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Timezone</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Timezone, ${timezone}. Change timezone`}
+        accessibilityState={{ expanded: editing, disabled: busy }}
+        disabled={busy}
+        onPress={() => setEditing(!editing)}
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      >
+        <Ionicons
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+          name="globe-outline"
+          size={23}
+          color={colors.muted}
+        />
+        <View style={styles.meta}>
+          <Text style={styles.label}>Timezone</Text>
+          <Text style={styles.value}>{timezone.replaceAll("_", " ")}</Text>
+        </View>
+        <Ionicons
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
+          name={editing ? "chevron-up" : "chevron-forward"}
+          size={18}
+          color={colors.muted}
+        />
+      </Pressable>
       <Text style={styles.hint}>
-        Used for local calendar days and streaks. IANA name, e.g.
-        America/New_York.
+        Your day starts and ends at midnight here.
       </Text>
-      <TextInput
-        accessibilityLabel="Timezone"
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!busy}
-        maxLength={64}
-        onChangeText={setDraft}
-        placeholder="UTC"
-        placeholderTextColor={colors.muted}
-        style={styles.input}
-        value={draft}
-      />
-      <View style={styles.actions}>
-        <PrimaryButton
-          label="Save timezone"
-          disabled={busy || !dirty || draft.trim().length === 0}
-          onPress={handleSave}
-        />
-        <GhostButton
-          label="Use device"
-          disabled={busy || deviceTimezone === draft.trim()}
-          onPress={() => {
-            void (async () => {
-              const success = await onSave(deviceTimezone);
-
-              if (success) {
-                setDraft(deviceTimezone);
+      {editing ? (
+        <View style={styles.editor}>
+          <Text style={styles.label}>Timezone name</Text>
+          <TextInput
+            accessibilityLabel="Timezone name"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!busy}
+            maxLength={64}
+            onChangeText={setDraft}
+            placeholder="America/Sao_Paulo"
+            placeholderTextColor={colors.muted}
+            style={styles.input}
+            value={draft}
+            selectionColor={colors.primary}
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              if (dirty && draft.trim()) {
+                void save(draft);
               }
-            })();
-          }}
-        />
-      </View>
+            }}
+          />
+          <Text style={styles.hint}>
+            Use a region/city name, such as America/Sao_Paulo.
+          </Text>
+          <PrimaryButton
+            label="Save timezone"
+            disabled={busy || !dirty || !draft.trim()}
+            onPress={() => void save(draft)}
+          />
+          <GhostButton
+            label="Use device timezone"
+            disabled={busy || deviceTimezone === timezone}
+            onPress={() => void save(deviceTimezone)}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: space[2] },
-  label: {
-    fontSize: fontSize.sm,
-    fontWeight: "700",
-    color: colors.ink,
-  },
-  hint: {
-    fontSize: fontSize.sm,
-    color: colors.muted,
-    lineHeight: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
-    fontSize: fontSize.md,
-    color: colors.ink,
-  },
-  actions: { gap: space[2], marginTop: space[1] },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    wrap: { gap: space[3] },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[4],
+      padding: space[5],
+      minHeight: 82,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+    },
+    pressed: { backgroundColor: colors.bgMid },
+    meta: { flex: 1, gap: space[1] },
+    label: { fontSize: 16, fontWeight: "500", color: colors.ink },
+    value: { fontSize: 14, color: colors.muted, lineHeight: 20 },
+    hint: {
+      fontSize: 14,
+      color: colors.muted,
+      lineHeight: 21,
+      paddingHorizontal: space[4],
+    },
+    editor: { gap: space[3] },
+    input: {
+      minHeight: 52,
+      padding: space[4],
+      fontSize: 16,
+      color: colors.ink,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.line,
+    },
+  });

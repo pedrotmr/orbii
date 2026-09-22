@@ -1,26 +1,20 @@
 import { useAuth } from "@clerk/expo";
 import { api } from "@orbii/backend";
-import { colors, fontSize, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
+import BootSpinner from "../components/boot-spinner";
 import BrandMark from "../components/brand-mark";
 import GhostButton from "../components/ghost-button";
-import ScreenAtmosphere from "../components/screen-atmosphere";
+import ScreenScaffold from "../components/layout/screen-scaffold";
+import InlineError from "../components/states/inline-error";
+import { useThemedStyles } from "../theme/use-theme";
 import SetupCapacityStep from "./capacity/setup-capacity-step";
 import SetupSeedAddStep from "./seed-add/setup-seed-add-step";
 import SetupWelcomeStep from "./welcome/setup-welcome-step";
 
 type SetupStep = "welcome" | "seed-add" | "capacity";
-
 interface SetupWizardScreenProps {
   onComplete: () => void;
 }
@@ -28,6 +22,7 @@ interface SetupWizardScreenProps {
 export default function SetupWizardScreen({
   onComplete,
 }: SetupWizardScreenProps) {
+  const styles = useThemedStyles(createStyles);
   const { signOut } = useAuth();
   const [step, setStep] = useState<SetupStep>("welcome");
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +48,7 @@ export default function SetupWizardScreen({
   };
 
   if (habits === undefined) {
-    return (
-      <View style={styles.boot}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <BootSpinner />;
   }
 
   const handleFinish = (capacity: number) => {
@@ -83,72 +74,54 @@ export default function SetupWizardScreen({
   }
 
   return (
-    <ScreenAtmosphere>
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="dark" />
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
+    <ScreenScaffold>
+      <View style={styles.header}>
+        <BrandMark />
+        <Text
+          accessibilityLabel={`Setup, step ${stepNumber} of 3`}
+          style={styles.progress}
         >
-          <BrandMark />
-          <Text style={styles.progress}>{stepNumber} of 3</Text>
+          {stepNumber} of 3
+        </Text>
+      </View>
+      {step === "welcome" ? (
+        <SetupWelcomeStep onContinue={() => setStep("seed-add")} />
+      ) : null}
 
-          {step === "welcome" ? (
-            <SetupWelcomeStep onContinue={() => setStep("seed-add")} />
-          ) : null}
+      {step === "seed-add" ? (
+        <SetupSeedAddStep
+          habits={habits}
+          busy={busy}
+          run={run}
+          onContinue={() => setStep("capacity")}
+        />
+      ) : null}
 
-          {step === "seed-add" ? (
-            <SetupSeedAddStep
-              habits={habits}
-              busy={busy}
-              run={run}
-              onContinue={() => setStep("capacity")}
-            />
-          ) : null}
+      {step === "capacity" ? (
+        <SetupCapacityStep busy={busy} onFinish={handleFinish} />
+      ) : null}
 
-          {step === "capacity" ? (
-            <SetupCapacityStep busy={busy} onFinish={handleFinish} />
-          ) : null}
+      {error ? <InlineError message={error} /> : null}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <GhostButton
-            label="Sign out"
-            disabled={busy}
-            onPress={() =>
-              void run(async () => {
-                await signOut();
-              })
-            }
-          />
-        </ScrollView>
-      </SafeAreaView>
-    </ScreenAtmosphere>
+      <GhostButton
+        label="Sign out"
+        disabled={busy}
+        onPress={() =>
+          void run(async () => {
+            await signOut();
+          })
+        }
+      />
+    </ScreenScaffold>
   );
 }
-
-const styles = StyleSheet.create({
-  boot: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.bg,
-  },
-  safe: { flex: 1, backgroundColor: "transparent" },
-  scroll: {
-    padding: space[6],
-    paddingBottom: space[12],
-    gap: space[4],
-    flexGrow: 1,
-  },
-  progress: {
-    fontSize: fontSize.sm,
-    color: colors.muted,
-    fontWeight: "600",
-  },
-  error: {
-    color: colors.primaryDeep,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: space[3],
+    },
+    progress: { color: colors.muted, fontSize: 13, fontWeight: "500" },
+  });
