@@ -1,8 +1,10 @@
-import { colors, fontSize, space } from "@orbii/tokens";
-import { StyleSheet, Text, View } from "react-native";
+import { type Palette, space } from "@orbii/tokens";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import type { TodayHabit } from "../today-habit";
 import GhostButton from "../../components/ghost-button";
-import { todayHabitStyles } from "../today-habit-styles";
+import FocusOrbit from "../../components/ritual/focus-orbit";
+import { useThemedStyles } from "../../theme/use-theme";
 import TodayCommittedRow from "./today-committed-row";
 
 interface TodayActivePhaseProps {
@@ -20,46 +22,63 @@ export default function TodayActivePhase({
   onToggle,
   onReshuffle,
 }: TodayActivePhaseProps) {
+  const styles = useThemedStyles(createStyles);
+  const completed = committedHabits.filter((habit) =>
+    completedIds.includes(habit.id),
+  ).length;
   return (
-    <View style={styles.block}>
-      <Text style={styles.eyebrow}>Today’s Orbit</Text>
-      <Text style={styles.title}>Finish these to succeed</Text>
-      <View style={todayHabitStyles.list}>
-        {committedHabits.map((habit) => {
-          const done = completedIds.includes(habit.id);
-          return (
-            <TodayCommittedRow
-              key={habit.id}
-              habit={habit}
-              done={done}
-              disabled={busy}
-              onToggle={() => onToggle(habit.id)}
-            />
-          );
-        })}
+    <Animated.View
+      entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
+      style={styles.block}
+    >
+      <Text accessibilityRole="header" style={styles.title}>
+        {"Just these.\nJust today."}
+      </Text>
+      <Text style={styles.sub}>A little attention goes a long way.</Text>
+      <FocusOrbit
+        total={committedHabits.length}
+        completed={completed}
+        mode="active"
+        compact
+      />
+      <View style={styles.list}>
+        {committedHabits.map((habit) => (
+          <TodayCommittedRow
+            key={habit.id}
+            habit={habit}
+            done={completedIds.includes(habit.id)}
+            disabled={busy}
+            onToggle={() => onToggle(habit.id)}
+          />
+        ))}
       </View>
       <GhostButton
-        label="Release & reshuffle"
+        label="Choose a different focus"
         disabled={busy}
-        onPress={onReshuffle}
+        onPress={() =>
+          Alert.alert(
+            "Change today’s focus?",
+            "Your current selection and checkmarks will be released. You can choose again.",
+            [
+              { text: "Keep my focus", style: "cancel" },
+              { text: "Choose again", onPress: onReshuffle },
+            ],
+          )
+        }
       />
-    </View>
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  block: { gap: space[3] },
-  eyebrow: {
-    fontSize: fontSize.xs,
-    fontWeight: "600",
-    color: colors.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: fontSize["2xl"],
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.6,
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    block: { gap: space[3], flexGrow: 1 },
+    title: {
+      fontSize: 34,
+      lineHeight: 39,
+      fontWeight: "700",
+      color: colors.ink,
+      letterSpacing: -1,
+    },
+    sub: { fontSize: 16, lineHeight: 24, color: colors.muted },
+    list: { gap: space[2], marginTop: space[2] },
+  });

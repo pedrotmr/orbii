@@ -1,6 +1,8 @@
-import { colors, fontSize, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import PrimaryButton from "../../components/primary-button";
+import OrbitIllustration from "../../components/ritual/orbit-illustration";
+import { useThemedStyles } from "../../theme/use-theme";
 
 interface SetupWelcomeStepProps {
   onContinue: () => void;
@@ -9,39 +11,38 @@ interface SetupWelcomeStepProps {
 export default function SetupWelcomeStep({
   onContinue,
 }: SetupWelcomeStepProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.wrap}>
-      <Text style={styles.eyebrow}>Welcome</Text>
-      <Text style={styles.title}>Your Orbit holds more than today</Text>
-      <Text style={styles.body}>
-        Orbit is the habits you want in your life. Today’s Orbit is a small set
-        you actually take on — success is finishing that set, not covering
-        everything.
+      <Text accessibilityRole="header" style={styles.title}>
+        {"A full life.\nA lighter list."}
       </Text>
+      <Text style={styles.body}>
+        Keep the habits you care about in your Orbit. Each day, choose a small
+        focus from a handful of options.
+      </Text>
+      <OrbitIllustration />
+      <Text style={styles.note}>Finish your focus. That’s a day complete.</Text>
       <PrimaryButton label="Build my Orbit" onPress={onContinue} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: space[3], flex: 1, justifyContent: "center" },
-  eyebrow: {
-    fontSize: fontSize.xs,
-    fontWeight: "600",
-    color: colors.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: fontSize["2xl"],
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  body: {
-    fontSize: fontSize.md,
-    color: colors.muted,
-    lineHeight: 22,
-    marginBottom: space[2],
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    wrap: { flexGrow: 1, gap: space[4] },
+    title: {
+      fontSize: 34,
+      lineHeight: 39,
+      fontWeight: "700",
+      color: colors.ink,
+      letterSpacing: -1,
+    },
+    body: { color: colors.muted, fontSize: 17, lineHeight: 25 },
+    note: {
+      marginTop: "auto",
+      color: colors.ink,
+      fontSize: 15,
+      lineHeight: 22,
+      textAlign: "center",
+    },
+  });

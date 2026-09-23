@@ -1,41 +1,17 @@
-import { api, type HabitCategory } from "@orbii/backend";
-import { colors, fontSize, space } from "@orbii/tokens";
+import { api } from "@orbii/backend";
 import { useMutation, useQuery } from "convex/react";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import BrandMark from "../components/brand-mark";
-import ScreenAtmosphere from "../components/screen-atmosphere";
+import { Alert } from "react-native";
+import BootSpinner from "../components/boot-spinner";
+import ScreenScaffold from "../components/layout/screen-scaffold";
+import InlineError from "../components/states/inline-error";
 import { useTodayLocal } from "../local-date";
-import OrbitAddHabitForm from "./add/orbit-add-habit-form";
-import OrbitHabitList from "./list/orbit-habit-list";
-
-const slugify = (name: string) => {
-  const base = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  if (base.length > 0) {
-    return base;
-  }
-
-  return "habit";
-};
+import OrbitContent from "./body/orbit-content";
 
 export default function OrbitScreen() {
   const user = useQuery(api.users.get, {});
   const localDate = useTodayLocal(user?.timezone);
   const habits = useQuery(api.habits.list, {});
-  const addHabit = useMutation(api.habits.add);
   const removeHabit = useMutation(api.habits.remove);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,40 +35,21 @@ export default function OrbitScreen() {
   };
 
   if (habits === undefined || user === undefined) {
-    return (
-      <SafeAreaView style={styles.boot}>
-        <ActivityIndicator color={colors.primary} />
-      </SafeAreaView>
-    );
+    return <BootSpinner />;
   }
 
   if (user === null) {
     return (
-      <SafeAreaView style={styles.boot}>
-        <Text style={styles.error}>User not ready</Text>
-      </SafeAreaView>
+      <ScreenScaffold tabbed>
+        <InlineError message="We couldn’t load your Orbit. Please try opening the app again." />
+      </ScreenScaffold>
     );
   }
-
-  const handleAdd = async (input: {
-    name: string;
-    glyph: string;
-    category: HabitCategory;
-  }) => {
-    return await run(async () => {
-      await addHabit({
-        habitKey: `custom-${slugify(input.name)}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: input.name,
-        glyph: input.glyph,
-        category: input.category,
-      });
-    });
-  };
 
   const handleRemove = (habitKey: string) => {
     Alert.alert(
       "Remove habit",
-      "Remove this habit from your Orbit? If it is in today’s session, it will be scrubbed.",
+      "This habit will leave your Orbit and today’s focus.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -109,73 +66,11 @@ export default function OrbitScreen() {
   };
 
   return (
-    <ScreenAtmosphere>
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="dark" />
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <BrandMark />
-          <Text style={styles.eyebrow}>Orbit</Text>
-          <Text style={styles.title}>Habits you keep in life</Text>
-          <Text style={styles.sub}>
-            Add freely. You won’t do all of these every day — that’s the point.
-          </Text>
-
-          <Text style={styles.count}>{habits.length} in Orbit</Text>
-
-          <OrbitHabitList habits={habits} busy={busy} onRemove={handleRemove} />
-
-          <OrbitAddHabitForm busy={busy} onAdd={handleAdd} />
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </ScrollView>
-      </SafeAreaView>
-    </ScreenAtmosphere>
+    <OrbitContent
+      habits={habits}
+      busy={busy}
+      error={error}
+      onRemove={handleRemove}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  boot: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.bg,
-  },
-  safe: { flex: 1, backgroundColor: "transparent" },
-  scroll: {
-    padding: space[6],
-    paddingBottom: space[12],
-    gap: space[3],
-  },
-  eyebrow: {
-    fontSize: fontSize.xs,
-    fontWeight: "600",
-    color: colors.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontSize: fontSize["2xl"],
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  sub: {
-    fontSize: fontSize.md,
-    color: colors.muted,
-    lineHeight: 22,
-  },
-  count: {
-    fontSize: fontSize.sm,
-    fontWeight: "600",
-    color: colors.ink,
-    marginTop: space[2],
-  },
-  error: {
-    color: colors.primaryDeep,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-  },
-});

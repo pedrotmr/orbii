@@ -1,8 +1,10 @@
 import { OFFER_SIZE } from "@orbii/backend";
-import { colors, fontSize, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
-import Metric from "../../components/metric";
+import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import PrimaryButton from "../../components/primary-button";
+import FocusOrbit from "../../components/ritual/focus-orbit";
+import { useThemedStyles } from "../../theme/use-theme";
 
 interface TodayIdlePhaseProps {
   habitCount: number;
@@ -19,39 +21,62 @@ export default function TodayIdlePhase({
   busy,
   onReveal,
 }: TodayIdlePhaseProps) {
+  const styles = useThemedStyles(createStyles);
   return (
-    <View style={styles.block}>
-      <Text style={styles.title}>Ready for today’s Orbit?</Text>
-      <Text style={styles.sub}>
-        We’ll offer {Math.min(OFFER_SIZE, habitCount)} options. Pick up to{" "}
-        {capacity} you can actually do.
-      </Text>
-      <View style={styles.metrics}>
-        <Metric label="In Orbit" value={String(habitCount)} />
-        <Metric label="Day streak" value={String(streak)} />
-        <Metric label="Capacity" value={String(capacity)} />
+    <Animated.View
+      entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
+      style={styles.block}
+    >
+      <View style={styles.heading}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {"A little focus.\nA day well spent."}
+        </Text>
+        <Text style={styles.sub}>
+          Your habits can wait their turn. Make room for a few today.
+        </Text>
       </View>
-      <PrimaryButton
-        label="See today’s options"
-        disabled={busy}
-        onPress={onReveal}
-      />
-    </View>
+      <FocusOrbit total={Math.min(capacity, habitCount)} />
+      <View style={styles.footer}>
+        <Text style={styles.detail}>
+          {Math.min(OFFER_SIZE, habitCount)} options. You choose what fits.
+        </Text>
+        <PrimaryButton
+          label={busy ? "Finding your options…" : "Find today’s focus"}
+          disabled={busy}
+          onPress={onReveal}
+        />
+        <Text style={styles.streak}>
+          {streak > 0
+            ? `${streak} ${streak === 1 ? "day" : "days"} in a row. One day at a time.`
+            : "A fresh start, whenever you’re ready."}
+        </Text>
+      </View>
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  block: { gap: space[3] },
-  title: {
-    fontSize: fontSize["2xl"],
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.6,
-  },
-  sub: {
-    fontSize: fontSize.md,
-    color: colors.muted,
-    lineHeight: 22,
-  },
-  metrics: { flexDirection: "row", gap: space[2], marginVertical: space[2] },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    block: { flexGrow: 1, gap: space[5] },
+    heading: { gap: space[3] },
+    title: {
+      fontSize: 34,
+      lineHeight: 39,
+      fontWeight: "700",
+      color: colors.ink,
+      letterSpacing: -1,
+    },
+    sub: { fontSize: 17, color: colors.muted, lineHeight: 25, maxWidth: 310 },
+    footer: { marginTop: "auto", gap: space[3], paddingTop: space[3] },
+    detail: {
+      textAlign: "center",
+      color: colors.ink,
+      fontSize: 15,
+      fontWeight: "500",
+    },
+    streak: {
+      textAlign: "center",
+      color: colors.muted,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+  });
