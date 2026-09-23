@@ -1,11 +1,19 @@
-# Orbii mobile — Expo Go dogfood (wave 1)
+# Orbii mobile — SDK 58 preview development
 
-Install guide for 1–2 trusted users. Goal: open Orbii on a phone via **Expo Go**, sign in with Clerk, and run the daily Orbit loop against the shared Convex **dev** deployment.
+Development setup for the SDK 58 preview, ahead of the planned 1–2 trusted-user dogfood. The app connects to the shared Convex **dev** deployment.
+
+This branch currently targets **Expo SDK 58 preview** and React Native 0.88 RC.
+Use a matching SDK 58 preview client; public App Store / Play Store Expo Go
+builds targeting SDK 57 cannot open this project. The installed Clerk release
+declares Expo support below SDK 58, and native sign-in has not been verified with
+this preview. Trusted-user distribution remains blocked on runtime compatibility.
 
 ## Prerequisites
 
-- Node 20 + [pnpm](https://pnpm.io/) 10
-- iPhone or Android with **Expo Go** from the App Store / Play Store
+- Node 22.13+ on the 22 line, 24.3+ on the 24 line, or 26+; Node 23 and 25 are unsupported. CI uses Node 22.13.0. See the [SDK 58 runtime requirements](https://expo.dev/changelog/sdk-58-beta).
+- [pnpm](https://pnpm.io/) 10
+- Android device/emulator or iOS simulator with a matching SDK 58 preview Expo Go client installed through Expo CLI
+- For a physical iPhone: Apple Developer Program access and TestFlight for the preview client installed through `eas go`
 - Access to this repo and the Clerk / Convex projects (ask Pedro)
 - Optional on the host machine: Expo CLI (`pnpm --filter @orbii/mobile start`)
 
@@ -74,7 +82,29 @@ Or from the repo root:
 pnpm dev
 ```
 
-Scan the QR code with **Expo Go** (Camera on iOS; Expo Go app on Android).
+### Install and open the matching preview client
+
+For an Android device/emulator or iOS simulator, let Expo CLI install/open the
+client compatible with this project:
+
+```bash
+pnpm --filter @orbii/mobile android
+# Or, on a Mac with an iOS simulator:
+pnpm --filter @orbii/mobile ios
+```
+
+For a physical iPhone, run the following from `apps/mobile` and follow the EAS
+instructions to install the preview client through TestFlight:
+
+```bash
+npx eas-cli@latest go
+```
+
+Then start Expo and open its QR code using that matching preview client. Sign in
+with the same Expo account in the CLI and Expo Go when using the EAS client.
+If a client matching this preview is unavailable, the public SDK 57 store client
+is not a substitute. See [Expo's SDK 58 preview announcement](https://expo.dev/changelog/sdk-58-beta)
+and [physical iOS setup](https://docs.expo.dev/get-started/set-up-your-environment/?device=physical&mode=expo-go&platform=ios).
 
 ### First launch
 
@@ -96,7 +126,7 @@ Scan the QR code with **Expo Go** (Camera on iOS; Expo Go app on Android).
 
 ## Out of scope for wave 1
 
-- TestFlight / Play internal track
+- Distributing an Orbii build through TestFlight / Play internal track (the preview Expo Go client above is a separate development prerequisite)
 - Production Convex deployment
 - Notifications, web app, smart scheduling
 

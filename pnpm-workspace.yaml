@@ -5,4 +5,4 @@ packages:
 nodeLinker: hoisted
 
 overrides:
-  react-dom: 19.2.3
+  react-dom: 19.3.0

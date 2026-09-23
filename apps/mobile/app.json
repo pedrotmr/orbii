@@ -7,11 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F4F7FA"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.orbii.mobile"
@@ -19,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F4F7FA",
-        "foregroundImage": "./assets/adaptive-icon.png"
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "package": "app.orbii.mobile"
     },
@@ -30,7 +25,15 @@
       "expo-secure-store",
       "expo-web-browser",
       "@clerk/expo",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F7FA"
+        }
+      ]
     ]
   }
 }
