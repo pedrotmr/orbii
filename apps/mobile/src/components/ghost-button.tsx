@@ -1,5 +1,7 @@
-import { colors, fonts, fontSize, space } from "@orbii/tokens";
+import type { Palette } from "@orbii/tokens";
+import { fontSize, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text } from "react-native";
+import { useThemedStyles } from "../theme/use-theme";
 
 interface GhostButtonProps {
   label: string;
@@ -12,6 +14,7 @@ export default function GhostButton({
   onPress,
   disabled,
 }: GhostButtonProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -33,15 +36,21 @@ export default function GhostButton({
   );
 }
 
-const styles = StyleSheet.create({
-  ghostBtn: { paddingVertical: space[3], alignItems: "center" },
-  ghostBtnDisabled: { opacity: 0.4 },
-  ghostBtnText: {
-    fontFamily: fonts.semiBold,
-    color: colors.muted,
-    fontSize: fontSize.sm,
-  },
-  ghostBtnTextDisabled: {
-    color: colors.line,
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    ghostBtn: {
+      minHeight: 48,
+      paddingVertical: space[3],
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ghostBtnDisabled: { opacity: 0.4 },
+    ghostBtnText: {
+      fontWeight: "600",
+      color: colors.muted,
+      fontSize: fontSize.sm,
+    },
+    ghostBtnTextDisabled: {
+      color: colors.muted,
+    },
+  });

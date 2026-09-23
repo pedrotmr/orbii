@@ -1,10 +1,12 @@
+import type { Palette } from "@orbii/tokens";
 import { useAuth } from "@clerk/expo";
 import { api } from "@orbii/backend";
-import { colors, fontSize, space } from "@orbii/tokens";
+import { fontSize, space } from "@orbii/tokens";
 import { useMutation } from "convex/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { deviceTimezone } from "../local-date";
+import { useThemedStyles } from "../theme/use-theme";
 import BootSpinner from "./boot-spinner";
 import GhostButton from "./ghost-button";
 import PrimaryButton from "./primary-button";
@@ -14,6 +16,7 @@ interface EnsureUserGateProps {
 }
 
 export default function EnsureUserGate({ children }: EnsureUserGateProps) {
+  const styles = useThemedStyles(createStyles);
   const { signOut } = useAuth();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,18 +64,19 @@ export default function EnsureUserGate({ children }: EnsureUserGateProps) {
   return children;
 }
 
-const styles = StyleSheet.create({
-  boot: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.bg,
-    gap: space[3],
-    padding: space[6],
-  },
-  error: {
-    color: colors.primaryDeep,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    boot: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.bg,
+      gap: space[3],
+      padding: space[6],
+    },
+    error: {
+      color: colors.primaryDeep,
+      fontSize: fontSize.sm,
+      textAlign: "center",
+    },
+  });

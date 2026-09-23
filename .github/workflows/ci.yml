@@ -36,5 +36,5 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test backend
-        run: pnpm --filter @orbii/backend test
+      - name: Test mobile and backend
+        run: pnpm test

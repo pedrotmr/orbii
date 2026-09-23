@@ -1,21 +1,14 @@
 import { api } from "@orbii/backend";
-import { colors, fontSize, space } from "@orbii/tokens";
 import { useMutation, useQuery } from "convex/react";
-import { StatusBar } from "expo-status-bar";
 import { useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { TodayHabit } from "./today-habit";
-import BrandMark from "../components/brand-mark";
-import ScreenAtmosphere from "../components/screen-atmosphere";
+import BootSpinner from "../components/boot-spinner";
+import { completionFeedback } from "../components/controls/feedback";
+import ScreenScaffold from "../components/layout/screen-scaffold";
+import InlineError from "../components/states/inline-error";
 import { useTodayLocal } from "../local-date";
 import TodayActivePhase from "./active/today-active-phase";
+import TodayHeader from "./chrome/today-header";
 import TodayCompletePhase from "./complete/today-complete-phase";
 import TodayIdlePhase from "./idle/today-idle-phase";
 import TodayRevealPhase from "./reveal/today-reveal-phase";
@@ -95,112 +88,79 @@ export default function TodayScreen() {
   };
 
   if (day === undefined || habits === undefined || user === undefined) {
-    return (
-      <View style={styles.boot}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
+    return <BootSpinner />;
   }
 
   if (day === null || user === null) {
     return (
-      <View style={styles.boot}>
-        <Text style={styles.error}>{error ?? "User not ready"}</Text>
-      </View>
+      <ScreenScaffold tabbed>
+        <InlineError message="We couldn’t load your Orbit. Please try opening the app again." />
+      </ScreenScaffold>
     );
   }
 
   const phase = day.session.phase;
   const orbitEmpty = habits.length === 0;
 
-  let mood: "default" | "reveal" | "celebrate" = "default";
-
-  if (phase === "reveal") {
-    mood = "reveal";
-  }
-
-  if (phase === "complete") {
-    mood = "celebrate";
-  }
-
   return (
-    <ScreenAtmosphere mood={mood}>
-      <SafeAreaView style={styles.safe}>
-        <StatusBar style="dark" />
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <BrandMark />
+    <ScreenScaffold tabbed>
+      <TodayHeader localDate={localDate} />
+      {orbitEmpty ? <TodayEmptyOrbit /> : null}
 
-          {orbitEmpty ? <TodayEmptyOrbit /> : null}
+      {!orbitEmpty && phase === "idle" ? (
+        <TodayIdlePhase
+          habitCount={habits.length}
+          capacity={day.capacity}
+          streak={day.streak}
+          busy={actionBusy}
+          onReveal={() => void run(() => startReveal({ localDate }))}
+        />
+      ) : null}
 
-          {!orbitEmpty && phase === "idle" ? (
-            <TodayIdlePhase
-              habitCount={habits.length}
-              capacity={day.capacity}
-              streak={day.streak}
-              busy={actionBusy}
-              onReveal={() => void run(() => startReveal({ localDate }))}
-            />
-          ) : null}
+      {phase === "reveal" ? (
+        <TodayRevealPhase
+          capacity={day.capacity}
+          selectedIds={day.session.selectedIds}
+          offeredHabits={offeredHabits}
+          busy={actionBusy}
+          onToggle={(habitId) =>
+            void run(() => toggleSelect({ localDate, habitId }))
+          }
+          onCommit={() => void run(() => commit({ localDate }))}
+          onShuffle={() => void run(() => rereveal({ localDate }))}
+        />
+      ) : null}
 
-          {phase === "reveal" ? (
-            <TodayRevealPhase
-              capacity={day.capacity}
-              selectedIds={day.session.selectedIds}
-              offeredHabits={offeredHabits}
-              busy={actionBusy}
-              onToggle={(habitId) =>
-                void run(() => toggleSelect({ localDate, habitId }))
+      {phase === "active" ? (
+        <TodayActivePhase
+          committedHabits={committedHabits}
+          completedIds={day.session.completedIds}
+          busy={actionBusy}
+          onToggle={(habitId) =>
+            void run(async () => {
+              await toggleComplete({ localDate, habitId });
+              if (
+                !day.session.completedIds.includes(habitId) &&
+                day.session.completedIds.length + 1 ===
+                  day.session.committedIds.length
+              ) {
+                completionFeedback();
               }
-              onCommit={() => void run(() => commit({ localDate }))}
-              onShuffle={() => void run(() => rereveal({ localDate }))}
-            />
-          ) : null}
+            })
+          }
+          onReshuffle={() => void run(() => rereveal({ localDate }))}
+        />
+      ) : null}
 
-          {phase === "active" ? (
-            <TodayActivePhase
-              committedHabits={committedHabits}
-              completedIds={day.session.completedIds}
-              busy={actionBusy}
-              onToggle={(habitId) =>
-                void run(() => toggleComplete({ localDate, habitId }))
-              }
-              onReshuffle={() => void run(() => rereveal({ localDate }))}
-            />
-          ) : null}
+      {phase === "complete" ? (
+        <TodayCompletePhase
+          streak={day.streak}
+          daysCompleted={day.daysCompleted}
+          committedHabits={committedHabits}
+        />
+      ) : null}
 
-          {phase === "complete" ? (
-            <TodayCompletePhase
-              streak={day.streak}
-              daysCompleted={day.daysCompleted}
-              committedHabits={committedHabits}
-            />
-          ) : null}
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </ScrollView>
-      </SafeAreaView>
-    </ScreenAtmosphere>
+      {error ? <InlineError message={error} /> : null}
+    </ScreenScaffold>
   );
 }
-
-const styles = StyleSheet.create({
-  boot: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.bg,
-    gap: space[3],
-    padding: space[6],
-  },
-  safe: { flex: 1, backgroundColor: "transparent" },
-  scroll: {
-    padding: space[6],
-    paddingBottom: space[12],
-    gap: space[4],
-  },
-  error: {
-    color: colors.primaryDeep,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-  },
-});

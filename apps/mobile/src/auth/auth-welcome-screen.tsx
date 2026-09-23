@@ -1,14 +1,9 @@
 import { useSSO } from "@clerk/expo";
 import { useHostedAuth } from "@clerk/expo/hosted-auth";
-import { colors, fontSize, space } from "@orbii/tokens";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import BrandMark from "../components/brand-mark";
-import GhostButton from "../components/ghost-button";
-import PrimaryButton from "../components/primary-button";
-import ScreenAtmosphere from "../components/screen-atmosphere";
+import WelcomeContent from "./welcome/welcome-content";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -55,57 +50,12 @@ export default function AuthWelcomeScreen() {
   };
 
   return (
-    <ScreenAtmosphere>
-      <View style={styles.container}>
-        <BrandMark large />
-        <Text style={styles.title}>Sign in to continue</Text>
-        <Text style={styles.sub}>
-          Orbii needs an account. No account means no app — trusted users only
-          for V1.
-        </Text>
-        <PrimaryButton
-          label={busy ? "Opening…" : "Continue with Google"}
-          disabled={busy}
-          onPress={() => void runSSO("oauth_google")}
-        />
-        <PrimaryButton
-          label={busy ? "Opening…" : "Continue with Apple"}
-          disabled={busy}
-          onPress={() => void runSSO("oauth_apple")}
-        />
-        <GhostButton
-          label="Email instead"
-          disabled={busy}
-          onPress={() => void runHosted("sign-in")}
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </View>
-    </ScreenAtmosphere>
+    <WelcomeContent
+      busy={busy}
+      error={error}
+      onGoogle={() => void runSSO("oauth_google")}
+      onApple={() => void runSSO("oauth_apple")}
+      onEmail={() => void runHosted("sign-in")}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: space[6],
-    gap: space[3],
-  },
-  title: {
-    fontSize: fontSize["2xl"],
-    fontWeight: "700",
-    color: colors.ink,
-    letterSpacing: -0.6,
-  },
-  sub: {
-    fontSize: fontSize.md,
-    color: colors.muted,
-    lineHeight: 22,
-    marginBottom: space[2],
-  },
-  error: {
-    color: colors.primaryDeep,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-  },
-});
