@@ -2,9 +2,14 @@
 
 Install guide for 1–2 trusted users. Goal: open Orbii on a phone via **Expo Go**, sign in with Clerk, and run the daily Orbit loop against the shared Convex **dev** deployment.
 
+This branch currently targets **Expo SDK 58 preview** and React Native 0.88 RC.
+The public App Store / Play Store Expo Go install path below has not been verified
+for this runtime. Use a matching SDK 58 preview client for development; trusted-user
+distribution remains pending runtime compatibility validation.
+
 ## Prerequisites
 
-- Node 20 + [pnpm](https://pnpm.io/) 10
+- Node 22.13 or newer + [pnpm](https://pnpm.io/) 10
 - iPhone or Android with **Expo Go** from the App Store / Play Store
 - Access to this repo and the Clerk / Convex projects (ask Pedro)
 - Optional on the host machine: Expo CLI (`pnpm --filter @orbii/mobile start`)

@@ -7,6 +7,20 @@ import {
 } from "../src/components/habits/habit-symbol-catalog";
 import HabitSymbolPicker from "../src/habits/create/picker/habit-symbol-picker";
 
+test("the initial default symbol remains visible and checked in quick picks", async () => {
+  await render(
+    <HabitSymbolPicker
+      selected={defaultHabitSymbol}
+      suggested={undefined}
+      onSelect={jest.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("radio", { name: defaultHabitSymbol.label }),
+  ).toBeChecked();
+  expect(screen.getAllByRole("radio")).toHaveLength(6);
+});
+
 test("quick choices include the current and suggested icons without moving after selection", async () => {
   const cold = findHabitSymbol("symbol:cold")!;
   const piano = findHabitSymbol("symbol:piano")!;

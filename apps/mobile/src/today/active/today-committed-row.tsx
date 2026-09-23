@@ -39,7 +39,12 @@ export default function TodayCommittedRow({
       }}
       onPressIn={motion.onPressIn}
       onPressOut={motion.onPressOut}
-      style={[styles.row, done && styles.done, motion.style]}
+      style={[
+        styles.row,
+        done && styles.done,
+        disabled && styles.disabled,
+        motion.style,
+      ]}
     >
       <HabitIcon glyph={habit.glyph} />
       <View style={styles.meta}>
@@ -86,6 +91,7 @@ const createStyles = (colors: Palette) =>
       borderRadius: radius.lg,
     },
     done: { backgroundColor: colors.bgMid },
+    disabled: { opacity: 0.5 },
     meta: { flex: 1, gap: 4 },
     name: {
       fontSize: 18,

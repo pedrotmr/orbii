@@ -3,13 +3,19 @@ import { StyleSheet, View } from "react-native";
 import { useThemedStyles } from "../theme/use-theme";
 import ScreenScaffold from "./layout/screen-scaffold";
 
-export default function BootSpinner() {
+interface BootSpinnerProps {
+  label?: string;
+}
+
+export default function BootSpinner({
+  label = "Loading your Orbit",
+}: BootSpinnerProps) {
   const styles = useThemedStyles(createStyles);
   return (
     <ScreenScaffold>
       <View
         accessible
-        accessibilityLabel="Loading your Orbit"
+        accessibilityLabel={label}
         accessibilityState={{ busy: true }}
         style={styles.wrap}
       >

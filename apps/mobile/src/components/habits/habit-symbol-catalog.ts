@@ -1000,10 +1000,12 @@ export const searchHabitSymbols = (
       return false;
     }
 
-    const searchable = normalizeWords(
+    const searchableWords = normalizeWords(
       [symbol.label, ...symbol.keywords].join(" "),
+    ).split(" ");
+    return words.every((word) =>
+      searchableWords.some((searchable) => searchable.startsWith(word)),
     );
-    return words.every((word) => searchable.includes(word));
   });
   if (matches.length > 0) {
     return matches;

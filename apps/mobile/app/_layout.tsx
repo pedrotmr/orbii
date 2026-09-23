@@ -67,10 +67,13 @@ export default function RootLayout() {
               <Stack.Screen
                 name="habit-create"
                 options={{
-                  presentation:
-                    process.env.EXPO_OS === "ios" ? "modal" : "formSheet",
-                  sheetAllowedDetents: [0.9, 1],
-                  sheetGrabberVisible: true,
+                  ...(process.env.EXPO_OS === "ios"
+                    ? { presentation: "modal" }
+                    : {
+                        presentation: "formSheet",
+                        sheetAllowedDetents: [0.9, 1],
+                        sheetGrabberVisible: true,
+                      }),
                   contentStyle: { backgroundColor: colors.surface },
                 }}
               />

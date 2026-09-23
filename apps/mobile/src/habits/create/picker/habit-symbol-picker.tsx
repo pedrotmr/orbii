@@ -40,11 +40,7 @@ export default function HabitSymbolPicker({
   const showingCollection =
     browsingAll || Boolean(query.trim()) || category !== "all";
   const [quickPicks] = useState(() =>
-    [
-      ...(suggested ? [suggested] : []),
-      ...(selected.id !== "spark" ? [selected] : []),
-      ...habitSymbols,
-    ]
+    [...(suggested ? [suggested] : []), selected, ...habitSymbols]
       .filter(
         (symbol, index, symbols) =>
           symbols.findIndex((item) => item.id === symbol.id) === index,

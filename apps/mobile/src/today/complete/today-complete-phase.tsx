@@ -30,25 +30,29 @@ export default function TodayCompletePhase({
       <Text style={styles.sub}>
         You made time for what matters. Enjoy the rest of your day.
       </Text>
-      <FocusOrbit
-        total={committedHabits.length}
-        completed={committedHabits.length}
-        mode="complete"
-      />
-      <View style={styles.habits}>
-        {committedHabits.map((habit) => (
-          <View key={habit.id} style={styles.habit}>
-            <Ionicons
-              accessible={false}
-              importantForAccessibility="no-hide-descendants"
-              name="checkmark-circle"
-              size={22}
-              color={colors.primary}
-            />
-            <Text style={styles.name}>{habit.name}</Text>
+      {committedHabits.length > 0 ? (
+        <>
+          <FocusOrbit
+            total={committedHabits.length}
+            completed={committedHabits.length}
+            mode="complete"
+          />
+          <View style={styles.habits}>
+            {committedHabits.map((habit) => (
+              <View key={habit.id} style={styles.habit}>
+                <Ionicons
+                  accessible={false}
+                  importantForAccessibility="no-hide-descendants"
+                  name="checkmark-circle"
+                  size={22}
+                  color={colors.primary}
+                />
+                <Text style={styles.name}>{habit.name}</Text>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      ) : null}
       <View style={styles.stats}>
         <View style={styles.stat}>
           <Text style={styles.value}>{streak}</Text>

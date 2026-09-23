@@ -31,7 +31,11 @@ export default function OrbitHabitRow({
         accessibilityState={{ disabled: busy }}
         disabled={busy}
         onPress={() => onRemove(habit.id)}
-        style={({ pressed }) => [styles.remove, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.remove,
+          busy && styles.disabled,
+          pressed && !busy && styles.pressed,
+        ]}
       >
         <Ionicons
           accessible={false}
@@ -74,5 +78,6 @@ const createStyles = (colors: Palette) =>
       justifyContent: "center",
       borderRadius: radius.full,
     },
+    disabled: { opacity: 0.5 },
     pressed: { backgroundColor: colors.bgMid },
   });

@@ -98,7 +98,7 @@ export default function SettingsTimezoneSection({
           />
           <GhostButton
             label="Use device timezone"
-            disabled={busy || deviceTimezone === timezone}
+            disabled={busy || deviceTimezone === draft.trim()}
             onPress={() => void save(deviceTimezone)}
           />
         </View>

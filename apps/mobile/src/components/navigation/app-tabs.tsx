@@ -8,8 +8,11 @@ export default function AppTabs() {
       tintColor={colors.primary}
       indicatorColor={colors.primarySoft}
       backgroundColor={colors.bg}
-      iconColor={colors.muted}
-      labelStyle={{ color: colors.muted }}
+      iconColor={{ default: colors.muted, selected: colors.primary }}
+      labelStyle={{
+        default: { color: colors.muted },
+        selected: { color: colors.primary },
+      }}
       disableTransparentOnScrollEdge
     >
       <NativeTabs.Trigger name="today" disableAutomaticContentInsets>

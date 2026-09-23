@@ -36,7 +36,7 @@ export default function SettingsScreen() {
   };
 
   if (user === undefined) {
-    return <BootSpinner />;
+    return <BootSpinner label="Loading settings" />;
   }
 
   if (user === null) {

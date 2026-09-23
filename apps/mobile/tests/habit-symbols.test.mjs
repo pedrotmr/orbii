@@ -47,6 +47,19 @@ test("picker search understands synonyms and respects category filters", () => {
   assert.deepEqual(searchHabitSymbols("unavailable symbol", "all"), []);
 });
 
+test("short searches match the start of words without unrelated substring matches", () => {
+  assert.deepEqual(
+    searchHabitSymbols("cat", "all").map((symbol) => symbol.id),
+    ["cat"],
+  );
+  assert.deepEqual(
+    searchHabitSymbols("run", "all").map((symbol) => symbol.id),
+    ["run"],
+  );
+  assert.equal(searchHabitSymbols("pia", "learn")[0]?.id, "piano");
+  assert.equal(searchHabitSymbols("cold sho", "body")[0]?.id, "cold");
+});
+
 test("specific hobbies and everyday activities suggest their own symbols", () => {
   assert.equal(suggestHabitSymbol("Practice piano")?.id, "piano");
   assert.equal(suggestHabitSymbol("Fold laundry")?.id, "laundry");
