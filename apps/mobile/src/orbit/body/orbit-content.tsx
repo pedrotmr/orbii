@@ -44,7 +44,11 @@ export default function OrbitContent({
           accessibilityState={{ disabled: busy }}
           disabled={busy}
           onPress={() => router.push("/habit-create")}
-          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.add,
+            busy && styles.disabled,
+            pressed && !busy && styles.pressed,
+          ]}
         >
           <Ionicons
             accessible={false}
@@ -91,6 +95,7 @@ const createStyles = (colors: Palette) =>
       flexDirection: "row",
       gap: space[1],
     },
+    disabled: { opacity: 0.5 },
     pressed: { backgroundColor: colors.primarySoft },
     addLabel: { color: colors.primary, fontSize: 15, fontWeight: "600" },
     note: {
