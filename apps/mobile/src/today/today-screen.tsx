@@ -1,11 +1,16 @@
 import { api } from "@orbii/backend";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useRef, useState } from "react";
-import type { TodayHabit } from "./today-habit";
 import BootSpinner from "../components/boot-spinner";
 import { completionFeedback } from "../components/controls/feedback";
 import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
+import {
+  endOrbitLiveActivity,
+  startOrbitLiveActivity,
+} from "../live-activity/orbit-live-activity";
+import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
+import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
 import { useTodayLocal } from "../local-date";
 import TodayActivePhase from "./active/today-active-phase";
 import TodayHeader from "./chrome/today-header";
@@ -13,6 +18,7 @@ import TodayCompletePhase from "./complete/today-complete-phase";
 import TodayIdlePhase from "./idle/today-idle-phase";
 import TodayRevealPhase from "./reveal/today-reveal-phase";
 import TodayEmptyOrbit from "./states/today-empty-orbit";
+import { resolveTodayHabits } from "./today-habit";
 
 export default function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
@@ -33,40 +39,24 @@ export default function TodayScreen() {
   const committedIds = day?.session.committedIds;
 
   const offeredHabits = useMemo(() => {
-    if (!offeredIds || !habits) {
-      return [] as TodayHabit[];
-    }
-
-    const next: TodayHabit[] = [];
-
-    for (const id of offeredIds) {
-      const habit = habits.find((h) => h.id === id);
-
-      if (habit) {
-        next.push({ id: habit.id, name: habit.name, glyph: habit.glyph });
-      }
-    }
-
-    return next;
+    return resolveTodayHabits(offeredIds, habits);
   }, [offeredIds, habits]);
 
   const committedHabits = useMemo(() => {
-    if (!committedIds || !habits) {
-      return [] as TodayHabit[];
-    }
-
-    const next: TodayHabit[] = [];
-
-    for (const id of committedIds) {
-      const habit = habits.find((h) => h.id === id);
-
-      if (habit) {
-        next.push({ id: habit.id, name: habit.name, glyph: habit.glyph });
-      }
-    }
-
-    return next;
+    return resolveTodayHabits(committedIds, habits);
   }, [committedIds, habits]);
+
+  const selectedHabits = useMemo(() => {
+    return resolveTodayHabits(day?.session.selectedIds, habits);
+  }, [day?.session.selectedIds, habits]);
+
+  useSyncOrbitLiveActivity({
+    ready: day !== undefined && day !== null && habits !== undefined,
+    localDate,
+    phase: day?.session.phase,
+    committedHabits,
+    completedIds: day?.session.completedIds ?? [],
+  });
 
   const run = async (fn: () => Promise<unknown>) => {
     if (busyRef.current) {
@@ -126,7 +116,32 @@ export default function TodayScreen() {
           onToggle={(habitId) =>
             void run(() => toggleSelect({ localDate, habitId }))
           }
-          onCommit={() => void run(() => commit({ localDate }))}
+          onCommit={() =>
+            void run(async () => {
+              await commit({ localDate });
+
+              try {
+                const started = await startOrbitLiveActivity(
+                  createOrbitLiveActivityContent({
+                    localDate,
+                    phase: "active",
+                    committedHabits: selectedHabits,
+                    completedIds: [],
+                  }),
+                );
+
+                if (!started) {
+                  setError(
+                    "Your Orbit is committed. A supported iOS build is required to show it on the Lock Screen.",
+                  );
+                }
+              } catch {
+                setError(
+                  "Your Orbit is committed, but we couldn’t show it on the Lock Screen. Try again from Orbit.",
+                );
+              }
+            })
+          }
           onShuffle={() => void run(() => rereveal({ localDate }))}
         />
       ) : null}
@@ -148,7 +163,12 @@ export default function TodayScreen() {
               }
             })
           }
-          onReshuffle={() => void run(() => rereveal({ localDate }))}
+          onReshuffle={() =>
+            void run(async () => {
+              await rereveal({ localDate });
+              await endOrbitLiveActivity();
+            })
+          }
         />
       ) : null}
 

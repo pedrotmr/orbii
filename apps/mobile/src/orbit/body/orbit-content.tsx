@@ -7,11 +7,15 @@ import ScreenScaffold from "../../components/layout/screen-scaffold";
 import InlineError from "../../components/states/inline-error";
 import { useTheme, useThemedStyles } from "../../theme/use-theme";
 import OrbitHabitList from "../list/orbit-habit-list";
+import OrbitLiveActivityRestoreButton from "./orbit-live-activity-restore-button";
 
 interface OrbitContentProps {
   habits: Habit[];
   busy: boolean;
   error: string | null;
+  showLiveActivityButton?: boolean;
+  showLiveActivityUnsupported?: boolean;
+  onRestoreLiveActivity?: () => void;
   onRemove: (id: string) => void;
 }
 
@@ -19,6 +23,9 @@ export default function OrbitContent({
   habits,
   busy,
   error,
+  showLiveActivityButton,
+  showLiveActivityUnsupported,
+  onRestoreLiveActivity,
   onRemove,
 }: OrbitContentProps) {
   const { colors } = useTheme();
@@ -34,6 +41,19 @@ export default function OrbitContent({
           Good things to keep in your life. A few at a time.
         </Text>
       </View>
+      {(showLiveActivityButton || showLiveActivityUnsupported) &&
+      onRestoreLiveActivity ? (
+        <OrbitLiveActivityRestoreButton
+          busy={busy}
+          disabled={!showLiveActivityButton}
+          subtitle={
+            showLiveActivityUnsupported
+              ? "Requires an Orbii iOS development build"
+              : "Keep your committed focus close"
+          }
+          onPress={onRestoreLiveActivity}
+        />
+      ) : null}
       <View style={styles.summary}>
         <Text style={styles.count}>
           {habits.length} {habits.length === 1 ? "habit" : "habits"}
