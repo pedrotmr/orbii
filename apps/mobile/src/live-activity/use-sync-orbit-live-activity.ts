@@ -6,6 +6,10 @@ import {
 } from "./orbit-live-activity";
 import { createOrbitLiveActivityContent } from "./orbit-live-activity-content";
 
+const reportSyncError = (error: unknown) => {
+  console.error("Failed to synchronize the Orbit Live Activity", error);
+};
+
 interface UseSyncOrbitLiveActivityArgs {
   ready: boolean;
   localDate: string;
@@ -34,15 +38,15 @@ export const useSyncOrbitLiveActivity = ({
     });
 
     if (phase === "active") {
-      void updateExistingOrbitLiveActivity(content);
+      void updateExistingOrbitLiveActivity(content).catch(reportSyncError);
       return;
     }
 
     if (phase === "complete") {
-      void endOrbitLiveActivity(content, "default");
+      void endOrbitLiveActivity(content, "default").catch(reportSyncError);
       return;
     }
 
-    void endOrbitLiveActivity();
+    void endOrbitLiveActivity().catch(reportSyncError);
   }, [committedHabits, completedIds, localDate, phase, ready]);
 };

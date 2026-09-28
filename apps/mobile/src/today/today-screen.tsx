@@ -11,7 +11,7 @@ import {
 } from "../live-activity/orbit-live-activity";
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
-import { useTodayLocal } from "../local-date";
+import { todayLocalInTimezone, useTodayLocal } from "../local-date";
 import TodayActivePhase from "./active/today-active-phase";
 import TodayHeader from "./chrome/today-header";
 import TodayCompletePhase from "./complete/today-complete-phase";
@@ -26,6 +26,11 @@ export default function TodayScreen() {
   const busyRef = useRef(false);
   const user = useQuery(api.users.get, {});
   const localDate = useTodayLocal(user?.timezone);
+  const timezone = user?.timezone?.trim();
+  const isLocalDateReady =
+    user !== undefined &&
+    user !== null &&
+    (!timezone || localDate === todayLocalInTimezone(timezone));
 
   const startReveal = useMutation(api.day.startRevealMutation);
   const toggleSelect = useMutation(api.day.toggleSelect);
@@ -51,7 +56,11 @@ export default function TodayScreen() {
   }, [day?.session.selectedIds, habits]);
 
   useSyncOrbitLiveActivity({
-    ready: day !== undefined && day !== null && habits !== undefined,
+    ready:
+      isLocalDateReady &&
+      day !== undefined &&
+      day !== null &&
+      habits !== undefined,
     localDate,
     phase: day?.session.phase,
     committedHabits,

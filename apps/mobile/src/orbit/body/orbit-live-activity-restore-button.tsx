@@ -23,6 +23,7 @@ export default function OrbitLiveActivityRestoreButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Show today’s Orbit on the Lock Screen"
+      accessibilityHint={subtitle}
       accessibilityState={{ disabled: busy || disabled }}
       disabled={busy || disabled}
       onPress={onPress}

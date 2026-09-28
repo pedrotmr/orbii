@@ -13,13 +13,18 @@ import {
 } from "../live-activity/orbit-live-activity";
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
-import { useTodayLocal } from "../local-date";
+import { todayLocalInTimezone, useTodayLocal } from "../local-date";
 import { resolveTodayHabits } from "../today/today-habit";
 import OrbitContent from "./body/orbit-content";
 
 export default function OrbitScreen() {
   const user = useQuery(api.users.get, {});
   const localDate = useTodayLocal(user?.timezone);
+  const timezone = user?.timezone?.trim();
+  const isLocalDateReady =
+    user !== undefined &&
+    user !== null &&
+    (!timezone || localDate === todayLocalInTimezone(timezone));
   const day = useQuery(api.day.get, { localDate });
   const habits = useQuery(api.habits.list, {});
   const removeHabit = useMutation(api.habits.remove);
@@ -34,7 +39,11 @@ export default function OrbitScreen() {
   }, [day?.session.committedIds, habits]);
 
   useSyncOrbitLiveActivity({
-    ready: day !== undefined && day !== null && habits !== undefined,
+    ready:
+      isLocalDateReady &&
+      day !== undefined &&
+      day !== null &&
+      habits !== undefined,
     localDate,
     phase: day?.session.phase,
     committedHabits,
@@ -113,8 +122,7 @@ export default function OrbitScreen() {
     );
   }
 
-  const hasCommittedOrbit =
-    day.session.phase === "active" || day.session.phase === "complete";
+  const hasCommittedOrbit = day.session.phase === "active";
 
   const handleRemove = (habitKey: string) => {
     Alert.alert(
@@ -137,7 +145,7 @@ export default function OrbitScreen() {
 
   const handleRestoreLiveActivity = () => {
     void run(async () => {
-      if (day.session.phase !== "active" && day.session.phase !== "complete") {
+      if (day.session.phase !== "active") {
         throw new Error(
           "Commit today’s Orbit before showing it on the Lock Screen.",
         );
@@ -146,7 +154,7 @@ export default function OrbitScreen() {
       const started = await startOrbitLiveActivity(
         createOrbitLiveActivityContent({
           localDate,
-          phase: day.session.phase,
+          phase: "active",
           committedHabits,
           completedIds: day.session.completedIds,
         }),
