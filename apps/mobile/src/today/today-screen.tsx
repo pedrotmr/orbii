@@ -5,10 +5,7 @@ import BootSpinner from "../components/boot-spinner";
 import { completionFeedback } from "../components/controls/feedback";
 import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
-import {
-  endOrbitLiveActivity,
-  startOrbitLiveActivity,
-} from "../live-activity/orbit-live-activity";
+import { startOrbitLiveActivity } from "../live-activity/orbit-live-activity";
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
 import { todayLocalInTimezone, useTodayLocal } from "../local-date";
@@ -175,7 +172,6 @@ export default function TodayScreen() {
           onReshuffle={() =>
             void run(async () => {
               await rereveal({ localDate });
-              await endOrbitLiveActivity();
             })
           }
         />
