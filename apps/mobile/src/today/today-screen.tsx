@@ -5,7 +5,10 @@ import BootSpinner from "../components/boot-spinner";
 import { completionFeedback } from "../components/controls/feedback";
 import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
-import { startOrbitLiveActivity } from "../live-activity/orbit-live-activity";
+import {
+  isOrbitLiveActivitySupported,
+  startOrbitLiveActivity,
+} from "../live-activity/orbit-live-activity";
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
 import { todayLocalInTimezone, useTodayLocal } from "../local-date";
@@ -127,6 +130,10 @@ export default function TodayScreen() {
               await commit({ localDate });
 
               try {
+                if (!(await isOrbitLiveActivitySupported())) {
+                  return;
+                }
+
                 const started = await startOrbitLiveActivity(
                   createOrbitLiveActivityContent({
                     localDate,
@@ -138,7 +145,7 @@ export default function TodayScreen() {
 
                 if (!started) {
                   setError(
-                    "Your Orbit is committed. A supported iOS build is required to show it on the Lock Screen.",
+                    "Your Orbit is committed, but we couldn’t show it on the Lock Screen. Try again from Orbit.",
                   );
                 }
               } catch {
