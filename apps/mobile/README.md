@@ -7,6 +7,8 @@ Use a matching SDK 58 preview client; public App Store / Play Store Expo Go
 builds targeting SDK 57 cannot open this project. The installed Clerk release
 declares Expo support below SDK 58, and native sign-in has not been verified with
 this preview. Trusted-user distribution remains blocked on runtime compatibility.
+The Orbit Live Activity requires an iOS development build; it is unavailable in
+Expo Go. The rest of the app remains usable in the matching preview client.
 
 ## Prerequisites
 
@@ -14,6 +16,7 @@ this preview. Trusted-user distribution remains blocked on runtime compatibility
 - [pnpm](https://pnpm.io/) 10
 - Android device/emulator or iOS simulator with a matching SDK 58 preview Expo Go client installed through Expo CLI
 - For a physical iPhone: Apple Developer Program access and TestFlight for the preview client installed through `eas go`
+- For the Live Activity: an iPhone running iOS 17 or later and Xcode for a local development build
 - Access to this repo and the Clerk / Convex projects (ask Pedro)
 - Optional on the host machine: Expo CLI (`pnpm --filter @orbii/mobile start`)
 
@@ -73,8 +76,11 @@ pnpm --filter @orbii/backend dev
 Terminal B — Expo:
 
 ```bash
-pnpm --filter @orbii/mobile start
+pnpm --filter @orbii/mobile start -- --go
 ```
+
+This uses the matching SDK 58 preview Expo Go client. The `ios` and `android`
+package commands build local native development apps.
 
 Or from the repo root:
 
@@ -82,29 +88,39 @@ Or from the repo root:
 pnpm dev
 ```
 
-### Install and open the matching preview client
+### Install the matching preview client
 
-For an Android device/emulator or iOS simulator, let Expo CLI install/open the
-client compatible with this project:
-
-```bash
-pnpm --filter @orbii/mobile android
-# Or, on a Mac with an iOS simulator:
-pnpm --filter @orbii/mobile ios
-```
-
-For a physical iPhone, run the following from `apps/mobile` and follow the EAS
-instructions to install the preview client through TestFlight:
+For a physical iPhone using Expo Go, run the following from `apps/mobile` and
+follow the EAS instructions to install the preview client through TestFlight:
 
 ```bash
 npx eas-cli@latest go
 ```
 
-Then start Expo and open its QR code using that matching preview client. Sign in
-with the same Expo account in the CLI and Expo Go when using the EAS client.
-If a client matching this preview is unavailable, the public SDK 57 store client
-is not a substitute. See [Expo's SDK 58 preview announcement](https://expo.dev/changelog/sdk-58-beta)
+Then start Expo with `--go` and open its QR code using that matching preview
+client. Sign in with the same Expo account in the CLI and Expo Go when using the
+EAS client. If a client matching this preview is unavailable, the public SDK 57
+store client is not a substitute. See [Expo's SDK 58 preview announcement](https://expo.dev/changelog/sdk-58-beta)
 and [physical iOS setup](https://docs.expo.dev/get-started/set-up-your-environment/?device=physical&mode=expo-go&platform=ios).
+
+### Try the iOS Live Activity
+
+`expo-widgets` is not included in Expo Go. Build and launch the iOS development
+app on a connected iPhone:
+
+```bash
+pnpm --filter @orbii/mobile exec expo run:ios --device
+```
+
+For later sessions, start Metro and open the installed development app:
+
+```bash
+pnpm --filter @orbii/mobile start -- --dev-client
+```
+
+Commit today’s Orbit to start its Live Activity. If you dismiss it, return to
+the Orbit tab and choose **Show today’s Orbit on Lock Screen** to add it again.
+Rebuild the development app after changing native dependencies or app config.
 
 ### First launch
 
@@ -128,7 +144,7 @@ and [physical iOS setup](https://docs.expo.dev/get-started/set-up-your-environme
 
 - Distributing an Orbii build through TestFlight / Play internal track (the preview Expo Go client above is a separate development prerequisite)
 - Production Convex deployment
-- Notifications, web app, smart scheduling
+- A separate Lock Screen widget, Android Live Updates, push notifications, web app, smart scheduling
 
 ## Related
 

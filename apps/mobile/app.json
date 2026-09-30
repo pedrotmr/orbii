@@ -39,7 +39,8 @@
           "imageWidth": 200
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-widgets"
     ],
     "experiments": {
       "reactCompiler": true
