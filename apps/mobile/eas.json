@@ -1,0 +1,74 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
+      },
+      "env": {
+        "APP_VARIANT": "development"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "autoIncrement": true,
+      "node": "22.13.0",
+      "pnpm": "10.33.0",
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
+      },
+      "env": {
+        "APP_VARIANT": "preview"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview-simulator": {
+      "extends": "preview",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview-testflight": {
+      "extends": "preview",
+      "distribution": "store"
+    },
+    "production": {
+      "distribution": "store",
+      "environment": "production",
+      "autoIncrement": true,
+      "node": "22.13.0",
+      "pnpm": "10.33.0",
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
+      },
+      "env": {
+        "APP_VARIANT": "production"
+      }
+    }
+  },
+  "submit": {
+    "preview": {
+      "ios": {}
+    },
+    "preview-testflight": {
+      "ios": {
+        "appleTeamId": "YW25U2BJ23",
+        "ascAppId": "6817832044"
+      }
+    },
+    "production": {
+      "ios": {
+        "appleTeamId": "YW25U2BJ23"
+      }
+    }
+  }
+}

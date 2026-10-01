@@ -58,12 +58,80 @@ Needed only on the machine that runs `convex dev`. See [`packages/backend/README
 
 1. Enable **Native API**: [Clerk native applications](https://dashboard.clerk.com/~/native-applications)
 2. Allow redirect URLs used by this app:
-   - Custom scheme (dev client / future standalone): `orbii://oauth-callback`
-   - **Expo Go** (what wave-1 dogfood uses): Clerk must also accept the `exp://` callback Expo generates. With the current code (`AuthSession.makeRedirectUri({ scheme: "orbii", path: "oauth-callback" })`), Expo Go typically emits something like `exp://<LAN-host>:8081/--/oauth-callback`. In Clerk → Native applications / redirect allowlist, add that exact URL for your LAN IP (or use Clerk’s Expo redirect helper / wildcard policy your org allows). Re-check by logging `redirectUrl` once from the device if SSO fails to return.
+   - Development app: `orbiidev://oauth-callback`
+   - Production app: `orbii://oauth-callback`
+   - **Expo Go** (what wave-1 dogfood uses): Clerk must also accept the `exp://` callback Expo generates. Expo Go typically emits something like `exp://<LAN-host>:8081/--/oauth-callback`. In Clerk → Native applications / redirect allowlist, add that exact URL for your LAN IP (or use Clerk’s Expo redirect helper / wildcard policy your org allows). Re-check by logging `redirectUrl` once from the device if SSO fails to return.
 3. Convex JWT: enable Clerk’s **Convex** integration so the JWT template named `convex` exists
 4. On the Convex deployment, set `CLERK_JWT_ISSUER_DOMAIN` to the Clerk Frontend API issuer (`pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN …` from `packages/backend`)
 
 Without the `convex` JWT template + issuer domain, mobile can sign in with Clerk but Convex queries/mutations fail auth.
+
+## Orbii Dev and Orbii deployment
+
+Orbii uses two iOS app identities so the development/TestFlight app and the App Store app can be installed side by side. The development and preview profiles share the Orbii Dev identity; production uses Orbii's existing identifier.
+
+| EAS profile          | App identity | iOS bundle ID          | URL scheme | EAS environment |
+| -------------------- | ------------ | ---------------------- | ---------- | --------------- |
+| `development`        | Orbii Dev    | `app.orbii.mobile.dev` | `orbiidev` | development     |
+| `preview`            | Orbii Dev    | `app.orbii.mobile.dev` | `orbiidev` | preview         |
+| `preview-testflight` | Orbii Dev    | `app.orbii.mobile.dev` | `orbiidev` | preview         |
+| `production`         | Orbii        | `app.orbii.mobile`     | `orbii`    | production      |
+
+The production identifiers preserve the current app ID. The widget extension and app group are generated from each app's bundle ID, keeping widget data separate too. `preview-testflight` follows Mira La Cancha's staging TestFlight profile naming. Orbii pins Node 22.13.0 because that is the oldest supported Node version in this repository; its pnpm version matches Mira at 10.33.0.
+
+### Setup steps
+
+1. Confirm the existing EAS project link from `apps/mobile`:
+
+   ```bash
+   pnpm dlx eas-cli@latest project:info
+   ```
+
+   It should show `@peedrotmr/orbii`. Both app identities live in this same EAS project.
+
+2. In the Apple Developer account used for Mira La Cancha, open **Certificates, Identifiers & Profiles → Identifiers**. Confirm the production App ID exists, then register the development App ID if it's missing:
+
+   - `app.orbii.mobile.dev` for **Orbii Dev** (new)
+   - `app.orbii.mobile` for **Orbii** (existing production identifier)
+
+   They must be separate identifiers to allow both apps on the same iPhone.
+
+3. In App Store Connect, select the same Apple team and confirm there are app records with each matching name and bundle ID above. Create whichever record is missing. Apple requires the record before uploading the first build. Record each app's numeric Apple ID from **App Information**; those become the `ascAppId` values in `eas.json`.
+
+4. EAS **development** and **preview** environments both use the current Orbii dev Convex URL and Clerk publishable test key. The **production** environment is intentionally empty: before building Orbii, create/select the production Convex and Clerk services and set `EXPO_PUBLIC_CONVEX_URL` and `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` there. These are public client values embedded in the app; never put server secrets in `EXPO_PUBLIC_*` variables.
+
+5. In Clerk's Native Applications settings, allow the callback schemes for both installed apps:
+
+   - `orbiidev://oauth-callback`
+   - `orbii://oauth-callback`
+
+   Expo Go continues to use its generated `exp://` callback. The Dev TestFlight build uses `orbiidev://`.
+
+6. Add the two App Store Connect Apple IDs from step 3 to `eas.json` under `submit.preview-testflight.ios.ascAppId` and `submit.production.ios.ascAppId`. Both profiles already use the Apple Developer team ID used by Mira La Cancha.
+
+7. Build the Orbii Dev native development client when you need native testing or the Live Activity. From `apps/mobile`:
+
+   ```bash
+   pnpm dlx eas-cli@latest build --platform ios --profile development
+   ```
+
+8. Build and submit **Orbii Dev** to TestFlight with Mira's staging command:
+
+   ```bash
+   pnpm mobile:testflight:staging
+   ```
+
+   This runs the `preview-testflight` profile, uses the preview EAS environment and Orbii Dev bundle ID, and automatically submits the completed build.
+
+9. After production Convex and Clerk values are ready, build and submit **Orbii**:
+
+   ```bash
+   pnpm mobile:testflight:production
+   ```
+
+   This runs the production profile and submits to Orbii's separate App Store Connect record. TestFlight processing and tester setup happen in App Store Connect.
+
+The first EAS iOS build may prompt you to sign in to Apple and create/manage signing credentials for each bundle ID. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path; the TestFlight configuration is ready, but confirm native Clerk sign-in on the current SDK 58 preview before inviting users.
 
 ## Run
 
@@ -142,7 +210,7 @@ Rebuild the development app after changing native dependencies or app config.
 
 ## Out of scope for wave 1
 
-- Distributing an Orbii build through TestFlight / Play internal track (the preview Expo Go client above is a separate development prerequisite)
+- Replacing the shared dev Convex deployment with production data before the V1 spec and production services are ready
 - Production Convex deployment
 - A separate Lock Screen widget, Android Live Updates, push notifications, web app, smart scheduling
 

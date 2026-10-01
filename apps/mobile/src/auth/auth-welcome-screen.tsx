@@ -1,14 +1,21 @@
 import { useSSO } from "@clerk/expo";
 import { useHostedAuth } from "@clerk/expo/hosted-auth";
 import * as AuthSession from "expo-auth-session";
+import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import WelcomeContent from "./welcome/welcome-content";
 
 WebBrowser.maybeCompleteAuthSession();
 
+const configuredScheme = Constants.expoConfig?.scheme;
+const appScheme =
+  typeof configuredScheme === "string"
+    ? configuredScheme
+    : configuredScheme?.[0];
+
 const redirectUrl = AuthSession.makeRedirectUri({
-  scheme: "orbii",
+  scheme: appScheme,
   path: "oauth-callback",
 });
 
