@@ -9,6 +9,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "eas-build-post-install": "node scripts/ensure-expo-widgets-memo.mjs",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:catalog && pnpm test:components",
     "clean": "rm -rf .expo .turbo",
