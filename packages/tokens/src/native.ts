@@ -45,6 +45,15 @@ export const darkColors: Palette = {
   disabled: "#3A4136",
 };
 
+/** Sign in with Apple and Sign in with Google brand colors; same in both themes, do not restyle. */
+export const signInColors = {
+  apple: "#000000",
+  onApple: "#FFFFFF",
+  google: "#FFFFFF",
+  googleStroke: "#747775",
+  onGoogle: "#1F1F1F",
+} as const;
+
 export const space = {
   1: 4,
   2: 8,

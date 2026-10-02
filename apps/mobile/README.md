@@ -192,7 +192,7 @@ Rebuild the development app after changing native dependencies or app config.
 
 ### First launch
 
-1. Sign in (Google, Apple, or email hosted flow)
+1. Sign in with Apple or Google
 2. Empty Orbit → Setup wizard (welcome → seed/add → capacity)
 3. Land on **Today** → reveal → pick ≤ capacity → commit → complete
 4. **Orbit** to add/remove habits; **Settings** for capacity, timezone, sign out

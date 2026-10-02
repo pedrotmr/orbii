@@ -1,29 +1,28 @@
 import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
+import type { SignInProvider } from "../sign-in-provider";
 import BrandMark from "../../components/brand-mark";
-import GhostButton from "../../components/ghost-button";
 import ScreenScaffold from "../../components/layout/screen-scaffold";
-import PrimaryButton from "../../components/primary-button";
 import OrbitIllustration from "../../components/ritual/orbit-illustration";
 import InlineError from "../../components/states/inline-error";
 import { useThemedStyles } from "../../theme/use-theme";
+import SocialSignInButton from "./sign-in/social-sign-in-button";
 
 interface WelcomeContentProps {
-  busy: boolean;
+  pendingProvider: SignInProvider | null;
   error: string | null;
-  onGoogle: () => void;
-  onApple: () => void;
-  onEmail: () => void;
+  onSignIn: (provider: SignInProvider) => void;
 }
 
+const PROVIDERS: SignInProvider[] = ["apple", "google"];
+
 export default function WelcomeContent({
-  busy,
+  pendingProvider,
   error,
-  onGoogle,
-  onApple,
-  onEmail,
+  onSignIn,
 }: WelcomeContentProps) {
   const styles = useThemedStyles(createStyles);
+  const busy = pendingProvider !== null;
   return (
     <ScreenScaffold>
       <BrandMark large />
@@ -37,24 +36,16 @@ export default function WelcomeContent({
         </Text>
       </View>
       <View style={styles.actions}>
-        <PrimaryButton
-          label={busy ? "Opening…" : "Continue with Google"}
-          disabled={busy}
-          onPress={onGoogle}
-        />
-        <PrimaryButton
-          label="Continue with Apple"
-          variant="outlined"
-          disabled={busy}
-          onPress={onApple}
-        />
-        <GhostButton
-          label="Continue with email"
-          disabled={busy}
-          onPress={onEmail}
-        />
+        {PROVIDERS.map((provider) => (
+          <SocialSignInButton
+            key={provider}
+            provider={provider}
+            pending={pendingProvider === provider}
+            disabled={busy}
+            onPress={() => onSignIn(provider)}
+          />
+        ))}
         {error ? <InlineError message={error} /> : null}
-        <Text style={styles.note}>Your Orbit, with you on every device.</Text>
       </View>
     </ScreenScaffold>
   );
@@ -71,10 +62,4 @@ const createStyles = (colors: Palette) =>
     },
     sub: { fontSize: 17, lineHeight: 25, color: colors.muted, maxWidth: 320 },
     actions: { marginTop: "auto", gap: space[3], paddingTop: space[3] },
-    note: {
-      fontSize: 13,
-      color: colors.muted,
-      textAlign: "center",
-      lineHeight: 20,
-    },
   });

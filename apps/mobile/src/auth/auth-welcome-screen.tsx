@@ -1,9 +1,9 @@
 import { useSSO } from "@clerk/expo";
-import { useHostedAuth } from "@clerk/expo/hosted-auth";
 import * as AuthSession from "expo-auth-session";
 import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
+import type { SignInProvider } from "./sign-in-provider";
 import WelcomeContent from "./welcome/welcome-content";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -21,16 +21,17 @@ const redirectUrl = AuthSession.makeRedirectUri({
 
 export default function AuthWelcomeScreen() {
   const { startSSOFlow } = useSSO();
-  const { startHostedAuth } = useHostedAuth();
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [pendingProvider, setPendingProvider] = useState<SignInProvider | null>(
+    null,
+  );
 
-  const runSSO = async (strategy: "oauth_google" | "oauth_apple") => {
+  const signIn = async (provider: SignInProvider) => {
     try {
-      setBusy(true);
+      setPendingProvider(provider);
       setError(null);
       const { createdSessionId, setActive } = await startSSOFlow({
-        strategy,
+        strategy: `oauth_${provider}`,
         redirectUrl,
       });
 
@@ -40,29 +41,15 @@ export default function AuthWelcomeScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign-in failed");
     } finally {
-      setBusy(false);
-    }
-  };
-
-  const runHosted = async (mode: "sign-in" | "sign-up") => {
-    try {
-      setBusy(true);
-      setError(null);
-      await startHostedAuth({ mode });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Sign-in failed");
-    } finally {
-      setBusy(false);
+      setPendingProvider(null);
     }
   };
 
   return (
     <WelcomeContent
-      busy={busy}
+      pendingProvider={pendingProvider}
       error={error}
-      onGoogle={() => void runSSO("oauth_google")}
-      onApple={() => void runSSO("oauth_apple")}
-      onEmail={() => void runHosted("sign-in")}
+      onSignIn={(provider) => void signIn(provider)}
     />
   );
 }
