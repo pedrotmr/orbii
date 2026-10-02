@@ -18,7 +18,8 @@ interface SocialSignInButtonProps {
   onPress: () => void;
 }
 
-const GOOGLE_LOGO_SIZE = 18;
+/** Google's iOS button kit draws the G at 20pt; its rules forbid resizing it. */
+const GOOGLE_LOGO_SIZE = 20;
 /** The Apple glyph sits low and padded inside its box, so it draws larger and lifts to match the G. */
 const APPLE_LOGO_SIZE = 30;
 
