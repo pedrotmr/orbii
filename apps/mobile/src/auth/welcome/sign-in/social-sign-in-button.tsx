@@ -18,9 +18,9 @@ interface SocialSignInButtonProps {
   onPress: () => void;
 }
 
-const GOOGLE_LOGO_SIZE = 20;
-/** The Apple glyph is padded inside its box, so it draws larger to match the G. */
-const APPLE_LOGO_SIZE = 24;
+const GOOGLE_LOGO_SIZE = 18;
+/** The Apple glyph sits low and padded inside its box, so it draws larger and lifts to match the G. */
+const APPLE_LOGO_SIZE = 30;
 
 export default function SocialSignInButton({
   provider,
@@ -32,7 +32,9 @@ export default function SocialSignInButton({
   const label = isApple ? "Continue with Apple" : "Continue with Google";
   const labelColor = isApple ? signInColors.onApple : signInColors.onGoogle;
   const logo = isApple ? (
-    <AppleLogo size={APPLE_LOGO_SIZE} color={labelColor} />
+    <View style={styles.appleLogo}>
+      <AppleLogo size={APPLE_LOGO_SIZE} color={labelColor} />
+    </View>
   ) : (
     <GoogleLogo size={GOOGLE_LOGO_SIZE} />
   );
@@ -54,9 +56,7 @@ export default function SocialSignInButton({
         pressed && styles.pressed,
       ]}
     >
-      <View style={styles.logo}>
-        {pending ? <ActivityIndicator color={labelColor} /> : logo}
-      </View>
+      {pending ? <ActivityIndicator color={labelColor} /> : logo}
       <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
     </Pressable>
   );
@@ -81,11 +81,6 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.85 },
-  logo: {
-    width: APPLE_LOGO_SIZE,
-    height: APPLE_LOGO_SIZE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  appleLogo: { transform: [{ translateY: -2.5 }] },
   label: { fontSize: fontSize.md, fontWeight: "500" },
 });
