@@ -1,4 +1,4 @@
-import { fontSize, type Palette, radius, space } from "@orbii/tokens";
+import { fontSize, radius, signInColors, space } from "@orbii/tokens";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import type { SignInProvider } from "../../sign-in-provider";
 import { selectionFeedback } from "../../../components/controls/feedback";
-import { useTheme, useThemedStyles } from "../../../theme/use-theme";
 import AppleLogo from "./logos/apple-logo";
 import GoogleLogo from "./logos/google-logo";
 
@@ -29,11 +28,9 @@ export default function SocialSignInButton({
   disabled,
   onPress,
 }: SocialSignInButtonProps) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(createStyles);
   const isApple = provider === "apple";
   const label = isApple ? "Continue with Apple" : "Continue with Google";
-  const labelColor = isApple ? colors.onAppleButton : colors.onGoogleButton;
+  const labelColor = isApple ? signInColors.onApple : signInColors.onGoogle;
   const logo = isApple ? (
     <AppleLogo size={APPLE_LOGO_SIZE} color={labelColor} />
   ) : (
@@ -65,31 +62,30 @@ export default function SocialSignInButton({
   );
 }
 
-const createStyles = (colors: Palette) =>
-  StyleSheet.create({
-    button: {
-      minHeight: 52,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: space[3],
-      paddingHorizontal: space[5],
-      borderRadius: radius.full,
-      borderCurve: "continuous",
-    },
-    apple: { backgroundColor: colors.appleButton },
-    google: {
-      backgroundColor: colors.googleButton,
-      borderWidth: 1,
-      borderColor: colors.googleButtonStroke,
-    },
-    disabled: { opacity: 0.5 },
-    pressed: { opacity: 0.85 },
-    logo: {
-      width: APPLE_LOGO_SIZE,
-      height: APPLE_LOGO_SIZE,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    label: { fontSize: fontSize.md, fontWeight: "500" },
-  });
+const styles = StyleSheet.create({
+  button: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space[3],
+    paddingHorizontal: space[5],
+    borderRadius: radius.full,
+    borderCurve: "continuous",
+  },
+  apple: { backgroundColor: signInColors.apple },
+  google: {
+    backgroundColor: signInColors.google,
+    borderWidth: 1,
+    borderColor: signInColors.googleStroke,
+  },
+  disabled: { opacity: 0.5 },
+  pressed: { opacity: 0.85 },
+  logo: {
+    width: APPLE_LOGO_SIZE,
+    height: APPLE_LOGO_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  label: { fontSize: fontSize.md, fontWeight: "500" },
+});

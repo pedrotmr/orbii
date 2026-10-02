@@ -20,12 +20,6 @@ export const lightColors = {
   focus: "#CE5628",
   track: "#E3E6DE",
   disabled: "#DFE1DB",
-  /** Sign in with Apple and Sign in with Google brand colors; do not restyle. */
-  appleButton: "#000000",
-  onAppleButton: "#FFFFFF",
-  googleButton: "#FFFFFF",
-  googleButtonStroke: "#747775",
-  onGoogleButton: "#1F1F1F",
 } as const;
 export type Palette = { [Key in keyof typeof lightColors]: string };
 export const darkColors: Palette = {
@@ -49,12 +43,16 @@ export const darkColors: Palette = {
   focus: "#FFA77C",
   track: "#373F32",
   disabled: "#3A4136",
-  appleButton: "#FFFFFF",
-  onAppleButton: "#000000",
-  googleButton: "#131314",
-  googleButtonStroke: "#8E918F",
-  onGoogleButton: "#E3E3E3",
 };
+
+/** Sign in with Apple and Sign in with Google brand colors; same in both themes, do not restyle. */
+export const signInColors = {
+  apple: "#000000",
+  onApple: "#FFFFFF",
+  google: "#FFFFFF",
+  googleStroke: "#747775",
+  onGoogle: "#1F1F1F",
+} as const;
 
 export const space = {
   1: 4,
