@@ -78,6 +78,43 @@ export const assertLatestMainCommit = (sha, git = runGit) => {
   }
 };
 
+const readRemoteMainSha = () => {
+  const repository = process.env.GITHUB_REPOSITORY;
+  const token = process.env.GITHUB_TOKEN;
+  if (!repository || !token) {
+    throw new Error(
+      "A read-only GitHub token and repository are required to verify live main.",
+    );
+  }
+  return execFileSync(
+    "gh",
+    [
+      "api",
+      `repos/${repository}/commits/${releaseConfig.defaultBranch}`,
+      "--jq",
+      ".sha",
+    ],
+    {
+      cwd: repositoryDirectory,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "inherit"],
+      env: { ...process.env, GH_TOKEN: token },
+    },
+  ).trim();
+};
+
+export const assertLatestRemoteMainCommit = (sha, api = readRemoteMainSha) => {
+  const mainSha = api();
+  if (
+    !/^[a-f\d]{40}$/i.test(mainSha) ||
+    sha.toLowerCase() !== mainSha.toLowerCase()
+  ) {
+    throw new Error(
+      "Automatic staging requires the latest main commit; rerun staging manually to select an older revision.",
+    );
+  }
+};
+
 export const resolveSource = async (
   { ref, version, dryRun = false, workflowSha },
   { git = runGit, readVersion = readCommittedVersion } = {},

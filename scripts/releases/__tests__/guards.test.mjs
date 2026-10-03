@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  errorMessage,
+  validateBackendUrl,
   validateContext,
   validateChannel,
   validateRelease,
@@ -59,6 +61,13 @@ test("updates reject paused channels, wrong branches, and branch rollouts", () =
   for (const changed of [
     { ...channel, isPaused: true },
     { ...channel, name: "production" },
+    { ...channel, updateBranches: [{ id: "branch", name: "production" }] },
+    {
+      ...channel,
+      branchMapping: JSON.stringify({
+        data: [{ branchId: "other-branch", branchMappingLogic: "true" }],
+      }),
+    },
     {
       ...channel,
       branchMapping: JSON.stringify({
@@ -143,4 +152,98 @@ test("Convex targets are pinned separately and missing production setup fails cl
     EXPO_PUBLIC_CONVEX_URL: config.productionConvexUrl,
     EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_example",
   });
+});
+
+test("malformed submission config retains the actionable setup error", () => {
+  for (const eas of [null, undefined, {}, []]) {
+    assert.throws(
+      () => validateSubmission(eas, { stagingProfile: "dev" }, "staging"),
+      /Set submit.dev.ios.ascAppId before deploying the backend/,
+    );
+  }
+});
+
+test("malformed channel responses fail with the channel validation error", () => {
+  for (const result of [null, undefined, {}, { currentPage: null }]) {
+    assert.throws(
+      () => validateChannel(result, "preview"),
+      /Channel preview must be active/,
+    );
+  }
+});
+
+test("failure diagnostics retain messages for Error and primitive throws", () => {
+  assert.equal(errorMessage(new Error("upload failed")), "upload failed");
+  assert.equal(errorMessage("literal failure"), "literal failure");
+  assert.equal(errorMessage(null), "null");
+  assert.equal(errorMessage(undefined), "undefined");
+});
+
+test("backend target pins support standard Convex and custom HTTPS origins", () => {
+  for (const url of [
+    "https://production.convex.cloud",
+    "https://api.example.com",
+    "https://api.example.com:8443",
+  ]) {
+    validateBackendUrl(
+      url,
+      { ...config, productionConvexUrl: url },
+      "production",
+    );
+  }
+});
+
+test("backend origins reject insecure, malformed, credentialed, or non-origin targets", () => {
+  for (const url of [
+    "http://api.example.com",
+    "https://api.example.com/",
+    "https://api.example.com/path",
+    "https://api.example.com?debug=true",
+    "https://api.example.com#fragment",
+    "https://user:password@api.example.com",
+    "https://@api.example.com",
+    "https://api.example.com:65536",
+    "https://api.example.com:0",
+    "https://api.example.com:",
+    "https://api.example.com?",
+    "https://api.example.com#",
+    "https://api.example.com:invalid",
+    " https://api.example.com",
+    "not-a-url",
+  ]) {
+    assert.throws(
+      () =>
+        validateBackendUrl(
+          url,
+          { ...config, productionConvexUrl: url },
+          "production",
+        ),
+      /Convex URL must match/,
+    );
+  }
+  assert.throws(
+    () => validateBackendUrl(config.productionConvexUrl, config, "other"),
+    /Choose staging or production/,
+  );
+});
+
+test("custom origins remain exact and aliases cannot share staging and production", () => {
+  const custom = {
+    ...config,
+    stagingConvexUrl: "https://staging.example.com",
+    productionConvexUrl: "https://api.example.com",
+  };
+  assert.throws(
+    () => validateBackendUrl(custom.productionConvexUrl, custom, "staging"),
+    /Convex URL must match/,
+  );
+  assert.throws(
+    () =>
+      validateBackendUrl(
+        custom.stagingConvexUrl,
+        { ...custom, productionConvexUrl: "https://STAGING.example.com:443" },
+        "staging",
+      ),
+    /different deployments/,
+  );
 });

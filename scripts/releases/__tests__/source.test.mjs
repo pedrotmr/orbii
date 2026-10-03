@@ -34,11 +34,8 @@ test("a normal release fetches main once and pins its SHA and committed version"
   ]);
 });
 
-test("offline dry runs use cached main without fetching or accessing EAS", async () => {
+test("offline source resolution uses cached main without fetching", async () => {
   const dependencies = fixture();
-  dependencies.eas = () => {
-    throw new Error("Unexpected EAS call");
-  };
   await resolveSource({ action: "testflight", dryRun: true }, dependencies);
   assert.deepEqual(dependencies.commands, [
     ["rev-parse", "--verify", "refs/remotes/origin/main^{commit}"],

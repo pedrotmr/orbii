@@ -3,7 +3,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { releaseConfig, repositoryDirectory } from "./config.mjs";
 import { validateBackendUrl } from "./guards.mjs";
-import { assertLatestMainCommit, assertMainCommit } from "./source.mjs";
+import {
+  assertLatestMainCommit,
+  assertLatestRemoteMainCommit,
+  assertMainCommit,
+} from "./source.mjs";
 
 const main = () => {
   const sha = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -33,6 +37,10 @@ const main = () => {
   }
 
   if (process.argv[2] === "verify-url") {
+    if (environment === "staging" && process.env.GITHUB_EVENT_NAME === "push") {
+      assertLatestRemoteMainCommit(sha);
+    }
+
     validateBackendUrl(
       process.env.RELEASE_BACKEND_URL,
       releaseConfig,

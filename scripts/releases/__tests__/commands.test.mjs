@@ -88,16 +88,33 @@ test("local commands release pushed main even with a local-only version", () => 
 
 test("custom notes remain data and optional version cannot override the commit", () => {
   const notes = "$(touch should-not-exist); `echo nope`\nSecond line";
-  const result = run("start-mobile-release", ["--notes", notes, "--dry-run"]);
+  const result = run("start-mobile-release", [
+    "--environment",
+    "staging",
+    "--notes",
+    notes,
+    "--dry-run",
+  ]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).inputs.notes, notes);
   assert.equal(
-    run("start-mobile-release", ["--version", "0.0.0", "--dry-run"]).status,
+    run("start-mobile-release", [
+      "--environment",
+      "staging",
+      "--version",
+      "0.0.0",
+      "--dry-run",
+    ]).status,
     1,
   );
   assert.equal(
-    run("start-mobile-release", ["--action", "update-promote", "--dry-run"])
-      .status,
+    run("start-mobile-release", [
+      "--environment",
+      "staging",
+      "--action",
+      "update-promote",
+      "--dry-run",
+    ]).status,
     1,
   );
 });
@@ -173,8 +190,27 @@ console.log(JSON.stringify(result));
 `,
     { mode: 0o755 },
   );
+  writeFileSync(
+    join(bin, "gh"),
+    `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.FAKE_EAS_LOG, JSON.stringify(['gh', ...args]) + '\\n');
+if (!process.env.GH_TOKEN) { process.exit(7); }
+const counterFile = process.env.FAKE_GH_COUNTER;
+const index = fs.existsSync(counterFile) ? Number(fs.readFileSync(counterFile, 'utf8')) : 0;
+fs.writeFileSync(counterFile, String(index + 1));
+const shas = JSON.parse(process.env.FAKE_GH_MAIN_SHAS);
+console.log(shas[Math.min(index, shas.length - 1)]);
+`,
+    { mode: 0o755 },
+  );
   const env = {
     PATH: `${bin}:${process.env.PATH}`,
+    FAKE_GH_COUNTER: join(bin, "gh-count"),
+    FAKE_GH_MAIN_SHAS: JSON.stringify([sha]),
+    GITHUB_REPOSITORY: "example/app",
+    GITHUB_TOKEN: "fake-read-only-token",
     FAKE_EAS_LOG: log,
     EXPO_TOKEN: "fake",
     RELEASE_SHA: sha,
@@ -386,5 +422,174 @@ test("automatic staging refuses an older main commit while manual releases remai
     assert.equal(manual.status, 0, manual.stderr);
   } finally {
     git(["update-ref", "refs/remotes/origin/main", sha]);
+  }
+});
+
+test("release commands require an explicit target instead of defaulting to production", () => {
+  for (const args of [[], ["--dry-run"]]) {
+    const result = run("start-mobile-release", args);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Choose staging or production/);
+    assert.equal(result.stdout, "");
+  }
+});
+
+test("automatic staging checks live main before build and again before exact submission", (context) => {
+  const mock = mockDelivery(context, "staging", { "build:list": [] });
+  const result = run("mobile-release", ["deliver"], {
+    ...mock.env,
+    GITHUB_EVENT_NAME: "push",
+    FAKE_GH_MAIN_SHAS: JSON.stringify([sha, mainSha]),
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /Automatic staging requires the latest main commit/,
+  );
+  const calls = mock.commands();
+  const buildIndex = calls.findIndex((args) => args[2] === "build");
+  const freshIndices = calls.flatMap((args, index) =>
+    args[0] === "gh" ? [index] : [],
+  );
+  assert.equal(freshIndices.length, 2);
+  assert.ok(freshIndices[0] < buildIndex && freshIndices[1] > buildIndex);
+  assert.equal(
+    calls.some((args) => args[2] === "submit"),
+    false,
+  );
+  const record = JSON.parse(
+    readFileSync(join(repo, ".release-artifacts/mobile-release.json"), "utf8"),
+  );
+  assert.equal(record.stage, "failed");
+  assert.equal(record.failedAt, "built");
+  assert.equal(record.build.id, mock.build.id);
+});
+
+test("live-main freshness prevents stale staging uploads despite a matching cached main", (context) => {
+  const mock = mockDelivery(context, "staging", { "build:list": [] });
+  const result = run("mobile-release", ["deliver"], {
+    ...mock.env,
+    GITHUB_EVENT_NAME: "push",
+    FAKE_GH_MAIN_SHAS: JSON.stringify([mainSha]),
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /Automatic staging requires the latest main commit/,
+  );
+  assert.equal(
+    mock
+      .commands()
+      .some((args) => ["build", "update", "submit"].includes(args[2])),
+    false,
+  );
+});
+
+test("live-main freshness prevents stale staging OTA publication", (context) => {
+  const channel = config.stagingChannel;
+  const mock = mockDelivery(context, "staging", {
+    "fingerprint:compare": {
+      fingerprint1: { hash: "same" },
+      fingerprint2: { hash: "same" },
+    },
+    "channel:view": {
+      currentPage: {
+        name: channel,
+        updateBranches: [{ id: "branch", name: channel }],
+        branchMapping: JSON.stringify({
+          data: [{ branchId: "branch", branchMappingLogic: "true" }],
+        }),
+      },
+    },
+    update: [{ id: "update-id", group: "group-id" }],
+  });
+  const result = run("mobile-release", ["deliver"], {
+    ...mock.env,
+    GITHUB_EVENT_NAME: "push",
+    FAKE_GH_MAIN_SHAS: JSON.stringify([mainSha]),
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /Automatic staging requires the latest main commit/,
+  );
+  assert.equal(
+    mock.commands().some((args) => args[2] === "update"),
+    false,
+  );
+});
+
+test("manual older staging and explicit production bypass automatic freshness checks", (context) => {
+  for (const environment of ["staging", "production"]) {
+    const mock = mockDelivery(context, environment, { "build:list": [] });
+    const result = run("mobile-release", ["deliver"], {
+      ...mock.env,
+      GITHUB_EVENT_NAME: "workflow_dispatch",
+      GITHUB_TOKEN: "",
+      FAKE_GH_MAIN_SHAS: JSON.stringify([mainSha]),
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      mock.commands().some((args) => args[0] === "gh"),
+      false,
+    );
+  }
+});
+
+test("committed JavaScript config primitive failures retain a useful CLI diagnostic", () => {
+  const configPath = join(repo, "release.config.json");
+  const dynamicPath = join(repo, "apps/mobile/app.config.js");
+  writeFileSync(
+    configPath,
+    JSON.stringify({ ...config, versionFile: "apps/mobile/app.config.js" }),
+  );
+  writeFileSync(
+    dynamicPath,
+    'throw "missing config input"; export default {};',
+  );
+  git(["add", "apps/mobile/app.config.js"]);
+  const failingSha = commit("test: primitive JavaScript config failure");
+  git(["update-ref", "refs/remotes/origin/main", failingSha]);
+  try {
+    for (const [script, args] of [
+      ["start-mobile-release", ["--environment", "staging", "--dry-run"]],
+      ["mobile-release", ["resolve"]],
+    ]) {
+      const result = run(script, args, {
+        EXPO_TOKEN: "fake",
+        RELEASE_SHA: failingSha,
+        GITHUB_SHA: failingSha,
+        RELEASE_TARGET_ENVIRONMENT: "staging",
+      });
+      assert.equal(result.status, 1);
+      assert.equal(result.stderr.trim(), "missing config input");
+    }
+  } finally {
+    git(["checkout", "--detach", sha]);
+    git(["update-ref", "refs/remotes/origin/main", sha]);
+  }
+});
+
+test("Expo config and EAS setup subprocess failures are captured as delivery failures", (context) => {
+  for (const overrides of [{ config: null }, { "build:list": null }]) {
+    const mock = mockDelivery(context, "staging", overrides);
+    const result = run("mobile-release", ["deliver"], mock.env);
+    assert.equal(result.status, 1);
+    const record = JSON.parse(
+      readFileSync(
+        join(repo, ".release-artifacts/mobile-release.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(record.stage, "failed");
+    assert.equal(record.failedAt, "validating");
+    assert.equal(record.build, undefined);
+    assert.match(record.error, /Command failed/);
+    assert.equal(
+      mock
+        .commands()
+        .some((args) => ["update", "build", "submit"].includes(args[2])),
+      false,
+    );
   }
 });

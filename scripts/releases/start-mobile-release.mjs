@@ -1,14 +1,14 @@
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { releaseConfig, repositoryDirectory } from "./config.mjs";
-import { validateRelease } from "./guards.mjs";
+import { errorMessage, validateRelease } from "./guards.mjs";
 import { resolveNotes, resolveSource } from "./source.mjs";
 
 try {
   const { values } = parseArgs({
     args: process.argv.slice(2).filter((argument) => argument !== "--"),
     options: {
-      environment: { type: "string", default: "production" },
+      environment: { type: "string" },
       action: { type: "string", default: "testflight" },
       ref: { type: "string" },
       version: { type: "string" },
@@ -72,6 +72,6 @@ Dry runs are offline and use cached origin/main. Local changes are never uploade
     }
   }
 } catch (error) {
-  console.error(error.message);
+  console.error(errorMessage(error));
   process.exitCode = 1;
 }

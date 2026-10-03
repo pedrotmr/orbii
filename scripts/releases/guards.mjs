@@ -1,3 +1,6 @@
+export const errorMessage = (error) =>
+  error instanceof Error ? error.message : String(error);
+
 export const requireValue = (value, name) => {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`${name} is required.`);
@@ -66,12 +69,12 @@ export const selectStagingDelivery = (
 };
 
 export const validateChannel = (result, name) => {
-  const channel = result.currentPage;
+  const channel = result?.currentPage;
   const branches = channel?.updateBranches;
   const mapping = JSON.parse(channel?.branchMapping ?? "null");
   if (
     channel?.name !== name ||
-    channel.isPaused ||
+    channel?.isPaused ||
     !Array.isArray(branches) ||
     branches.length !== 1 ||
     branches[0].name !== name ||
@@ -116,11 +119,33 @@ export const validateSubmission = (eas, config, environment) => {
     environment === "staging"
       ? config.stagingProfile
       : config.productionProfile;
-  const appId = eas.submit?.[profile]?.ios?.ascAppId;
+  const appId = eas?.submit?.[profile]?.ios?.ascAppId;
   if (!/^\d+$/.test(appId ?? "")) {
     throw new Error(
       `Set submit.${profile}.ios.ascAppId before deploying the backend.`,
     );
+  }
+};
+
+const parseBackendOrigin = (value) => {
+  if (
+    typeof value !== "string" ||
+    value.endsWith(":") ||
+    !/^https:\/\/[^/?#\\\s@]+$/.test(value)
+  ) {
+    return null;
+  }
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      url.hostname &&
+      !url.username &&
+      !url.password &&
+      url.port !== "0"
+      ? url.origin
+      : null;
+  } catch {
+    return null;
   }
 };
 
@@ -134,14 +159,17 @@ export const validateBackendUrl = (url, config, environment) => {
       : config.productionConvexUrl,
     `${environment} Convex URL in release.config.json`,
   );
-  if (config.stagingConvexUrl === config.productionConvexUrl) {
+  const expectedOrigin = parseBackendOrigin(expected);
+  const otherOrigin = parseBackendOrigin(
+    environment === "staging"
+      ? config.productionConvexUrl
+      : config.stagingConvexUrl,
+  );
+  if (expectedOrigin && expectedOrigin === otherOrigin) {
     throw new Error("Staging and production must use different deployments.");
   }
 
-  if (
-    !/^https:\/\/[a-z0-9-]+\.convex\.cloud$/.test(expected) ||
-    url !== expected
-  ) {
+  if (!expectedOrigin || url !== expected) {
     throw new Error(
       "Convex URL must match the selected environment's configured deployment.",
     );

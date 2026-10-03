@@ -138,6 +138,7 @@ jobs:
         run: node -e 'console.log("version=" + require("./release.config.json").easCliVersion)' >> "$GITHUB_OUTPUT"
       - name: Deliver the checked commit using the matching EAS environment
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_CLI_VERSION: ${{ steps.eas.outputs.version }}
         working-directory: apps/mobile
@@ -146,6 +147,7 @@ jobs:
         if: ${{ always() }}
         with:
           name: mobile-release-staging
+          include-hidden-files: true
           path: .release-artifacts/mobile-release.json
           retention-days: 90
           if-no-files-found: ignore

@@ -8,6 +8,7 @@ import {
 import { join } from "node:path";
 import { releaseConfig, repositoryDirectory } from "./config.mjs";
 import {
+  errorMessage,
   requireValue,
   selectStagingDelivery,
   validateBuild,
@@ -18,6 +19,7 @@ import {
 } from "./guards.mjs";
 import {
   assertLatestMainCommit,
+  assertLatestRemoteMainCommit,
   resolveNotes,
   resolveSource,
   runEas,
@@ -162,7 +164,7 @@ const deliver = () => {
       let comparison;
       if (
         build?.appVersion === source.version &&
-        build.runtime?.version === source.version
+        build?.runtime?.version === source.version
       ) {
         comparison = runEas([
           "fingerprint:compare",
@@ -182,6 +184,11 @@ const deliver = () => {
         process.env.STAGING_DELIVERY || "auto",
       );
     }
+    const verifyAutomaticStaging = () => {
+      if (staging && process.env.GITHUB_EVENT_NAME === "push") {
+        assertLatestRemoteMainCommit(source.sha);
+      }
+    };
     record.delivery = delivery;
     record.notes = resolveNotes(process.env.RELEASE_NOTES, source.sha);
     record.stage = "starting";
@@ -192,6 +199,7 @@ const deliver = () => {
         runEas(["channel:view", channel, "--json", "--non-interactive"]),
         channel,
       );
+      verifyAutomaticStaging();
       const updates = runEas([
         "update",
         "--platform",
@@ -208,6 +216,7 @@ const deliver = () => {
       record.updates = updates.map(({ id, group }) => ({ id, group }));
       record.stage = "update-published";
     } else {
+      verifyAutomaticStaging();
       const builds = runEas([
         "build",
         "--platform",
@@ -235,6 +244,7 @@ const deliver = () => {
       record.build = { id: build.id, buildNumber: build.appBuildVersion };
       record.stage = "built";
       save();
+      verifyAutomaticStaging();
       // EAS Submit has no JSON flag. Wait for the upload and retain the exact build ID.
       runEas(
         [
@@ -255,7 +265,7 @@ const deliver = () => {
   } catch (error) {
     record.failedAt = record.stage;
     record.stage = "failed";
-    record.error = error.message;
+    record.error = errorMessage(error);
     throw error;
   } finally {
     save();
@@ -274,6 +284,6 @@ try {
     throw new Error("Expected resolve, validate-environment, or deliver.");
   }
 } catch (error) {
-  console.error(error.message);
+  console.error(errorMessage(error));
   process.exitCode = 1;
 }

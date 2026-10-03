@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -108,6 +109,12 @@ for (const name of ["mobile-release", "mobile-staging", "backend-deploy"]) {
     );
     if (name === "backend-deploy") {
       assert.equal(workflow.includes("workflow_dispatch:"), false);
+      const upload = workflow.slice(
+        workflow.indexOf("- name: Upload backend release record"),
+      );
+      assert.match(upload, /path: \.release-artifacts\/backend-release\.json/);
+      assert.match(upload, /include-hidden-files: true/);
+      assert.match(workflow, /GITHUB_TOKEN: \$\{\{ github.token \}\}/);
     }
   });
   test(`${name} source gate rejects off-main, malformed and accepts uppercase older main`, () => {
@@ -180,6 +187,17 @@ for (const name of ["mobile-release", "mobile-staging"]) {
       /require\("\.\/release\.config\.json"\)\.easCliVersion/,
     );
     assert.match(workflow, /eas-cli@\$EAS_CLI_VERSION/);
+    const upload = workflow.slice(
+      workflow.indexOf("- uses: actions/upload-artifact@v4"),
+    );
+    assert.match(upload, /path: \.release-artifacts\/mobile-release\.json/);
+    assert.match(upload, /include-hidden-files: true/);
+    if (name === "mobile-staging") {
+      const delivery = workflow.slice(
+        workflow.indexOf("- name: Deliver the checked commit"),
+      );
+      assert.match(delivery, /GITHUB_TOKEN: \$\{\{ github.token \}\}/);
+    }
   });
 }
 
@@ -209,4 +227,49 @@ test("stale automatic staging cannot deploy an older main revision; manual older
   );
   git(["checkout", main]);
   assert.equal(run(main, "push").status, 0);
+});
+
+test("backend rechecks live main immediately before pushing, even when checked-out main cache is stale", () => {
+  git(["checkout", older]);
+  git(["update-ref", "refs/remotes/origin/main", older]);
+  git(["update-ref", "refs/heads/main", main]);
+  const bin = join(directory, "mock-bin");
+  mkdirSync(bin);
+  writeFileSync(
+    join(bin, "gh"),
+    `#!/usr/bin/env node
+const {execFileSync} = require('node:child_process');
+if (process.env.GH_TOKEN !== 'readonly-test') { process.exit(9); }
+console.log(execFileSync('git', ['rev-parse', 'refs/heads/main'], {cwd: ${JSON.stringify(directory)}, encoding: 'utf8'}).trim());
+`,
+    { mode: 0o755 },
+  );
+  const run = () =>
+    spawnSync(
+      process.execPath,
+      ["scripts/releases/backend-record.mjs", "verify-url"],
+      {
+        cwd: directory,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH}`,
+          GITHUB_TOKEN: "readonly-test",
+          GITHUB_REPOSITORY: "example/app",
+          RELEASE_SHA: older,
+          RELEASE_TARGET_ENVIRONMENT: "staging",
+          GITHUB_EVENT_NAME: "push",
+          RELEASE_BACKEND_URL: "https://staging-example.convex.cloud",
+        },
+      },
+    );
+  const stale = run();
+  assert.equal(stale.status, 1);
+  assert.match(
+    stale.stderr,
+    /Automatic staging requires the latest main commit/,
+  );
+  git(["update-ref", "refs/heads/main", older]);
+  assert.equal(run().status, 0);
+  git(["update-ref", "refs/remotes/origin/main", main]);
 });
