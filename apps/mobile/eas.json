@@ -29,13 +29,15 @@
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "preview"
     },
     "preview-simulator": {
       "extends": "preview",
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "preview-simulator"
     },
     "preview-testflight": {
       "extends": "preview",
@@ -52,7 +54,8 @@
       },
       "env": {
         "APP_VARIANT": "production"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

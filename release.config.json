@@ -1,0 +1,18 @@
+{
+  "mobileDirectory": "apps/mobile",
+  "versionFile": "apps/mobile/app.json",
+  "defaultBranch": "main",
+  "gitRemote": "origin",
+  "easCliVersion": "24.8.0",
+  "easProjectId": "cebd63af-63fc-4c5a-a302-dbae0bdcd6e8",
+  "bundleIdentifier": "app.orbii.mobile",
+  "productionProfile": "production",
+  "productionChannel": "production",
+  "githubWorkflow": "mobile-release.yml",
+  "stagingWorkflow": "mobile-staging.yml",
+  "stagingProfile": "preview-testflight",
+  "stagingChannel": "preview",
+  "stagingBundleIdentifier": "app.orbii.mobile.dev",
+  "stagingConvexUrl": "https://posh-otter-652.convex.cloud",
+  "productionConvexUrl": ""
+}

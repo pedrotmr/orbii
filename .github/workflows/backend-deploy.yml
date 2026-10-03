@@ -1,0 +1,108 @@
+name: Deploy Convex backend
+
+on:
+  workflow_call:
+    inputs:
+      target_environment:
+        type: string
+        required: true
+      release_sha:
+        type: string
+        required: true
+    secrets:
+      CONVEX_DEPLOY_KEY:
+        required: false
+      CONVEX_DEPLOY_KEY_DEVELOP:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-${{ inputs.target_environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment || 'staging' }}
+    env:
+      RELEASE_BACKEND_VERIFY_SCRIPT: ${{ github.workspace }}/scripts/releases/backend-record.mjs
+      RELEASE_TARGET_ENVIRONMENT: ${{ inputs.target_environment || 'staging' }}
+      RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+    steps:
+      - name: Checkout trusted main history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify main source
+        id: provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+            echo "Select a full 40-character commit SHA." >&2
+            exit 1
+          fi
+          sha=$(git rev-parse --verify "${RELEASE_SHA}^{commit}")
+          if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+            echo "The release commit must be on main." >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Checkout verified source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.provenance.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Verify deployment identity
+        run: node scripts/releases/backend-record.mjs verify
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck backend
+        run: pnpm --filter @orbii/backend typecheck
+
+      - name: Test backend
+        run: pnpm --filter @orbii/backend test
+
+      - name: Deploy Convex production
+        if: env.RELEASE_TARGET_ENVIRONMENT == 'production'
+        run: pnpm --filter @orbii/backend exec convex deploy --yes --cmd-url-env-var-name RELEASE_BACKEND_URL --cmd 'node "$RELEASE_BACKEND_VERIFY_SCRIPT" verify-url'
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+      - name: Deploy Convex staging
+        if: env.RELEASE_TARGET_ENVIRONMENT == 'staging'
+        run: pnpm --filter @orbii/backend exec convex deploy --yes --cmd-url-env-var-name RELEASE_BACKEND_URL --cmd 'node "$RELEASE_BACKEND_VERIFY_SCRIPT" verify-url'
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_DEVELOP }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Record successful deployment
+        run: node scripts/releases/backend-record.mjs record
+
+      - name: Upload backend release record
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release-${{ inputs.target_environment || 'staging' }}
+          include-hidden-files: true
+          path: .release-artifacts/backend-release.json
+          retention-days: 90

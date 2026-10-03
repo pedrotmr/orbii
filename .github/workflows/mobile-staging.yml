@@ -1,0 +1,153 @@
+name: Deliver staging app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "scripts/releases/**"
+      - "release.config.json"
+      - ".github/workflows/mobile-staging.yml"
+      - ".github/workflows/backend-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional commit SHA; defaults to the selected main commit
+        type: string
+      delivery:
+        type: choice
+        options: [auto, testflight]
+        default: auto
+      notes:
+        description: Optional notes; defaults to the selected commit subject
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-staging
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      version: ${{ steps.source.outputs.version }}
+    env:
+      RELEASE_TARGET_ENVIRONMENT: staging
+      RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+    steps:
+      - name: Checkout trusted main history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify main source
+        id: provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+            echo "Select a full 40-character commit SHA." >&2
+            exit 1
+          fi
+          sha=$(git rev-parse --verify "${RELEASE_SHA}^{commit}")
+          if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+            echo "The release commit must be on main." >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Checkout verified source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.provenance.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - name: Resolve exact source and committed version
+        id: source
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: node scripts/releases/mobile-release.mjs resolve
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release:check
+      - name: Read EAS CLI pin
+        id: eas
+        run: node -e 'console.log("version=" + require("./release.config.json").easCliVersion)' >> "$GITHUB_OUTPUT"
+      - name: Verify app environment before backend deployment
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APP_VARIANT: preview
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          RELEASE_VERSION: ${{ steps.source.outputs.version }}
+          EAS_CLI_VERSION: ${{ steps.eas.outputs.version }}
+        run: pnpm dlx "eas-cli@$EAS_CLI_VERSION" env:exec preview 'node ../../scripts/releases/mobile-release.mjs validate-environment' --non-interactive
+
+  backend:
+    needs: [validate]
+    uses: ./.github/workflows/backend-deploy.yml
+    with:
+      target_environment: staging
+      release_sha: ${{ needs.validate.outputs.sha }}
+    secrets:
+      CONVEX_DEPLOY_KEY_DEVELOP: ${{ secrets.CONVEX_DEPLOY_KEY_DEVELOP }}
+
+  mobile:
+    needs: [validate, backend]
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 180
+    env:
+      APP_VARIANT: preview
+      RELEASE_TARGET_ENVIRONMENT: staging
+      RELEASE_SHA: ${{ needs.validate.outputs.sha }}
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      RELEASE_NOTES: ${{ inputs.notes }}
+      STAGING_DELIVERY: ${{ inputs.delivery || 'auto' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Read EAS CLI pin
+        id: eas
+        run: node -e 'console.log("version=" + require("./release.config.json").easCliVersion)' >> "$GITHUB_OUTPUT"
+      - name: Deliver the checked commit using the matching EAS environment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_CLI_VERSION: ${{ steps.eas.outputs.version }}
+        working-directory: apps/mobile
+        run: pnpm dlx "eas-cli@$EAS_CLI_VERSION" env:exec preview 'node ../../scripts/releases/mobile-release.mjs deliver' --non-interactive
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: mobile-release-staging
+          include-hidden-files: true
+          path: .release-artifacts/mobile-release.json
+          retention-days: 90
+          if-no-files-found: ignore

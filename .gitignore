@@ -31,3 +31,6 @@ apps/mobile/.claude/
 
 # Local autonomous execution state
 .ralph/
+
+# Local release records
+.release-artifacts/
