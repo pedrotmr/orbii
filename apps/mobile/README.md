@@ -90,7 +90,7 @@ pnpm mobile:testflight:production
 
 Each command dispatches its named GitHub Actions workflow on pushed `main`; it does not upload the local checkout. Staging builds Orbii Dev with the `preview-testflight` profile and submits it to TestFlight. Production uses the separate `production` profile. Apple App Review and public release remain manual in App Store Connect.
 
-Before dispatching staging, install and authenticate GitHub CLI for this repository (`gh auth status`) and add `EXPO_TOKEN` as a GitHub Actions repository secret. A required reviewer can be configured on the GitHub `production` environment as an extra approval gate.
+Add `EXPO_TOKEN` as a GitHub Actions repository secret before either workflow can build. To dispatch with the package scripts, install and authenticate GitHub CLI for this repository (`gh auth status`). A required reviewer can be configured on the GitHub `production` environment as an extra approval gate.
 
 Orbii currently has only its Convex dev deployment. The Dev TestFlight build therefore uses the preview EAS environment with the test Clerk and current dev Convex values; the workflow does not deploy Convex. This is a Dev app for testing, not an isolated staging database. Production delivery is not ready until the production EAS environment has its live Clerk and production Convex values and `submit.production.ios.ascAppId` is set to the production App Store Connect app ID.
 
