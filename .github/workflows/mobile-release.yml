@@ -41,8 +41,9 @@ jobs:
 
       - name: Confirm production App Store Connect app is configured
         run: >-
-          node -e "if (!require('./apps/mobile/eas.json').submit?.production?.ios?.ascAppId) {
-          throw new Error('Set submit.production.ios.ascAppId in apps/mobile/eas.json before production release');
+          node -e "const appId = require('./apps/mobile/eas.json').submit?.production?.ios?.ascAppId;
+          if (!/^\\d+$/.test(String(appId ?? ''))) {
+          throw new Error('Set submit.production.ios.ascAppId to a numeric Apple ID before production release');
           }"
 
       - name: Build and submit Orbii to TestFlight

@@ -39,6 +39,13 @@ jobs:
       - name: Verify project
         run: pnpm verify
 
+      - name: Confirm staging App Store Connect app is configured
+        run: >-
+          node -e "const appId = require('./apps/mobile/eas.json').submit?.['preview-testflight']?.ios?.ascAppId;
+          if (!/^\\d+$/.test(String(appId ?? ''))) {
+          throw new Error('Set submit.preview-testflight.ios.ascAppId to a numeric Apple ID before staging delivery');
+          }"
+
       - name: Build and submit Orbii Dev to TestFlight
         working-directory: apps/mobile
         run: pnpm dlx eas-cli@24.8.0 build --platform ios --profile preview-testflight --auto-submit --wait --non-interactive
