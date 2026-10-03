@@ -1,7 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { repositoryDirectory } from "./config.mjs";
+import { releaseConfig, repositoryDirectory } from "./config.mjs";
+import { validateBackendUrl } from "./guards.mjs";
+import { assertLatestMainCommit, assertMainCommit } from "./source.mjs";
 
 const main = () => {
   const sha = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -12,7 +14,7 @@ const main = () => {
 
   if (
     !/^[a-f\d]{40}$/i.test(process.env.RELEASE_SHA ?? "") ||
-    sha !== process.env.RELEASE_SHA
+    sha !== process.env.RELEASE_SHA.toLowerCase()
   ) {
     throw new Error("Backend deployment requires the exact selected commit.");
   }
@@ -21,12 +23,30 @@ const main = () => {
     throw new Error("Backend environment must be staging or production.");
   }
 
+  assertMainCommit(sha);
+  if (
+    environment === "staging" &&
+    process.env.GITHUB_EVENT_NAME === "push" &&
+    process.argv[2] !== "record"
+  ) {
+    assertLatestMainCommit(sha);
+  }
+
+  if (process.argv[2] === "verify-url") {
+    validateBackendUrl(
+      process.env.RELEASE_BACKEND_URL,
+      releaseConfig,
+      environment,
+    );
+    return;
+  }
+
   if (process.argv[2] === "verify") {
     return;
   }
 
   if (process.argv[2] !== "record") {
-    throw new Error("Expected verify or record.");
+    throw new Error("Expected verify, verify-url, or record.");
   }
 
   const directory = join(repositoryDirectory, ".release-artifacts");

@@ -26,6 +26,8 @@ const config = JSON.parse(
   readFileSync(join(sourceRepository, "release.config.json"), "utf8"),
 );
 config.versionFile = "apps/mobile/app.json";
+config.stagingConvexUrl = "https://test.convex.cloud";
+config.productionConvexUrl = "https://production.convex.cloud";
 writeFileSync(join(repo, "release.config.json"), JSON.stringify(config));
 writeFileSync(join(repo, ".gitignore"), ".release-artifacts/\n");
 writeFileSync(
@@ -103,6 +105,7 @@ test("custom notes remain data and optional version cannot override the commit",
 test("resolution fails before deploying backend when token or checkout is wrong", () => {
   const env = {
     RELEASE_SHA: mainSha,
+    GITHUB_SHA: mainSha,
     EXPO_TOKEN: "",
     GITHUB_OUTPUT: join(directory, "outputs"),
   };
@@ -117,6 +120,7 @@ test("resolution fails before deploying backend when token or checkout is wrong"
 });
 
 const mockDelivery = (context, environment, overrides = {}) => {
+  git(["update-ref", "refs/remotes/origin/main", sha]);
   const bin = mkdtempSync(join(directory, "bin-"));
   context.after(() => rmSync(bin, { recursive: true, force: true }));
   const log = join(bin, "calls.jsonl");
@@ -174,10 +178,13 @@ console.log(JSON.stringify(result));
     FAKE_EAS_LOG: log,
     EXPO_TOKEN: "fake",
     RELEASE_SHA: sha,
+    GITHUB_SHA: sha,
     RELEASE_VERSION: "9.9.9",
     RELEASE_TARGET_ENVIRONMENT: environment,
     APP_VARIANT: staging ? "preview" : "production",
-    EXPO_PUBLIC_CONVEX_URL: "https://test.convex.cloud",
+    EXPO_PUBLIC_CONVEX_URL: staging
+      ? config.stagingConvexUrl
+      : config.productionConvexUrl,
     EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: staging
       ? "pk_test_fake"
       : "pk_live_fake",
@@ -296,6 +303,7 @@ test("resolution blocks an unconfigured production app before delivery", () => {
   const result = run("mobile-release", ["resolve"], {
     EXPO_TOKEN: "fake",
     RELEASE_SHA: sha,
+    GITHUB_SHA: sha,
     RELEASE_TARGET_ENVIRONMENT: "production",
     GITHUB_OUTPUT: join(directory, "outputs"),
   });
@@ -304,4 +312,79 @@ test("resolution blocks an unconfigured production app before delivery", () => {
     result.stderr,
     /Set submit.production.ios.ascAppId before deploying/,
   );
+});
+
+test("setup failures replace stale success artifacts and retain failure stage", (context) => {
+  const mock = mockDelivery(context, "staging");
+  const result = run("mobile-release", ["deliver"], {
+    ...mock.env,
+    APP_VARIANT: "production",
+  });
+  assert.equal(result.status, 1);
+  const record = JSON.parse(
+    readFileSync(join(repo, ".release-artifacts/mobile-release.json"), "utf8"),
+  );
+  assert.equal(record.stage, "failed");
+  assert.equal(record.failedAt, "validating");
+  assert.equal(record.build, undefined);
+  assert.match(record.error, /APP_VARIANT/);
+});
+
+test("untracked source files cannot enter an otherwise clean EAS delivery", (context) => {
+  const mock = mockDelivery(context, "production");
+  const injected = join(repo, "apps/mobile/injected.js");
+  writeFileSync(injected, "console.log('uncommitted source');");
+  try {
+    const result = run("mobile-release", ["deliver"], mock.env);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /unchanged checkout/);
+  } finally {
+    rmSync(injected);
+  }
+});
+
+test("environment preflight rejects cross-environment Convex before delivery", (context) => {
+  const mock = mockDelivery(context, "staging");
+  const result = run("mobile-release", ["validate-environment"], {
+    ...mock.env,
+    EXPO_PUBLIC_CONVEX_URL: config.productionConvexUrl,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /selected environment/);
+  assert.equal(
+    mock
+      .commands()
+      .some((args) => ["build", "update", "submit"].includes(args[2])),
+    false,
+  );
+});
+
+test("automatic staging refuses an older main commit while manual releases remain possible", (context) => {
+  const mock = mockDelivery(context, "staging");
+  writeFileSync(versionFile, JSON.stringify({ expo: { version: "10.0.0" } }));
+  const latestSha = commit("feat: main advances before automatic delivery");
+  git(["update-ref", "refs/remotes/origin/main", latestSha]);
+  git(["checkout", "--detach", sha]);
+  try {
+    const env = {
+      ...mock.env,
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_OUTPUT: join(directory, "outputs"),
+    };
+    for (const action of ["resolve", "deliver"]) {
+      const result = run("mobile-release", [action], env);
+      assert.equal(result.status, 1);
+      assert.match(
+        result.stderr,
+        /Automatic staging requires the latest main commit/,
+      );
+    }
+    const manual = run("mobile-release", ["resolve"], {
+      ...env,
+      GITHUB_EVENT_NAME: "workflow_dispatch",
+    });
+    assert.equal(manual.status, 0, manual.stderr);
+  } finally {
+    git(["update-ref", "refs/remotes/origin/main", sha]);
+  }
 });

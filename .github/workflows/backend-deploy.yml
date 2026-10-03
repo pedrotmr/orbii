@@ -1,17 +1,6 @@
 name: Deploy Convex backend
 
 on:
-  workflow_dispatch:
-    inputs:
-      target_environment:
-        type: choice
-        options: [staging, production]
-        default: staging
-        required: true
-      release_sha:
-        description: Full commit SHA to deploy
-        type: string
-        required: true
   workflow_call:
     inputs:
       target_environment:
@@ -35,16 +24,41 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.target_environment || 'staging' }}
     env:
+      RELEASE_BACKEND_VERIFY_SCRIPT: ${{ github.workspace }}/scripts/releases/backend-record.mjs
       RELEASE_TARGET_ENVIRONMENT: ${{ inputs.target_environment || 'staging' }}
       RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
     steps:
-      - name: Checkout selected commit
+      - name: Checkout trusted main history
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.release_sha || github.sha }}
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify main source
+        id: provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_SHA" =~ ^[a-fA-F0-9]{40}$ ]]; then
+            echo "Select a full 40-character commit SHA." >&2
+            exit 1
+          fi
+          sha=$(git rev-parse --verify "${RELEASE_SHA}^{commit}")
+          if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+            echo "The release commit must be on main." >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Checkout verified source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.provenance.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -71,13 +85,13 @@ jobs:
 
       - name: Deploy Convex production
         if: env.RELEASE_TARGET_ENVIRONMENT == 'production'
-        run: pnpm --filter @orbii/backend run deploy
+        run: pnpm --filter @orbii/backend exec convex deploy --yes --cmd-url-env-var-name RELEASE_BACKEND_URL --cmd 'node "$RELEASE_BACKEND_VERIFY_SCRIPT" verify-url'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
       - name: Deploy Convex staging
         if: env.RELEASE_TARGET_ENVIRONMENT == 'staging'
-        run: pnpm --filter @orbii/backend run deploy
+        run: pnpm --filter @orbii/backend exec convex deploy --yes --cmd-url-env-var-name RELEASE_BACKEND_URL --cmd 'node "$RELEASE_BACKEND_VERIFY_SCRIPT" verify-url'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_DEVELOP }}
 

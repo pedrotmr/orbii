@@ -16,7 +16,13 @@ import {
   validateRelease,
   validateSubmission,
 } from "./guards.mjs";
-import { resolveNotes, resolveSource, runEas, runGit } from "./source.mjs";
+import {
+  assertLatestMainCommit,
+  resolveNotes,
+  resolveSource,
+  runEas,
+  runGit,
+} from "./source.mjs";
 
 const resolve = async () => {
   requireValue(process.env.EXPO_TOKEN, "GitHub EXPO_TOKEN secret");
@@ -26,6 +32,13 @@ const resolve = async () => {
     workflowSha: process.env.GITHUB_SHA,
   });
   validateRelease(source);
+  if (
+    process.env.RELEASE_TARGET_ENVIRONMENT === "staging" &&
+    process.env.GITHUB_EVENT_NAME === "push"
+  ) {
+    assertLatestMainCommit(source.sha);
+  }
+
   if (runGit(["rev-parse", "HEAD"]) !== source.sha) {
     throw new Error("Checkout must match the selected release commit.");
   }
@@ -46,33 +59,12 @@ const resolve = async () => {
   console.log(`Selected ${source.sha}, app version ${source.version}.`);
 };
 
-const deliver = () => {
+const validateEnvironment = () => {
   const environment = process.env.RELEASE_TARGET_ENVIRONMENT;
   if (!["staging", "production"].includes(environment)) {
     throw new Error("Choose staging or production.");
   }
-  const source = {
-    sha: process.env.RELEASE_SHA,
-    version: process.env.RELEASE_VERSION,
-  };
-  validateRelease(source);
-  requireValue(process.env.EXPO_TOKEN, "GitHub EXPO_TOKEN secret");
-  if (
-    runGit(["rev-parse", "HEAD"]) !== source.sha ||
-    runGit(["status", "--porcelain", "--untracked-files=no"])
-  ) {
-    throw new Error(
-      "Delivery requires an unchanged checkout of the selected commit.",
-    );
-  }
   const staging = environment === "staging";
-  const easEnvironment = staging ? "preview" : "production";
-  const profile = staging
-    ? releaseConfig.stagingProfile
-    : releaseConfig.productionProfile;
-  const channel = staging
-    ? releaseConfig.stagingChannel
-    : releaseConfig.productionChannel;
   if (process.env.APP_VARIANT !== (staging ? "preview" : "production")) {
     throw new Error("APP_VARIANT must match the target environment.");
   }
@@ -83,61 +75,26 @@ const deliver = () => {
       stdio: ["ignore", "pipe", "inherit"],
     }),
   );
-  validateContext(app, releaseConfig, environment, source.version, process.env);
-  let delivery = "testflight";
-  if (staging) {
-    const builds = runEas([
-      "build:list",
-      "--platform",
-      "ios",
-      "--status",
-      "finished",
-      "--distribution",
-      "store",
-      "--build-profile",
-      profile,
-      "--app-identifier",
-      releaseConfig.stagingBundleIdentifier,
-      "--channel",
-      channel,
-      "--limit",
-      "1",
-      "--json",
-      "--non-interactive",
-    ]);
-    if (!Array.isArray(builds)) {
-      throw new Error("EAS did not return the staging build list.");
-    }
-    const build = builds[0];
-    let comparison;
-    if (
-      build?.appVersion === source.version &&
-      build.runtime?.version === source.version
-    ) {
-      comparison = runEas([
-        "fingerprint:compare",
-        "--build-id",
-        build.id,
-        "--environment",
-        easEnvironment,
-        "--json",
-        "--non-interactive",
-      ]);
-    }
-    delivery = selectStagingDelivery(
-      build,
-      releaseConfig,
-      source.version,
-      comparison,
-      process.env.STAGING_DELIVERY || "auto",
-    );
-  }
+  validateContext(
+    app,
+    releaseConfig,
+    environment,
+    process.env.RELEASE_VERSION,
+    process.env,
+  );
+  console.log(`Validated ${environment} app and service configuration.`);
+};
+
+const deliver = () => {
+  const environment = process.env.RELEASE_TARGET_ENVIRONMENT;
+  const source = {
+    sha: process.env.RELEASE_SHA,
+    version: process.env.RELEASE_VERSION,
+  };
   const record = {
     ...source,
     environment,
-    delivery,
-    notes: resolveNotes(process.env.RELEASE_NOTES, source.sha),
-    stage: "starting",
+    stage: "validating",
     githubRun: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
   };
   const save = () => {
@@ -150,6 +107,85 @@ const deliver = () => {
     );
   };
   try {
+    save();
+    validateRelease(source);
+    if (!["staging", "production"].includes(environment)) {
+      throw new Error("Choose staging or production.");
+    }
+
+    if (environment === "staging" && process.env.GITHUB_EVENT_NAME === "push") {
+      assertLatestMainCommit(source.sha);
+    }
+    requireValue(process.env.EXPO_TOKEN, "GitHub EXPO_TOKEN secret");
+    if (
+      runGit(["rev-parse", "HEAD"]) !== source.sha ||
+      runGit(["status", "--porcelain", "--untracked-files=all"])
+    ) {
+      throw new Error(
+        "Delivery requires an unchanged checkout of the selected commit.",
+      );
+    }
+    validateEnvironment();
+    const staging = environment === "staging";
+    const easEnvironment = staging ? "preview" : "production";
+    const profile = staging
+      ? releaseConfig.stagingProfile
+      : releaseConfig.productionProfile;
+    const channel = staging
+      ? releaseConfig.stagingChannel
+      : releaseConfig.productionChannel;
+    let delivery = "testflight";
+    if (staging) {
+      const builds = runEas([
+        "build:list",
+        "--platform",
+        "ios",
+        "--status",
+        "finished",
+        "--distribution",
+        "store",
+        "--build-profile",
+        profile,
+        "--app-identifier",
+        releaseConfig.stagingBundleIdentifier,
+        "--channel",
+        channel,
+        "--limit",
+        "1",
+        "--json",
+        "--non-interactive",
+      ]);
+      if (!Array.isArray(builds)) {
+        throw new Error("EAS did not return the staging build list.");
+      }
+      const build = builds[0];
+      let comparison;
+      if (
+        build?.appVersion === source.version &&
+        build.runtime?.version === source.version
+      ) {
+        comparison = runEas([
+          "fingerprint:compare",
+          "--build-id",
+          build.id,
+          "--environment",
+          easEnvironment,
+          "--json",
+          "--non-interactive",
+        ]);
+      }
+      delivery = selectStagingDelivery(
+        build,
+        releaseConfig,
+        source.version,
+        comparison,
+        process.env.STAGING_DELIVERY || "auto",
+      );
+    }
+    record.delivery = delivery;
+    record.notes = resolveNotes(process.env.RELEASE_NOTES, source.sha);
+    record.stage = "starting";
+
     save();
     if (delivery === "update") {
       validateChannel(
@@ -219,6 +255,7 @@ const deliver = () => {
   } catch (error) {
     record.failedAt = record.stage;
     record.stage = "failed";
+    record.error = error.message;
     throw error;
   } finally {
     save();
@@ -229,10 +266,12 @@ const deliver = () => {
 try {
   if (process.argv[2] === "resolve") {
     await resolve();
+  } else if (process.argv[2] === "validate-environment") {
+    validateEnvironment();
   } else if (process.argv[2] === "deliver") {
     deliver();
   } else {
-    throw new Error("Expected resolve or deliver.");
+    throw new Error("Expected resolve, validate-environment, or deliver.");
   }
 } catch (error) {
   console.error(error.message);

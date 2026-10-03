@@ -38,6 +38,11 @@ export const readCommittedVersion = async (
           `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
         )
       ).default;
+  if (!config || typeof config !== "object" || Array.isArray(config)) {
+    throw new Error(
+      "The version file must be JSON or a self-contained JavaScript Expo object; function configs must keep the version in app.json.",
+    );
+  }
   const version = config?.expo?.version;
   if (!/^\d+\.\d+\.\d+$/.test(version ?? "")) {
     throw new Error(
@@ -47,27 +52,53 @@ export const readCommittedVersion = async (
   return version;
 };
 
+export const assertMainCommit = (sha, git = runGit) => {
+  if (!/^[a-f\d]{40}$/i.test(sha ?? "")) {
+    throw new Error("Select a full 40-character commit SHA.");
+  }
+  const mainRef = `refs/remotes/${releaseConfig.gitRemote}/${releaseConfig.defaultBranch}`;
+  try {
+    git(["merge-base", "--is-ancestor", sha.toLowerCase(), mainRef]);
+  } catch {
+    throw new Error(
+      `The release commit must be on ${releaseConfig.defaultBranch}. Fetch full main history before verifying.`,
+    );
+  }
+};
+
+export const assertLatestMainCommit = (sha, git = runGit) => {
+  const mainSha = git([
+    "rev-parse",
+    `refs/remotes/${releaseConfig.gitRemote}/${releaseConfig.defaultBranch}`,
+  ]);
+  if (sha.toLowerCase() !== mainSha.toLowerCase()) {
+    throw new Error(
+      "Automatic staging requires the latest main commit; rerun staging manually to select an older revision.",
+    );
+  }
+};
+
 export const resolveSource = async (
   { ref, version, dryRun = false, workflowSha },
   { git = runGit, readVersion = readCommittedVersion } = {},
 ) => {
-  let selectedRef = ref || workflowSha;
-  if (!selectedRef) {
-    if (!dryRun) {
-      git([
-        "fetch",
-        "--no-tags",
-        releaseConfig.gitRemote,
-        `+refs/heads/${releaseConfig.defaultBranch}:refs/remotes/${releaseConfig.gitRemote}/${releaseConfig.defaultBranch}`,
-      ]);
-    }
-    selectedRef = `refs/remotes/${releaseConfig.gitRemote}/${releaseConfig.defaultBranch}`;
-  }
-
+  const mainRef = `refs/remotes/${releaseConfig.gitRemote}/${releaseConfig.defaultBranch}`;
+  const selectedRef = ref || workflowSha || mainRef;
   if (selectedRef.startsWith("-")) {
     throw new Error("The release ref cannot start with a dash.");
   }
+
+  // CI checkout fetched authenticated history; local live commands refresh main.
+  if (!dryRun && !workflowSha) {
+    git([
+      "fetch",
+      "--no-tags",
+      releaseConfig.gitRemote,
+      `+refs/heads/${releaseConfig.defaultBranch}:${mainRef}`,
+    ]);
+  }
   const sha = git(["rev-parse", "--verify", `${selectedRef}^{commit}`]);
+  assertMainCommit(sha, git);
   const committedVersion = await readVersion(sha, git);
   if (version && version !== committedVersion) {
     throw new Error(

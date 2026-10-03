@@ -12,5 +12,7 @@
   "stagingWorkflow": "mobile-staging.yml",
   "stagingProfile": "preview-testflight",
   "stagingChannel": "preview",
-  "stagingBundleIdentifier": "app.orbii.mobile.dev"
+  "stagingBundleIdentifier": "app.orbii.mobile.dev",
+  "stagingConvexUrl": "https://posh-otter-652.convex.cloud",
+  "productionConvexUrl": ""
 }

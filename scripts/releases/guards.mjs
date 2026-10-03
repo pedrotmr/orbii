@@ -98,18 +98,13 @@ export const validateContext = (app, config, environment, version, env) => {
       "Expo config must match the selected app identity, version, and runtime.",
     );
   }
-  const url = requireValue(env.EXPO_PUBLIC_CONVEX_URL, "Convex URL");
+  validateBackendUrl(env.EXPO_PUBLIC_CONVEX_URL, config, environment);
   const key = requireValue(
     env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
     "Clerk publishable key",
   );
-  if (
-    new URL(url).protocol !== "https:" ||
-    !key.startsWith(staging ? "pk_test_" : "pk_live_")
-  ) {
-    throw new Error(
-      "Services must use HTTPS and the matching test/live Clerk instance.",
-    );
+  if (!key.startsWith(staging ? "pk_test_" : "pk_live_")) {
+    throw new Error("Services must use the matching test/live Clerk instance.");
   }
 };
 
@@ -125,6 +120,30 @@ export const validateSubmission = (eas, config, environment) => {
   if (!/^\d+$/.test(appId ?? "")) {
     throw new Error(
       `Set submit.${profile}.ios.ascAppId before deploying the backend.`,
+    );
+  }
+};
+
+export const validateBackendUrl = (url, config, environment) => {
+  if (!["staging", "production"].includes(environment)) {
+    throw new Error("Choose staging or production.");
+  }
+  const expected = requireValue(
+    environment === "staging"
+      ? config.stagingConvexUrl
+      : config.productionConvexUrl,
+    `${environment} Convex URL in release.config.json`,
+  );
+  if (config.stagingConvexUrl === config.productionConvexUrl) {
+    throw new Error("Staging and production must use different deployments.");
+  }
+
+  if (
+    !/^https:\/\/[a-z0-9-]+\.convex\.cloud$/.test(expected) ||
+    url !== expected
+  ) {
+    throw new Error(
+      "Convex URL must match the selected environment's configured deployment.",
     );
   }
 };

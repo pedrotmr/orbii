@@ -30,6 +30,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Check release tooling formatting
+        run: pnpm exec prettier --check scripts/releases .github/workflows
+
       - name: Lint
         run: pnpm lint
 

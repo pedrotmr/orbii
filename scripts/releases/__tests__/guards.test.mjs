@@ -11,6 +11,8 @@ const config = {
   easProjectId: "project",
   stagingBundleIdentifier: "app.dev",
   bundleIdentifier: "app.prod",
+  stagingConvexUrl: "https://test.convex.cloud",
+  productionConvexUrl: "https://production.convex.cloud",
 };
 const app = {
   ios: { bundleIdentifier: "app.dev" },
@@ -91,4 +93,54 @@ test("submission app IDs must exist before backend deployment", () => {
     /before deploying/,
   );
   assert.throws(() => validateSubmission(eas, profiles, "other"), /Choose/);
+});
+
+test("Convex targets are pinned separately and missing production setup fails closed", () => {
+  const productionApp = { ...app, ios: { bundleIdentifier: "app.prod" } };
+  assert.throws(
+    () =>
+      validateContext(app, config, "staging", "1.2.3", {
+        ...env,
+        EXPO_PUBLIC_CONVEX_URL: config.productionConvexUrl,
+      }),
+    /selected environment/,
+  );
+  assert.throws(
+    () =>
+      validateContext(productionApp, config, "production", "1.2.3", {
+        ...env,
+        EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_example",
+      }),
+    /selected environment/,
+  );
+  assert.throws(
+    () =>
+      validateContext(
+        productionApp,
+        { ...config, productionConvexUrl: "" },
+        "production",
+        "1.2.3",
+        {
+          ...env,
+          EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_example",
+        },
+      ),
+    /production Convex URL/,
+  );
+  assert.throws(
+    () =>
+      validateContext(
+        app,
+        { ...config, productionConvexUrl: config.stagingConvexUrl },
+        "staging",
+        "1.2.3",
+        env,
+      ),
+    /different deployments/,
+  );
+  validateContext(productionApp, config, "production", "1.2.3", {
+    ...env,
+    EXPO_PUBLIC_CONVEX_URL: config.productionConvexUrl,
+    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_example",
+  });
 });

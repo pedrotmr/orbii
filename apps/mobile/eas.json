@@ -36,7 +36,8 @@
       "extends": "preview",
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "preview-simulator"
     },
     "preview-testflight": {
       "extends": "preview",
