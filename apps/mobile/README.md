@@ -79,6 +79,21 @@ Orbii uses two iOS app identities so the development/TestFlight app and the App 
 
 The production identifiers preserve the current app ID. The widget extension and app group are generated from each app's bundle ID, keeping widget data separate too. `preview-testflight` follows Mira La Cancha's staging TestFlight profile naming. Orbii pins Node 22.13.0 because that is the oldest supported Node version in this repository; its pnpm version matches Mira at 10.33.0.
 
+### Release to TestFlight
+
+Run these commands from the repository root after the workflows are merged to `main`:
+
+```bash
+pnpm mobile:testflight:staging
+pnpm mobile:testflight:production
+```
+
+Each command dispatches its named GitHub Actions workflow on pushed `main`; it does not upload the local checkout. Staging builds Orbii Dev with the `preview-testflight` profile and submits it to TestFlight. Production uses the separate `production` profile. Apple App Review and public release remain manual in App Store Connect.
+
+Before dispatching staging, install and authenticate GitHub CLI for this repository (`gh auth status`) and add `EXPO_TOKEN` as a GitHub Actions repository secret. A required reviewer can be configured on the GitHub `production` environment as an extra approval gate.
+
+Orbii currently has only its Convex dev deployment. The Dev TestFlight build therefore uses the preview EAS environment with the test Clerk and current dev Convex values; the workflow does not deploy Convex. This is a Dev app for testing, not an isolated staging database. Production delivery is not ready until the production EAS environment has its live Clerk and production Convex values and `submit.production.ios.ascAppId` is set to the production App Store Connect app ID.
+
 ### Setup steps
 
 1. Confirm the existing EAS project link from `apps/mobile`:
@@ -115,23 +130,23 @@ The production identifiers preserve the current app ID. The widget extension and
    pnpm dlx eas-cli@latest build --platform ios --profile development
    ```
 
-8. Build and submit **Orbii Dev** to TestFlight with Mira's staging command:
+8. Dispatch the **Orbii Dev** TestFlight workflow:
 
    ```bash
    pnpm mobile:testflight:staging
    ```
 
-   This runs the `preview-testflight` profile, uses the preview EAS environment and Orbii Dev bundle ID, and automatically submits the completed build.
+   GitHub Actions checks the pushed `main`, runs `pnpm verify`, then uses the `preview-testflight` profile, preview EAS environment, and Orbii Dev bundle ID to build and submit the completed build.
 
-9. After production Convex and Clerk values are ready, build and submit **Orbii**:
+9. After production Convex and Clerk values and the production App Store Connect app ID are ready, dispatch the **Orbii** TestFlight workflow:
 
    ```bash
    pnpm mobile:testflight:production
    ```
 
-   This runs the production profile and submits to Orbii's separate App Store Connect record. TestFlight processing and tester setup happen in App Store Connect.
+   GitHub Actions checks the pushed `main`, runs `pnpm verify`, then uses the production profile and submits to Orbii's separate App Store Connect record. TestFlight processing and tester setup happen in App Store Connect.
 
-The first EAS iOS build may prompt you to sign in to Apple and create/manage signing credentials for each bundle ID. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path; the TestFlight configuration is ready, but confirm native Clerk sign-in on the current SDK 58 preview before inviting users.
+The first EAS iOS build may prompt you to sign in to Apple and create/manage signing credentials for each bundle ID. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path. Confirm native Clerk sign-in on the current SDK 58 preview before inviting TestFlight users; production is not ready until its account setup is complete.
 
 ## Run
 
