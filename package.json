@@ -7,11 +7,14 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
-    "mobile:testflight:staging": "pnpm --filter @orbii/mobile build:testflight:staging",
-    "mobile:testflight:production": "pnpm --filter @orbii/mobile build:testflight:production",
+    "mobile:testflight:staging": "pnpm release:mobile --environment staging",
+    "mobile:testflight:production": "pnpm release:mobile --environment production",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" \"!**/.agents/**\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" \"!**/.agents/**\" --ignore-path .gitignore",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "release:mobile": "node scripts/releases/start-mobile-release.mjs",
+    "release:test": "node --test scripts/releases/__tests__/*.test.mjs",
+    "release:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm release:test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

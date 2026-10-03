@@ -1,0 +1,92 @@
+name: Deploy Convex backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
+      release_sha:
+        description: Full commit SHA to deploy
+        type: string
+        required: true
+  workflow_call:
+    inputs:
+      target_environment:
+        type: string
+        required: true
+      release_sha:
+        type: string
+        required: true
+    secrets:
+      CONVEX_DEPLOY_KEY:
+        required: false
+      CONVEX_DEPLOY_KEY_DEVELOP:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-${{ inputs.target_environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment || 'staging' }}
+    env:
+      RELEASE_TARGET_ENVIRONMENT: ${{ inputs.target_environment || 'staging' }}
+      RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+    steps:
+      - name: Checkout selected commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Verify deployment identity
+        run: node scripts/releases/backend-record.mjs verify
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck backend
+        run: pnpm --filter @orbii/backend typecheck
+
+      - name: Test backend
+        run: pnpm --filter @orbii/backend test
+
+      - name: Deploy Convex production
+        if: env.RELEASE_TARGET_ENVIRONMENT == 'production'
+        run: pnpm --filter @orbii/backend run deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+      - name: Deploy Convex staging
+        if: env.RELEASE_TARGET_ENVIRONMENT == 'staging'
+        run: pnpm --filter @orbii/backend run deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_DEVELOP }}
+
+      - name: Record successful deployment
+        run: node scripts/releases/backend-record.mjs record
+
+      - name: Upload backend release record
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release-${{ inputs.target_environment || 'staging' }}
+          path: .release-artifacts/backend-release.json
+          retention-days: 90

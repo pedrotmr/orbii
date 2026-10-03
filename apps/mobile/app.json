@@ -3,7 +3,7 @@
     "name": "Orbii",
     "slug": "orbii",
     "scheme": "orbii",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -46,6 +46,9 @@
     ],
     "experiments": {
       "reactCompiler": true
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cebd63af-63fc-4c5a-a302-dbae0bdcd6e8"
     }
   }
 }

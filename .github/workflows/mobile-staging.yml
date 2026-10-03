@@ -1,0 +1,107 @@
+name: Deliver staging app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "scripts/releases/**"
+      - "release.config.json"
+      - ".github/workflows/mobile-staging.yml"
+      - ".github/workflows/backend-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional commit SHA; defaults to the selected main commit
+        type: string
+      delivery:
+        type: choice
+        options: [auto, testflight]
+        default: auto
+      notes:
+        description: Optional notes; defaults to the selected commit subject
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-staging
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      version: ${{ steps.source.outputs.version }}
+    env:
+      RELEASE_TARGET_ENVIRONMENT: staging
+      RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - name: Resolve exact source and committed version
+        id: source
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: node scripts/releases/mobile-release.mjs resolve
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release:check
+
+  backend:
+    needs: [validate]
+    uses: ./.github/workflows/backend-deploy.yml
+    with:
+      target_environment: staging
+      release_sha: ${{ needs.validate.outputs.sha }}
+    secrets:
+      CONVEX_DEPLOY_KEY_DEVELOP: ${{ secrets.CONVEX_DEPLOY_KEY_DEVELOP }}
+
+  mobile:
+    needs: [validate, backend]
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 180
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      APP_VARIANT: preview
+      RELEASE_TARGET_ENVIRONMENT: staging
+      RELEASE_SHA: ${{ needs.validate.outputs.sha }}
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      RELEASE_NOTES: ${{ inputs.notes }}
+      STAGING_DELIVERY: ${{ inputs.delivery || 'auto' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Deliver the checked commit using the matching EAS environment
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24.8.0 env:exec preview 'node ../../scripts/releases/mobile-release.mjs deliver' --non-interactive
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: mobile-release-staging
+          path: .release-artifacts/mobile-release.json
+          retention-days: 90
+          if-no-files-found: ignore

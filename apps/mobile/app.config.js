@@ -30,6 +30,7 @@ const withAppVariant = ({ config }) => ({
   owner: "peedrotmr",
   name: variant.name,
   scheme: variant.scheme,
+  runtimeVersion: config.version,
   ios: {
     ...config.ios,
     bundleIdentifier: variant.bundleIdentifier,

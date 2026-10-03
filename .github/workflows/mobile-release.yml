@@ -1,0 +1,94 @@
+name: Production TestFlight release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Optional commit SHA; defaults to the selected main commit
+        type: string
+      app_version:
+        description: Optional version assertion
+        type: string
+      notes:
+        description: Optional notes; defaults to the selected commit subject
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      version: ${{ steps.source.outputs.version }}
+    env:
+      RELEASE_TARGET_ENVIRONMENT: production
+      RELEASE_SHA: ${{ inputs.release_sha || github.sha }}
+      RELEASE_VERSION: ${{ inputs.app_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - name: Resolve exact source and committed version
+        id: source
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: node scripts/releases/mobile-release.mjs resolve
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release:check
+
+  backend:
+    needs: [validate]
+    uses: ./.github/workflows/backend-deploy.yml
+    with:
+      target_environment: production
+      release_sha: ${{ needs.validate.outputs.sha }}
+    secrets:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  mobile:
+    needs: [validate, backend]
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 180
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      APP_VARIANT: production
+      RELEASE_TARGET_ENVIRONMENT: production
+      RELEASE_SHA: ${{ needs.validate.outputs.sha }}
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      RELEASE_NOTES: ${{ inputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Deliver the checked commit using the matching EAS environment
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24.8.0 env:exec production 'node ../../scripts/releases/mobile-release.mjs deliver' --non-interactive
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: mobile-release-production
+          path: .release-artifacts/mobile-release.json
+          retention-days: 90
+          if-no-files-found: ignore

@@ -38,3 +38,5 @@ pnpm --filter @orbii/mobile start
 ```
 
 **Trusted-user Expo Go install:** see [`apps/mobile/README.md`](apps/mobile/README.md).
+
+**Releases:** [Daily commands](docs/deploy/RELEASING.md) · [Account setup](docs/deploy/DEPLOYMENT.md).

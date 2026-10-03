@@ -38,3 +38,6 @@ jobs:
 
       - name: Test mobile and backend
         run: pnpm test
+
+      - name: Test release safeguards
+        run: pnpm release:test
