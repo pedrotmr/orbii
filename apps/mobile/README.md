@@ -146,7 +146,7 @@ Orbii currently has only its Convex dev deployment. The Dev TestFlight build the
 
    GitHub Actions checks the pushed `main`, runs `pnpm verify`, then uses the production profile and submits to Orbii's separate App Store Connect record. TestFlight processing and tester setup happen in App Store Connect.
 
-The first EAS iOS build may prompt you to sign in to Apple and create/manage signing credentials for each bundle ID. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path. Confirm native Clerk sign-in on the current SDK 58 preview before inviting TestFlight users; production is not ready until its account setup is complete.
+Before the first workflow dispatch for each bundle ID, complete any required Apple sign-in and iOS signing-credential setup interactively from `apps/mobile` (for example, with `pnpm dlx eas-cli@24.8.0 credentials -p ios`). The GitHub workflows use `--non-interactive`, so they cannot answer EAS setup prompts. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path. Confirm native Clerk sign-in on the current SDK 58 preview before inviting TestFlight users; production is not ready until its account setup is complete.
 
 ## Run
 
