@@ -39,7 +39,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+          if [[ -z "$BEFORE_SHA" || "$BEFORE_SHA" =~ ^0+$ ]]; then
             changed_files="$(git show --format= --name-only "$AFTER_SHA")"
           else
             changed_files="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")"
@@ -56,7 +56,7 @@ jobs:
             esac
 
             case "$path" in
-              apps/mobile/app.config.js|apps/mobile/app.json|apps/mobile/eas.json|apps/mobile/package.json|apps/mobile/plugins/*|apps/mobile/ios/*|apps/mobile/android/*|packages/*/package.json|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+              apps/mobile/app.config.js|apps/mobile/app.json|apps/mobile/eas.json|apps/mobile/package.json|apps/mobile/plugins/*|apps/mobile/ios/*|apps/mobile/android/*|packages/tokens/package.json|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
                 native_changed=true
                 ;;
             esac

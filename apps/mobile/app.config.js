@@ -32,7 +32,7 @@ const withAppVariant = ({ config }) => ({
   name: variant.name,
   scheme: variant.scheme,
   runtimeVersion: {
-    policy: "appVersion",
+    policy: "fingerprint",
   },
   updates: {
     ...config.updates,
