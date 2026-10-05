@@ -8,6 +8,7 @@ on:
       - apps/mobile/**
       - packages/tokens/**
       - packages/backend/src/**
+      - packages/backend/convex/lib/**
       - packages/backend/convex/lib.ts
       - packages/backend/convex/_generated/api.*
       - packages/backend/package.json
@@ -17,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: orbii-staging-release
@@ -40,13 +42,27 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          if [[ -z "$BEFORE_SHA" || "$BEFORE_SHA" =~ ^0+$ ]]; then
-            changed_files="$(git show --format= --name-only "$AFTER_SHA")"
-          else
+          # GitHub keeps only one pending run per concurrency group. Compare
+          # with the last successful delivery so coalesced pushes are included.
+          last_success_sha="$(
+            curl --fail --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/mobile-staging-update.yml/runs?branch=main&status=success&per_page=100" \
+              | jq -r '.workflow_runs[0].head_sha // empty'
+          )"
+
+          if [[ -n "$last_success_sha" ]] && git cat-file -e "$last_success_sha^{commit}" 2>/dev/null; then
+            changed_files="$(git diff --name-only "$last_success_sha" "$AFTER_SHA")"
+          elif [[ -n "$BEFORE_SHA" && ! "$BEFORE_SHA" =~ ^0+$ ]] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
             changed_files="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")"
+          else
+            changed_files="$(git ls-tree -r --name-only "$AFTER_SHA")"
           fi
 
           mobile_changed=false
@@ -54,7 +70,7 @@ jobs:
 
           while IFS= read -r path; do
             case "$path" in
-              apps/mobile/*|packages/tokens/*|packages/backend/src/*|packages/backend/convex/lib.ts|packages/backend/convex/_generated/api.*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+              apps/mobile/*|packages/tokens/*|packages/backend/src/*|packages/backend/convex/lib/*|packages/backend/convex/lib.ts|packages/backend/convex/_generated/api.*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
                 mobile_changed=true
                 ;;
             esac
