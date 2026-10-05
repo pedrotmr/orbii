@@ -1,0 +1,91 @@
+name: Update Orbii Dev app
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - apps/mobile/**
+      - packages/tokens/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orbii-staging-release
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Classify changes
+        id: changes
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            changed_files="$(git show --format= --name-only "$AFTER_SHA")"
+          else
+            changed_files="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")"
+          fi
+
+          mobile_changed=false
+          native_changed=false
+
+          while IFS= read -r path; do
+            case "$path" in
+              apps/mobile/*|packages/tokens/*|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+                mobile_changed=true
+                ;;
+            esac
+
+            case "$path" in
+              apps/mobile/app.config.js|apps/mobile/app.json|apps/mobile/eas.json|apps/mobile/package.json|apps/mobile/plugins/*|apps/mobile/ios/*|apps/mobile/android/*|packages/*/package.json|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+                native_changed=true
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          echo "mobile_changed=$mobile_changed" >> "$GITHUB_OUTPUT"
+          echo "native_changed=$native_changed" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify project
+        run: pnpm verify
+
+      - name: Publish Orbii Dev app update
+        if: ${{ steps.changes.outputs.mobile_changed == 'true' && steps.changes.outputs.native_changed == 'false' }}
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24.8.0 update --channel preview --environment preview --platform all --message "main ${GITHUB_SHA:0:7}" --non-interactive
+        env:
+          APP_VARIANT: preview
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

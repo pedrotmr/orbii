@@ -1,4 +1,5 @@
 const appVariant = process.env.APP_VARIANT ?? "development";
+const easProjectId = "cebd63af-63fc-4c5a-a302-dbae0bdcd6e8";
 
 const variants = {
   development: {
@@ -30,6 +31,13 @@ const withAppVariant = ({ config }) => ({
   owner: "peedrotmr",
   name: variant.name,
   scheme: variant.scheme,
+  runtimeVersion: {
+    policy: "appVersion",
+  },
+  updates: {
+    ...config.updates,
+    url: `https://u.expo.dev/${easProjectId}`,
+  },
   ios: {
     ...config.ios,
     bundleIdentifier: variant.bundleIdentifier,
@@ -43,7 +51,7 @@ const withAppVariant = ({ config }) => ({
     appVariant,
     eas: {
       ...config.extra?.eas,
-      projectId: "cebd63af-63fc-4c5a-a302-dbae0bdcd6e8",
+      projectId: easProjectId,
     },
   },
 });
