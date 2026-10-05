@@ -17,6 +17,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "environment": "preview",
       "autoIncrement": true,
       "node": "22.13.0",
@@ -43,6 +44,7 @@
     },
     "production": {
       "distribution": "store",
+      "channel": "production",
       "environment": "production",
       "autoIncrement": true,
       "node": "22.13.0",

@@ -7,11 +7,12 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
-    "mobile:testflight:staging": "pnpm --filter @orbii/mobile build:testflight:staging",
-    "mobile:testflight:production": "pnpm --filter @orbii/mobile build:testflight:production",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" \"!**/.agents/**\" --ignore-path .gitignore",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" \"!**/.agents/**\" --ignore-path .gitignore",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "mobile:testflight:staging": "gh workflow run mobile-staging.yml --ref main",
+    "mobile:testflight:production": "gh workflow run mobile-release.yml --ref main",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" .github/workflows \"!**/.agents/**\" --ignore-path .gitignore --ignore-path apps/mobile/.gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" .github/workflows \"!**/.agents/**\" --ignore-path .gitignore --ignore-path apps/mobile/.gitignore",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

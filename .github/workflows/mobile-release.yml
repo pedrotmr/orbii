@@ -1,0 +1,53 @@
+name: Production TestFlight release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orbii-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify project
+        run: pnpm verify
+
+      - name: Confirm production App Store Connect app is configured
+        run: >-
+          node -e "const appId = require('./apps/mobile/eas.json').submit?.production?.ios?.ascAppId;
+          if (!/^\\d+$/.test(String(appId ?? ''))) {
+          throw new Error('Set submit.production.ios.ascAppId to a numeric Apple ID before production release');
+          }"
+
+      - name: Build and submit Orbii to TestFlight
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24.8.0 build --platform ios --profile production --auto-submit --wait --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
