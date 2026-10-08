@@ -1,4 +1,3 @@
-// Three visual identity directions, switchable via ?variant=A|B|C on this throwaway route.
 import { useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import BrandIdentityLockup from "@/components/BrandIdentityLockup";
@@ -12,6 +11,13 @@ interface DirectionDetails {
   direction: BrandDirection;
   name: string;
   description: string;
+  tagline: string;
+  palette: readonly PaletteColor[];
+}
+
+interface PaletteColor {
+  name: string;
+  hex: string;
 }
 
 const DIRECTIONS = [
@@ -20,20 +26,84 @@ const DIRECTIONS = [
     name: "Return loop",
     description:
       "One open loop for the daily return, drawn as a single confident stroke.",
+    tagline: "Come back to what matters.",
+    palette: [
+      { name: "Fog", hex: "#F3F6F5" },
+      { name: "Pine", hex: "#183D3B" },
+      { name: "Coral", hex: "#F06C57" },
+      { name: "Teal", hex: "#71B8AD" },
+      { name: "White", hex: "#FFFFFF" },
+    ],
   },
   {
     direction: "B",
     name: "Focus pair",
     description:
       "Two upright strokes echo the double i in Orbii and the small set chosen for today.",
+    tagline: "A little focus, every day.",
+    palette: [
+      { name: "Midnight", hex: "#15253D" },
+      { name: "Warm white", hex: "#F5F3ED" },
+      { name: "Sky", hex: "#7AC4D8" },
+      { name: "Persimmon", hex: "#F26E4B" },
+      { name: "Ink", hex: "#18202A" },
+    ],
   },
   {
     direction: "C",
-    name: "Focus window",
+    name: "Focus aperture",
     description:
-      "Open corners frame one coral choice: a quiet sign for giving a few habits your attention.",
+      "Four open corners frame one choice and leave the rest of life in view.",
+    tagline: "Make room for a few.",
+    palette: [
+      { name: "Chalk", hex: "#F4F0E6" },
+      { name: "Cobalt", hex: "#2858D8" },
+      { name: "Graphite", hex: "#20242D" },
+      { name: "Tangerine", hex: "#EE704E" },
+      { name: "Cornflower", hex: "#B8C9F2" },
+    ],
+  },
+  {
+    direction: "D",
+    name: "Handful",
+    description:
+      "Five small forms become a chosen handful, with one bright habit lifted forward.",
+    tagline: "Choose what fits today.",
+    palette: [
+      { name: "Evergreen", hex: "#173D34" },
+      { name: "Bone", hex: "#F2EEE2" },
+      { name: "Citron", hex: "#D7E45A" },
+      { name: "Clay", hex: "#D9785D" },
+      { name: "Sage", hex: "#A8B9A6" },
+    ],
+  },
+  {
+    direction: "E",
+    name: "Threshold",
+    description:
+      "An open doorway and a small step mark the start of a daily ritual.",
+    tagline: "Begin with one.",
+    palette: [
+      { name: "Aubergine", hex: "#29253D" },
+      { name: "Porcelain", hex: "#F6F0E5" },
+      { name: "Apricot", hex: "#FF865E" },
+      { name: "Marigold", hex: "#E7BD52" },
+      { name: "Blue gray", hex: "#8297A7" },
+    ],
   },
 ] as const satisfies readonly DirectionDetails[];
+
+const BRANDKIT_IMAGES: Record<BrandDirection, string> = {
+  A: new URL("../../screenshots/brandkit-a-return-loop.jpg", import.meta.url)
+    .href,
+  B: new URL("../../screenshots/brandkit-b-focus-pair.jpg", import.meta.url)
+    .href,
+  C: new URL("../../screenshots/brandkit-c-focus-aperture.jpg", import.meta.url)
+    .href,
+  D: new URL("../../screenshots/brandkit-d-handful.jpg", import.meta.url).href,
+  E: new URL("../../screenshots/brandkit-e-threshold.jpg", import.meta.url)
+    .href,
+};
 
 export default function BrandIdentityPrototype() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,37 +155,45 @@ export default function BrandIdentityPrototype() {
   }, [move]);
 
   return (
-    <main className="identity-prototype">
+    <main
+      className={`identity-prototype identity-prototype--${direction.toLowerCase()}`}
+    >
       <div className="identity-prototype__inner">
         <header className="identity-header">
           <div className="identity-header__copy">
             <p className="identity-header__label">Orbii · visual identity</p>
-            <h1>Make Orbii easy to spot.</h1>
+            <h1>Five ways to make Orbii memorable.</h1>
             <p>
-              Three directions for the mark and wordmark, shown in the app icon,
-              sign-in, and splash. Use the arrows or ← / → to compare.
+              Five distinct brand worlds, shown in the app icon, welcome screen,
+              and splash. Use the arrows or ← / → to compare.
             </p>
+            <BrandIdentitySwitcher
+              direction={direction}
+              name={selected.name}
+              onMove={move}
+            />
           </div>
-          <aside className="identity-palette" aria-label="Current color tokens">
-            <p>Colors held steady</p>
+          <aside
+            className="identity-palette"
+            aria-label="Explored color palette"
+          >
+            <p>Palette exploration</p>
             <div className="identity-palette__swatches">
-              <span
-                className="identity-swatch identity-swatch--mist"
-                title="Mist background"
-              />
-              <span
-                className="identity-swatch identity-swatch--coral"
-                title="Coral primary"
-              />
-              <span
-                className="identity-swatch identity-swatch--teal"
-                title="Teal accent"
-              />
-              <span>Current tokens</span>
+              {selected.palette.map((color) => (
+                <div
+                  className="identity-palette__color"
+                  key={color.name}
+                  title={`${color.name} ${color.hex}`}
+                >
+                  <span
+                    className="identity-swatch"
+                    style={{ backgroundColor: color.hex }}
+                  />
+                  <small>{color.hex}</small>
+                </div>
+              ))}
             </div>
-            <small>
-              Palette changes can be decided after choosing a direction.
-            </small>
+            <small>{selected.name} · five coordinated colors</small>
           </aside>
         </header>
 
@@ -130,6 +208,7 @@ export default function BrandIdentityPrototype() {
             <p>Direction {direction}</p>
             <h2 id="direction-title">{selected.name}</h2>
             <span>{selected.description}</span>
+            <small>{selected.tagline}</small>
           </div>
         </section>
 
@@ -161,8 +240,8 @@ export default function BrandIdentityPrototype() {
 
           <article className="identity-preview">
             <header className="identity-preview__heading">
-              <h3>Sign-in screen</h3>
-              <span>Current welcome copy</span>
+              <h3>Welcome screen</h3>
+              <span>First impression</span>
             </header>
             <div className="identity-device identity-device--signin">
               <div className="identity-device__status">
@@ -224,10 +303,7 @@ export default function BrandIdentityPrototype() {
               </div>
               <div className="identity-splash__center">
                 <BrandIdentityLockup direction={direction} scale="splash" />
-                <p>
-                  Good habits.
-                  <br />A little at a time.
-                </p>
+                <p>{selected.tagline}</p>
               </div>
               <div className="identity-splash__foot">
                 A little focus, every day
@@ -236,22 +312,34 @@ export default function BrandIdentityPrototype() {
           </article>
         </section>
 
+        <section className="identity-brandkit" aria-labelledby="brandkit-title">
+          <header className="identity-brandkit__header">
+            <div>
+              <p>Brandkit board · Direction {direction}</p>
+              <h2 id="brandkit-title">{selected.name}</h2>
+            </div>
+            <span>{selected.tagline}</span>
+          </header>
+          <figure className="identity-brandkit__figure">
+            <img
+              alt={`Orbii ${selected.name} brand identity board with logo, app, palette, type, and image direction`}
+              src={BRANDKIT_IMAGES[direction]}
+            />
+            <figcaption>
+              Visual concept board · logo geometry is refined separately in the
+              app previews above.
+            </figcaption>
+          </figure>
+        </section>
+
         <section className="identity-question" aria-label="Review questions">
           <p>
-            <strong>Your call:</strong> Which direction should Orbii use?
+            <strong>Your call:</strong> Which identity direction feels most like
+            Orbii?
           </p>
-          <p>
-            Should the existing Mist, Coral, and Teal color tokens stay as they
-            are?
-          </p>
+          <p>Choose a direction and palette, or combine details across them.</p>
         </section>
       </div>
-
-      <BrandIdentitySwitcher
-        direction={direction}
-        name={selected.name}
-        onMove={move}
-      />
     </main>
   );
 }

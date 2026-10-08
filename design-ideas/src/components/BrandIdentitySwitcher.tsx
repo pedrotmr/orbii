@@ -6,6 +6,8 @@ interface BrandIdentitySwitcherProps {
   onMove: (offset: number) => void;
 }
 
+const DIRECTIONS: BrandDirection[] = ["A", "B", "C", "D", "E"];
+
 export default function BrandIdentitySwitcher({
   direction,
   name,
@@ -24,6 +26,7 @@ export default function BrandIdentitySwitcher({
       <div aria-live="polite" className="identity-switcher__label">
         <span>{direction}</span>
         <span>{name}</span>
+        <small>{DIRECTIONS.indexOf(direction) + 1} / 5</small>
       </div>
       <button
         aria-label="Next brand direction"

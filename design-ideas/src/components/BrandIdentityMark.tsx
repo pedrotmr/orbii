@@ -1,4 +1,4 @@
-export type BrandDirection = "A" | "B" | "C";
+export type BrandDirection = "A" | "B" | "C" | "D" | "E";
 
 interface BrandIdentityMarkProps {
   direction: BrandDirection;
@@ -24,11 +24,19 @@ export default function BrandIdentityMark({
           cx="32"
           cy="32"
           r="21"
-          stroke="var(--mark-main, var(--primary))"
+          stroke="var(--direction-ink, var(--ink))"
           strokeWidth="7"
           strokeDasharray="110 24"
           strokeLinecap="round"
           transform="rotate(-34 32 32)"
+        />
+      ) : null}
+      {direction === "A" ? (
+        <circle
+          cx="47"
+          cy="16"
+          r="4.5"
+          fill="var(--direction-primary, var(--primary))"
         />
       ) : null}
       {direction === "B" ? (
@@ -65,7 +73,7 @@ export default function BrandIdentityMark({
       ) : null}
       {direction === "C" ? (
         <g
-          stroke="var(--mark-secondary, var(--accent))"
+          stroke="var(--direction-ink, var(--ink))"
           strokeWidth="6"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -77,8 +85,34 @@ export default function BrandIdentityMark({
             width="14"
             height="14"
             rx="4"
-            fill="var(--mark-main, var(--primary))"
+            fill="var(--direction-primary, var(--primary))"
             stroke="none"
+          />
+        </g>
+      ) : null}
+      {direction === "D" ? (
+        <g strokeLinecap="round" strokeWidth="8.5">
+          <path
+            d="M10 44 21 30M20 48l8-20M32 47V21M44 48l-8-20"
+            stroke="var(--direction-ink, var(--ink))"
+          />
+          <path d="M54 44 43 30" stroke="var(--mark-main, var(--primary))" />
+        </g>
+      ) : null}
+      {direction === "E" ? (
+        <g strokeLinecap="round" strokeLinejoin="round">
+          <path
+            d="M18 53V30a14 14 0 0 1 28 0v23"
+            stroke="var(--direction-ink, var(--ink))"
+            strokeWidth="8"
+          />
+          <rect
+            x="29"
+            y="47"
+            width="18"
+            height="8"
+            rx="3"
+            fill="var(--direction-primary, var(--primary))"
           />
         </g>
       ) : null}
