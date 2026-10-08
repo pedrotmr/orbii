@@ -60,6 +60,12 @@ export function AppShell() {
         >
           Design system
         </NavLink>
+        <NavLink
+          to="/prototype/points-rewards"
+          className={({ isActive }) => `demo-link${isActive ? " is-on" : ""}`}
+        >
+          Points &amp; rewards
+        </NavLink>
       </aside>
 
       <PhoneFrame mood={mood}>

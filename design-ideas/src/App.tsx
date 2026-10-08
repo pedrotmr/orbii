@@ -7,6 +7,7 @@ import { TodayScreen } from "@/screens/TodayScreen";
 import { OrbitScreen } from "@/screens/OrbitScreen";
 import { SettingsScreen } from "@/screens/SettingsScreen";
 import { DesignSystemPage } from "@/screens/DesignSystemPage";
+import { PointsRewardsPrototypeScreen } from "@/screens/PointsRewardsPrototypeScreen";
 import "@/components/ui.css";
 import "@/styles/global.css";
 
@@ -16,6 +17,10 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/design-system" element={<DesignSystemPage />} />
+          <Route
+            path="/prototype/points-rewards"
+            element={<PointsRewardsPrototypeScreen />}
+          />
           <Route element={<AppShell />}>
             <Route index element={<WelcomeScreen />} />
             <Route path="orbit/setup" element={<SetupScreen />} />
