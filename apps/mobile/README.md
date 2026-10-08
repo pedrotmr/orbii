@@ -161,7 +161,7 @@ pnpm --filter @orbii/backend dev
 Terminal B — Expo:
 
 ```bash
-pnpm --filter @orbii/mobile start -- --go
+pnpm --filter @orbii/mobile start
 ```
 
 This uses the matching SDK 58 preview Expo Go client. The `ios` and `android`

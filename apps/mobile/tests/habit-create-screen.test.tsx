@@ -1,6 +1,7 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Alert } from "react-native";
+import type { HabitInput } from "../src/habits/create/habit-input";
 import HabitCreateScreen from "../src/habits/create/habit-create-screen";
 import { deferred } from "./support/deferred";
 import {
@@ -45,7 +46,7 @@ test("blank names cannot submit from the button or keyboard", async () => {
 
 test("saving sends the trimmed name and suggested symbol, and only closes after success", async () => {
   const pending = deferred();
-  const save = jest.fn(() => pending.promise);
+  const save = jest.fn((_input: HabitInput) => pending.promise);
   await render(<HabitCreateScreen onSave={save} />);
   await enterName("  Take a cold shower  ");
   await press("Add to Orbit");
@@ -103,7 +104,7 @@ test("a failed save keeps the draft, displays an error, and can retry", async ()
 });
 
 test("manual icon and category choices survive renaming and are saved", async () => {
-  const save = jest.fn(async () => {});
+  const save = jest.fn(async (_input: HabitInput) => {});
   await render(<HabitCreateScreen onSave={save} />);
   await enterName("Take a cold shower");
   await press("Change icon, Cold shower");

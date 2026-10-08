@@ -42,7 +42,8 @@
         }
       ],
       "expo-status-bar",
-      "expo-widgets"
+      "expo-widgets",
+      "expo-web-browser"
     ],
     "experiments": {
       "reactCompiler": true
