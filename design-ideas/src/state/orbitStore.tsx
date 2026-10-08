@@ -24,6 +24,7 @@ type State = {
   committedIds: HabitId[];
   completedIds: HabitId[];
   phase: DayPhase;
+  releasedCount: number | null;
   streak: number;
   daysCompleted: number;
   lastCompletedDate: string | null;
@@ -35,6 +36,7 @@ type Action =
   | { type: "SET_CAPACITY"; capacity: number }
   | { type: "SET_OFFER_SIZE"; offerSize: number }
   | { type: "START_REVEAL" }
+  | { type: "REREVEAL" }
   | { type: "TOGGLE_SELECT"; id: HabitId }
   | { type: "COMMIT_TODAY" }
   | { type: "TOGGLE_COMPLETE"; id: HabitId }
@@ -76,6 +78,7 @@ const initialState: State = {
   committedIds: [],
   completedIds: [],
   phase: "idle",
+  releasedCount: null,
   streak: 0,
   daysCompleted: 0,
   lastCompletedDate: null,
@@ -122,10 +125,35 @@ function reducer(state: State, action: Action): State {
         selectedIds: [],
         committedIds: [],
         completedIds: [],
+        releasedCount: null,
+      };
+    }
+    case "REREVEAL": {
+      if (state.phase !== "reveal" && state.phase !== "active") return state;
+      const releasedCount =
+        state.phase === "active"
+          ? state.committedIds.length
+          : state.releasedCount;
+      const underserved = state.habits
+        .map((h) => h.id)
+        .filter((id) => !state.committedIds.includes(id));
+      return {
+        ...state,
+        phase: "reveal",
+        offeredIds: pickOffer(
+          state.habits,
+          state.offerSize,
+          underserved.slice(0, 2),
+        ),
+        selectedIds: [],
+        committedIds: [],
+        completedIds: [],
+        releasedCount,
       };
     }
     case "TOGGLE_SELECT": {
       if (state.phase !== "reveal") return state;
+      if (!state.offeredIds.includes(action.id)) return state;
       const exists = state.selectedIds.includes(action.id);
       if (exists) {
         return {
@@ -133,7 +161,12 @@ function reducer(state: State, action: Action): State {
           selectedIds: state.selectedIds.filter((id) => id !== action.id),
         };
       }
-      if (state.selectedIds.length >= state.capacity) return state;
+      if (
+        state.selectedIds.length >=
+        Math.min(state.offerSize, state.habits.length)
+      ) {
+        return state;
+      }
       return { ...state, selectedIds: [...state.selectedIds, action.id] };
     }
     case "COMMIT_TODAY": {
@@ -143,6 +176,7 @@ function reducer(state: State, action: Action): State {
         phase: "active",
         committedIds: state.selectedIds,
         completedIds: [],
+        releasedCount: null,
       };
     }
     case "TOGGLE_COMPLETE": {
@@ -186,6 +220,7 @@ function reducer(state: State, action: Action): State {
         selectedIds: [],
         committedIds: [],
         completedIds: [],
+        releasedCount: null,
       };
     default:
       return state;
@@ -203,6 +238,7 @@ type OrbitContextValue = {
   setCapacity: (n: number) => void;
   setOfferSize: (n: number) => void;
   startReveal: () => void;
+  rereveal: () => void;
   toggleSelect: (id: HabitId) => void;
   commitToday: () => void;
   toggleComplete: (id: HabitId) => void;
@@ -248,6 +284,7 @@ export function OrbitProvider({ children }: { children: ReactNode }) {
       setOfferSize: (offerSize) =>
         dispatch({ type: "SET_OFFER_SIZE", offerSize }),
       startReveal: () => dispatch({ type: "START_REVEAL" }),
+      rereveal: () => dispatch({ type: "REREVEAL" }),
       toggleSelect: (id) => dispatch({ type: "TOGGLE_SELECT", id }),
       commitToday: () => dispatch({ type: "COMMIT_TODAY" }),
       toggleComplete: (id) => dispatch({ type: "TOGGLE_COMPLETE", id }),

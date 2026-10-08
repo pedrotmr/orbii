@@ -36,7 +36,7 @@ export function SettingsScreen() {
 
         <section className="component-lab">
           <h2 style={{ margin: 0, fontSize: "var(--text-lg)" }}>
-            Daily capacity
+            Usual daily focus
           </h2>
           <p
             style={{
@@ -45,7 +45,7 @@ export function SettingsScreen() {
               fontSize: "var(--text-sm)",
             }}
           >
-            How many habits you aim to commit to each day.
+            A suggested effort level. Today, choose any count from the offer.
           </p>
           <div
             className="segmented"
