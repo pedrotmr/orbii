@@ -61,6 +61,7 @@ interface PrototypeProps {
   selectedIds: string[];
   completedIds: string[];
   balance: number;
+  rewardsEnabled: boolean;
   rewards: Reward[];
   difficulty: Difficulty;
   habitPoints: number;
@@ -80,6 +81,7 @@ interface PrototypeProps {
   onEditReward: (reward: Reward) => void;
   onAddReward: () => void;
   onEditHabit: () => void;
+  onToggleRewards: () => void;
 }
 
 const variants: { key: VariantKey; name: string }[] = [
@@ -118,6 +120,7 @@ export function PointsRewardsPrototypeScreen() {
   const [page, setPage] = useState<Page>("today");
   const [phase, setPhase] = useState<Phase>("offer");
   const [balance, setBalance] = useState(245);
+  const [rewardsEnabled, setRewardsEnabled] = useState(true);
   const [rewards, setRewards] = useState(initialRewards);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
@@ -213,6 +216,13 @@ export function PointsRewardsPrototypeScreen() {
     setPage("today");
   };
 
+  const toggleRewards = () => {
+    setRewardsEnabled((current) => !current);
+    if (page === "rewards") {
+      setPage("more");
+    }
+  };
+
   const chooseDifficulty = (nextDifficulty: Difficulty) => {
     setDifficulty(nextDifficulty);
 
@@ -290,6 +300,7 @@ export function PointsRewardsPrototypeScreen() {
     selectedIds,
     completedIds,
     balance,
+    rewardsEnabled,
     rewards,
     difficulty,
     habitPoints,
@@ -319,6 +330,7 @@ export function PointsRewardsPrototypeScreen() {
     onEditReward: openRewardEditor,
     onAddReward: openNewReward,
     onEditHabit: () => setPage("habit"),
+    onToggleRewards: toggleRewards,
   };
 
   return (
@@ -371,7 +383,9 @@ export function PointsRewardsPrototypeScreen() {
 function VariantA(props: PrototypeProps) {
   const activeTab =
     props.page === "rewards"
-      ? "rewards"
+      ? props.rewardsEnabled
+        ? "rewards"
+        : "more"
       : props.page === "more"
         ? "more"
         : props.page === "orbit" || props.page === "habit"
@@ -381,15 +395,21 @@ function VariantA(props: PrototypeProps) {
   return (
     <>
       {props.page === "today" ? <TodayA {...props} /> : null}
-      {props.page === "rewards" ? <RewardsA {...props} /> : null}
+      {props.page === "rewards" && props.rewardsEnabled ? (
+        <RewardsA {...props} />
+      ) : null}
       {props.page === "orbit" ? <OrbitA {...props} /> : null}
-      {props.page === "more" ? <MoreA {...props} /> : null}
+      {props.page === "more" ||
+      (props.page === "rewards" && !props.rewardsEnabled) ? (
+        <MoreA {...props} />
+      ) : null}
       {props.page === "habit" ? (
         <HabitEditorPage {...props} variant="A" />
       ) : null}
       <BottomNavigation
         variant="A"
         activeTab={activeTab}
+        rewardsEnabled={props.rewardsEnabled}
         onNavigate={props.setPage}
       />
     </>
@@ -1001,17 +1021,32 @@ function MoreA(props: PrototypeProps) {
         subtitle="A few things to make the ritual feel right."
       />
       <div className="pr-settings-list">
+        <button
+          className="pr-settings-toggle"
+          type="button"
+          role="switch"
+          aria-checked={props.rewardsEnabled}
+          aria-label="Rewards tab"
+          onClick={props.onToggleRewards}
+        >
+          <span className="pr-settings-row__icon">
+            <Gift size={18} />
+          </span>
+          <span className="pr-settings-row__copy">
+            <strong>Rewards</strong>
+            <small>Show a dedicated Rewards tab</small>
+          </span>
+          <span
+            className="pr-settings-toggle__switch"
+            data-on={props.rewardsEnabled ? "true" : "false"}
+            aria-hidden="true"
+          />
+        </button>
         <SettingsRow
           icon={<Coins size={18} />}
           title="Habit point values"
           subtitle="Easy 10 · Medium 20 · Hard 30"
           onClick={props.onEditHabit}
-        />
-        <SettingsRow
-          icon={<Gift size={18} />}
-          title="Rewards"
-          subtitle={`${props.rewards.filter((item) => !item.redeemed).length} active goals`}
-          onClick={() => props.setPage("rewards")}
         />
         <SettingsRow
           icon={<CircleHelp size={18} />}
@@ -1325,6 +1360,7 @@ function BottomNavigation({
 }: {
   variant: VariantKey;
   activeTab: string;
+  rewardsEnabled?: boolean;
   onNavigate: (page: Page) => void;
 }) {
   const items =
@@ -1360,13 +1396,17 @@ function BottomNavigation({
             icon: <MoreHorizontal size={18} />,
           },
         ];
+  const visibleItems = items.filter(
+    (item) =>
+      props.variant !== "A" || props.rewardsEnabled || item.page !== "rewards",
+  );
 
   return (
     <nav
       className={`pr-bottom-nav pr-bottom-nav--${props.variant.toLowerCase()}`}
       aria-label="App navigation"
     >
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <button
           type="button"
           key={item.page}
