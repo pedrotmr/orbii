@@ -16,6 +16,16 @@ Convex functions (`users`, `habits`, `day`) persist the same ritual against the 
 
 Mobile reads the same URL via `EXPO_PUBLIC_CONVEX_URL` and calls generated `api` from `@orbii/backend`. Commit `convex/_generated/` so clients typecheck without a live CLI session.
 
+### Habit ordering migration
+
+The `habits.order` field remains optional while existing records are backfilled. After deploying the widened schema and functions, run the migration from `packages/backend`:
+
+```bash
+pnpm exec convex run habits:backfillOrder
+```
+
+The migration processes accounts in batches and skips accounts whose habits already have an order, so rerunning it preserves later manual reorders.
+
 ### Env layout
 
 | File                            | Committed? | Purpose                                                       |

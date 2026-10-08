@@ -18,6 +18,10 @@ jest.mock("react-native-reanimated", () => ({
   useSharedValue: (value: unknown) => ({ value }),
   withTiming: (value: unknown) => value,
 }));
+jest.mock("react-native-draggable-flatlist", () => ({
+  NestableDraggableFlatList: require("./draggable-flatlist").default,
+  NestableScrollContainer: require("react-native").ScrollView,
+}));
 jest.mock(
   "react-native-safe-area-context",
   () => require("react-native-safe-area-context/jest/mock").default,

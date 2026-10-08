@@ -2,17 +2,20 @@ import type { ReactNode } from "react";
 import { type Palette, space } from "@orbii/tokens";
 import { StatusBar } from "expo-status-bar";
 import { KeyboardAvoidingView, ScrollView, StyleSheet } from "react-native";
+import { NestableScrollContainer } from "react-native-draggable-flatlist";
 import { SafeAreaView } from "react-native-screens/experimental";
 import { useThemedStyles } from "../../theme/use-theme";
 
 interface ScreenScaffoldProps {
   children: ReactNode;
   tabbed?: boolean;
+  nestable?: boolean;
 }
 
 export default function ScreenScaffold({
   children,
   tabbed = false,
+  nestable = false,
 }: ScreenScaffoldProps) {
   const styles = useThemedStyles(createStyles);
   return (
@@ -26,15 +29,27 @@ export default function ScreenScaffold({
         style={styles.flex}
         behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="never"
-        >
-          {children}
-        </ScrollView>
+        {nestable ? (
+          <NestableScrollContainer
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="never"
+          >
+            {children}
+          </NestableScrollContainer>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="never"
+          >
+            {children}
+          </ScrollView>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

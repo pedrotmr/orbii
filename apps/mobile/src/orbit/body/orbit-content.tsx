@@ -17,6 +17,7 @@ interface OrbitContentProps {
   showLiveActivityUnsupported?: boolean;
   onRestoreLiveActivity?: () => void;
   onRemove: (id: string) => void;
+  onReorder: (habitKeys: string[]) => void;
 }
 
 export default function OrbitContent({
@@ -27,12 +28,13 @@ export default function OrbitContent({
   showLiveActivityUnsupported,
   onRestoreLiveActivity,
   onRemove,
+  onReorder,
 }: OrbitContentProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const router = useRouter();
   return (
-    <ScreenScaffold tabbed>
+    <ScreenScaffold tabbed nestable>
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>
           Your Orbit
@@ -81,7 +83,15 @@ export default function OrbitContent({
         </Pressable>
       </View>
       {error ? <InlineError message={error} /> : null}
-      <OrbitHabitList habits={habits} busy={busy} onRemove={onRemove} />
+      <OrbitHabitList
+        habits={habits}
+        busy={busy}
+        onRemove={onRemove}
+        onEdit={(habitKey) =>
+          router.push({ pathname: "/habit-create", params: { habitKey } })
+        }
+        onReorder={onReorder}
+      />
       <Text style={styles.note}>
         They all belong here. They don’t all belong on today’s list.
       </Text>

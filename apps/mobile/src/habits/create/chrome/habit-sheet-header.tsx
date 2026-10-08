@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme, useThemedStyles } from "../../../theme/use-theme";
 
 interface HabitSheetHeaderProps {
+  isEditing: boolean;
   choosingIcon: boolean;
   busy: boolean;
   onBack: () => void;
@@ -12,6 +13,7 @@ interface HabitSheetHeaderProps {
 }
 
 export default function HabitSheetHeader({
+  isEditing,
   choosingIcon,
   busy,
   onBack,
@@ -32,14 +34,20 @@ export default function HabitSheetHeader({
         </Pressable>
       ) : null}
       <Text accessibilityRole="header" style={styles.title}>
-        {choosingIcon ? "Choose an icon" : "New habit"}
+        {choosingIcon
+          ? "Choose an icon"
+          : isEditing
+            ? "Edit habit"
+            : "New habit"}
       </Text>
       {choosingIcon ? (
         <View style={styles.control} />
       ) : (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Close habit creation"
+          accessibilityLabel={
+            isEditing ? "Close habit editing" : "Close habit creation"
+          }
           accessibilityState={{ disabled: busy }}
           disabled={busy}
           onPress={onClose}

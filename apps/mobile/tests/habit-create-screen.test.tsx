@@ -1,4 +1,5 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
+import { type Habit } from "@orbii/backend";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Alert } from "react-native";
 import type { HabitInput } from "../src/habits/create/habit-input";
@@ -147,6 +148,27 @@ test("an untouched form closes without a discard prompt", async () => {
   await render(<HabitCreateScreen onSave={jest.fn(async () => {})} />);
   await press("Close habit creation");
   expect(navigatedBack).toHaveBeenCalledTimes(1);
+  expect(Alert.alert).not.toHaveBeenCalled();
+});
+
+test("editing starts with saved values and closes without an untouched-change prompt", async () => {
+  const habit: Habit = {
+    id: "custom-walk",
+    name: "Take a walk",
+    glyph: "symbol:walk",
+    category: "body",
+  };
+
+  await render(
+    <HabitCreateScreen initialHabit={habit} onSave={jest.fn(async () => {})} />,
+  );
+
+  expect(screen.getByText("Edit habit")).toBeOnTheScreen();
+  expect(screen.getByDisplayValue(habit.name)).toBeOnTheScreen();
+  expect(
+    screen.getByRole("button", { name: "Change icon, Walk" }),
+  ).toBeOnTheScreen();
+  await press("Close habit editing");
   expect(Alert.alert).not.toHaveBeenCalled();
 });
 
