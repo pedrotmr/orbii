@@ -4,7 +4,7 @@ Instructions for AI coding agents in this repository.
 
 ## Product
 
-**Orbii** keeps many habits in an Orbit and surfaces a small daily focus set. Users choose 1 through the reveal offer size, commit, and complete — success is “Today’s Orbit complete,” not coverage of the full Orbit. V2 is for the creator + a few trusted users.
+**Orbii** keeps many habits in an Orbit and surfaces a small daily focus set. Users choose from 1 up to the reveal offer size, commit, and complete — success is “Today’s Orbit complete,” not coverage of the full Orbit. V2 is for the creator + a few trusted users.
 
 **Source of truth is GitHub Issues — not markdown trees in this repo.**
 
