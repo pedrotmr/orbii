@@ -4,6 +4,8 @@ import {
   Fragment,
   type ComponentProps,
   type ReactNode,
+  useEffect,
+  useState,
 } from "react";
 import { View } from "react-native";
 
@@ -27,15 +29,28 @@ export default function MockSortableGrid({
   renderItem,
   onDragEnd,
 }: MockSortableGridProps) {
+  const [displayedData, setDisplayedData] = useState(data);
+
+  useEffect(() => {
+    setDisplayedData(data);
+  }, [data]);
+
   const props = {
     testID: "sortable-grid",
-    onDragEnd,
+    onDragEnd: (event: {
+      data: Habit[];
+      fromIndex: number;
+      toIndex: number;
+    }) => {
+      setDisplayedData(event.data);
+      onDragEnd?.(event);
+    },
   } as unknown as ComponentProps<typeof View>;
 
   return createElement(
     View,
     props,
-    data.map((item, index) =>
+    displayedData.map((item, index) =>
       createElement(
         Fragment,
         { key: item.id },

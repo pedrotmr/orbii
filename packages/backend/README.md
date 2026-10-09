@@ -24,7 +24,10 @@ The `habits.order` field remains optional while existing records are backfilled.
 pnpm exec convex run habits:backfillOrder
 ```
 
-The migration processes accounts in batches and skips accounts whose habits already have an order, so rerunning it preserves later manual reorders.
+The migration scans habits in batches, groups them by owner, and assigns order
+in creation-time order. It includes habits even when the owner has no user
+record. Rerunning it skips owners whose habits already have an order, preserving
+later manual reorders.
 
 ### Env layout
 

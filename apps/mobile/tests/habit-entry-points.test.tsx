@@ -35,6 +35,7 @@ test("Orbit opens the creation sheet and displays a newly received habit", async
       habits={[]}
       busy={false}
       error={null}
+      gridResetKey={0}
       onRemove={remove}
       onReorder={reorder}
     />,
@@ -47,6 +48,7 @@ test("Orbit opens the creation sheet and displays a newly received habit", async
       habits={[savedHabit]}
       busy={false}
       error={null}
+      gridResetKey={0}
       onRemove={remove}
       onReorder={reorder}
     />,
@@ -70,6 +72,7 @@ test("Orbit persists the order returned after a drag", async () => {
       habits={[savedHabit, secondHabit]}
       busy={false}
       error={null}
+      gridResetKey={0}
       onRemove={jest.fn()}
       onReorder={reorder}
     />,
@@ -82,6 +85,55 @@ test("Orbit persists the order returned after a drag", async () => {
   });
 
   expect(reorder).toHaveBeenCalledWith([secondHabit.id, savedHabit.id]);
+});
+
+test("Orbit resets its sortable grid when a drag is rejected while busy", async () => {
+  const habits = [savedHabit, secondHabit];
+  const onRemove = jest.fn();
+  const onReorder = jest.fn();
+  const view = await render(
+    <OrbitContent
+      habits={habits}
+      busy={false}
+      error={null}
+      gridResetKey={0}
+      onRemove={onRemove}
+      onReorder={onReorder}
+    />,
+  );
+
+  await fireEvent(screen.getByTestId("sortable-grid"), "dragEnd", {
+    data: [secondHabit, savedHabit],
+    fromIndex: 0,
+    toIndex: 1,
+  });
+
+  expect(
+    screen
+      .getAllByRole("button", { name: /^Edit / })
+      .map((button) => button.props.accessibilityLabel),
+  ).toEqual([`Edit ${secondHabit.name}`, `Edit ${savedHabit.name}`]);
+
+  await view.rerender(
+    <OrbitContent
+      habits={habits}
+      busy
+      error="Another update is in progress. Try reordering again."
+      gridResetKey={1}
+      onRemove={onRemove}
+      onReorder={onReorder}
+    />,
+  );
+
+  expect(
+    screen.getByText("Another update is in progress. Try reordering again."),
+  ).toBeOnTheScreen();
+  expect(
+    screen
+      .getAllByRole("button", { name: /^Edit / })
+      .map((button) => button.props.accessibilityLabel),
+  ).toEqual([`Edit ${savedHabit.name}`, `Edit ${secondHabit.name}`]);
+  expect(onReorder).toHaveBeenCalledWith([secondHabit.id, savedHabit.id]);
 });
 
 test("onboarding opens the same sheet and can continue only after receiving a saved habit", async () => {
@@ -120,6 +172,7 @@ test("both entry points prevent opening a new sheet while their parent is busy",
       habits={[]}
       busy
       error={null}
+      gridResetKey={0}
       onRemove={jest.fn()}
       onReorder={jest.fn()}
     />,

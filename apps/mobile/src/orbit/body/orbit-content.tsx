@@ -13,6 +13,7 @@ interface OrbitContentProps {
   habits: Habit[];
   busy: boolean;
   error: string | null;
+  gridResetKey: number;
   showLiveActivityButton?: boolean;
   showLiveActivityUnsupported?: boolean;
   onRestoreLiveActivity?: () => void;
@@ -24,6 +25,7 @@ export default function OrbitContent({
   habits,
   busy,
   error,
+  gridResetKey,
   showLiveActivityButton,
   showLiveActivityUnsupported,
   onRestoreLiveActivity,
@@ -95,6 +97,7 @@ export default function OrbitContent({
       <OrbitHabitList
         habits={habits}
         busy={busy}
+        gridResetKey={gridResetKey}
         header={header}
         footer={footer}
         onRemove={onRemove}

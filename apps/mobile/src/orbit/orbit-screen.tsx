@@ -1,7 +1,7 @@
 import { api } from "@orbii/backend";
 import { useMutation, useQuery } from "convex/react";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import BootSpinner from "../components/boot-spinner";
 import ScreenScaffold from "../components/layout/screen-scaffold";
@@ -50,7 +50,9 @@ export default function OrbitScreen() {
     },
   );
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [gridResetKey, setGridResetKey] = useState(0);
   const [liveActivityAvailability, setLiveActivityAvailability] = useState<
     "checking" | "available" | "active" | "unavailable"
   >("checking");
@@ -114,9 +116,11 @@ export default function OrbitScreen() {
   );
 
   const run = async (fn: () => Promise<unknown>) => {
-    if (busy) {
+    if (busyRef.current) {
       return false;
     }
+
+    busyRef.current = true;
 
     try {
       setBusy(true);
@@ -127,6 +131,7 @@ export default function OrbitScreen() {
       setError(e instanceof Error ? e.message : "Something went wrong");
       return false;
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
@@ -152,6 +157,12 @@ export default function OrbitScreen() {
   };
 
   const handleReorder = (habitKeys: string[]) => {
+    if (busyRef.current) {
+      setError("Another update is in progress. Try reordering again.");
+      setGridResetKey((currentKey) => currentKey + 1);
+      return;
+    }
+
     void run(() => reorderHabits({ habitKeys }));
   };
 
@@ -185,6 +196,7 @@ export default function OrbitScreen() {
       habits={habits}
       busy={busy}
       error={error}
+      gridResetKey={gridResetKey}
       showLiveActivityButton={
         liveActivityAvailability === "available" && hasCommittedOrbit
       }

@@ -11,7 +11,7 @@ import { applyCompletionStats, scrubHabitFromSession } from "./lib/ritual";
 
 const MAX_HABIT_NAME_LENGTH = 50;
 const MAX_HABIT_GLYPH_LENGTH = 50;
-const USERS_PER_ORDER_BACKFILL_BATCH = 20;
+const HABITS_PER_ORDER_BACKFILL_BATCH = 20;
 
 const habitCategoryValidator = v.union(
   v.literal("body"),
@@ -152,21 +152,22 @@ export const reorder = mutation({
 export const backfillOrder = internalMutation({
   args: { cursor: v.optional(v.union(v.string(), v.null())) },
   handler: async (ctx, args) => {
-    const users = await ctx.db
-      .query("users")
+    const habitsPage = await ctx.db
+      .query("habits")
       .order("asc")
       .paginate({
-        numItems: USERS_PER_ORDER_BACKFILL_BATCH,
+        numItems: HABITS_PER_ORDER_BACKFILL_BATCH,
         cursor: args.cursor ?? null,
       });
     let habitsUpdated = 0;
+    const clerkUserIds = new Set(
+      habitsPage.page.map((habit) => habit.clerkUserId),
+    );
 
-    for (const user of users.page) {
+    for (const clerkUserId of clerkUserIds) {
       const habits = await ctx.db
         .query("habits")
-        .withIndex("by_clerkUserId", (q) =>
-          q.eq("clerkUserId", user.clerkUserId),
-        )
+        .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
         .collect();
 
       if (!habits.some((habit) => habit.order === undefined)) {
@@ -183,13 +184,13 @@ export const backfillOrder = internalMutation({
       }
     }
 
-    if (!users.isDone) {
+    if (!habitsPage.isDone) {
       await ctx.scheduler.runAfter(0, internal.habits.backfillOrder, {
-        cursor: users.continueCursor,
+        cursor: habitsPage.continueCursor,
       });
     }
 
-    return { habitsUpdated, isDone: users.isDone };
+    return { habitsUpdated, isDone: habitsPage.isDone };
   },
 });
 

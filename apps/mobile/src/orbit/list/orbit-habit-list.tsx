@@ -11,6 +11,7 @@ import OrbitHabitRow from "./orbit-habit-row";
 interface OrbitHabitListProps {
   habits: Habit[];
   busy: boolean;
+  gridResetKey: number;
   header: ReactElement;
   footer: ReactElement;
   onRemove: (habitKey: string) => void;
@@ -21,6 +22,7 @@ interface OrbitHabitListProps {
 export default function OrbitHabitList({
   habits,
   busy,
+  gridResetKey,
   header,
   footer,
   onRemove,
@@ -53,6 +55,7 @@ export default function OrbitHabitList({
       <View style={styles.header}>{header}</View>
       <View style={styles.grid}>
         <Sortable.Grid
+          key={gridResetKey}
           activeItemScale={1.02}
           activeItemShadowOpacity={0.12}
           columns={1}
