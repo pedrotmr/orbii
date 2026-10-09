@@ -145,6 +145,5 @@ const createStyles = (colors: Palette) =>
       fontSize: 14,
       lineHeight: 22,
       paddingHorizontal: space[2],
-      marginTop: space[6],
     },
   });
