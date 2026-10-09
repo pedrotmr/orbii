@@ -62,7 +62,16 @@ export default function HabitCreateScreen({
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
   const suggested = suggestHabitSymbol(name);
-  const symbol = chosenSymbol ?? suggested ?? defaultHabitSymbol;
+  const hasUnsupportedSavedGlyph =
+    isEditing && initialHabit !== undefined && !initialSymbol && !chosenSymbol;
+  const symbol =
+    chosenSymbol ??
+    (hasUnsupportedSavedGlyph ? defaultHabitSymbol : suggested) ??
+    defaultHabitSymbol;
+  const iconGlyph = hasUnsupportedSavedGlyph
+    ? initialHabit.glyph
+    : symbolGlyph(symbol.id);
+  const iconLabel = hasUnsupportedSavedGlyph ? "saved icon" : symbol.label;
   const category = chosenCategory ?? suggested?.category ?? "life";
   const dirty = isEditing
     ? name.trim() !== initialHabit.name ||
@@ -191,7 +200,8 @@ export default function HabitCreateScreen({
           ) : (
             <HabitCreateForm
               name={name}
-              symbol={symbol}
+              iconGlyph={iconGlyph}
+              iconLabel={iconLabel}
               category={category}
               busy={busy}
               onNameChange={setName}

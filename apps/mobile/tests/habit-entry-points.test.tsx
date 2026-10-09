@@ -20,6 +20,13 @@ const savedHabit: Habit = {
   category: "body",
 };
 
+const secondHabit: Habit = {
+  id: "custom-read",
+  name: "Read a book",
+  glyph: "symbol:read",
+  category: "learn",
+};
+
 test("Orbit opens the creation sheet and displays a newly received habit", async () => {
   const remove = jest.fn();
   const reorder = jest.fn();
@@ -54,6 +61,27 @@ test("Orbit opens the creation sheet and displays a newly received habit", async
     params: { habitKey: savedHabit.id },
   });
   expect(reorder).not.toHaveBeenCalled();
+});
+
+test("Orbit persists the order returned after a drag", async () => {
+  const reorder = jest.fn();
+  await render(
+    <OrbitContent
+      habits={[savedHabit, secondHabit]}
+      busy={false}
+      error={null}
+      onRemove={jest.fn()}
+      onReorder={reorder}
+    />,
+  );
+
+  await fireEvent(screen.getByTestId("sortable-grid"), "dragEnd", {
+    data: [secondHabit, savedHabit],
+    fromIndex: 0,
+    toIndex: 1,
+  });
+
+  expect(reorder).toHaveBeenCalledWith([secondHabit.id, savedHabit.id]);
 });
 
 test("onboarding opens the same sheet and can continue only after receiving a saved habit", async () => {

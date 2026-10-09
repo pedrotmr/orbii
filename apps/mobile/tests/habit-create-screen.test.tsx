@@ -183,7 +183,10 @@ test("editing an unknown saved glyph preserves it when saving the name", async (
   const save = jest.fn(async (_input: HabitInput) => {});
 
   await render(<HabitCreateScreen initialHabit={habit} onSave={save} />);
-  await press("Change icon, Walk");
+  expect(
+    screen.getByText(habit.glyph, { includeHiddenElements: true }),
+  ).toBeOnTheScreen();
+  await press("Change icon, saved icon");
   await fireEvent.press(screen.getByRole("radio", { name: "Read" }));
   await press("Back to habit");
   await enterName("Take a longer walk");
@@ -206,7 +209,10 @@ test("choosing a new icon replaces an unknown saved glyph", async () => {
   const save = jest.fn(async (_input: HabitInput) => {});
 
   await render(<HabitCreateScreen initialHabit={habit} onSave={save} />);
-  await press("Change icon, Walk");
+  expect(
+    screen.getByText(habit.glyph, { includeHiddenElements: true }),
+  ).toBeOnTheScreen();
+  await press("Change icon, saved icon");
   await fireEvent.press(screen.getByRole("radio", { name: "Read" }));
   await press("Use icon");
   await press("Save changes");
