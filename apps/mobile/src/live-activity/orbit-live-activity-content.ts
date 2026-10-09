@@ -20,34 +20,18 @@ export interface OrbitLiveActivityContent {
   habits: OrbitLiveActivityHabit[];
 }
 
-interface OrbitLiveActivityBannerSpacing {
+export interface OrbitLiveActivitySpacing {
   horizontalInset: number;
   verticalInset: number;
   sectionGap: number;
+  rowGap: number;
+  iconGap: number;
   listLeadingInset: number;
+  compactGap: number;
+  microGap: number;
   progressRingSize: number;
   logoSize: number;
 }
-
-interface OrbitLiveActivityHabitRowsSpacing {
-  rowGap: number;
-  iconGap: number;
-}
-
-interface OrbitLiveActivityCompactSpacing {
-  compactGap: number;
-}
-
-interface OrbitLiveActivityIslandSpacing {
-  microGap: number;
-}
-
-export interface OrbitLiveActivitySpacing
-  extends
-    OrbitLiveActivityBannerSpacing,
-    OrbitLiveActivityHabitRowsSpacing,
-    OrbitLiveActivityCompactSpacing,
-    OrbitLiveActivityIslandSpacing {}
 
 interface CreateOrbitLiveActivityContentArgs {
   localDate: string;
