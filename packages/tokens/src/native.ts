@@ -1,3 +1,7 @@
+import returnLoop from "./return-loop.json";
+
+export const brandColors = returnLoop.brand;
+
 /** Semantic native colors. Each foreground is paired with its surface in both themes. */
 export const lightColors = {
   bg: "#F5F5F3",
@@ -23,7 +27,9 @@ export const lightColors = {
   track: "#E3E6DE",
   disabled: "#DFE1DB",
 } as const;
+
 export type Palette = { [Key in keyof typeof lightColors]: string };
+
 export const darkColors: Palette = {
   bg: "#181B18",
   bgMid: "#222621",

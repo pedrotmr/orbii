@@ -22,12 +22,14 @@ export default function WelcomeContent({
   onSignIn,
 }: WelcomeContentProps) {
   const styles = useThemedStyles(createStyles);
+
   const busy = pendingProvider !== null;
   return (
     <ScreenScaffold>
       <BrandMark large />
       <OrbitIllustration />
       <View style={styles.copy}>
+        <Text style={styles.tagline}>Come back to what matters.</Text>
         <Text accessibilityRole="header" style={styles.title}>
           {"Good habits.\nA little at a time."}
         </Text>
@@ -50,9 +52,11 @@ export default function WelcomeContent({
     </ScreenScaffold>
   );
 }
+
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     copy: { gap: space[3] },
+    tagline: { fontSize: 15, fontWeight: "600", color: colors.accent },
     title: {
       fontSize: 36,
       lineHeight: 41,

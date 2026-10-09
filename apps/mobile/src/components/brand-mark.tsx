@@ -1,7 +1,7 @@
-import type { Palette } from "@orbii/tokens";
-import { fontSize, radius, space } from "@orbii/tokens";
+import { brandColors, fontSize, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
-import { useThemedStyles } from "../theme/use-theme";
+import { useTheme } from "../theme/use-theme";
+import ReturnLoopMark from "./brand-mark/return-loop-mark";
 
 interface BrandMarkProps {
   /** Slightly larger brand for welcome/auth. */
@@ -9,7 +9,8 @@ interface BrandMarkProps {
 }
 
 export default function BrandMark({ large }: BrandMarkProps) {
-  const styles = useThemedStyles(createStyles);
+  const { scheme } = useTheme();
+  const wordColor = scheme === "dark" ? brandColors.fog : brandColors.pine;
   return (
     <View
       accessible
@@ -17,37 +18,30 @@ export default function BrandMark({ large }: BrandMarkProps) {
       accessibilityLabel="Orbii"
       style={styles.row}
     >
-      <View style={[styles.orb, large && styles.orbLarge]} />
-      <Text style={[styles.word, large && styles.wordLarge]}>Orbii</Text>
+      <ReturnLoopMark size={large ? 40 : 28} />
+      <Text
+        style={[styles.word, { color: wordColor }, large && styles.wordLarge]}
+      >
+        Orb<Text style={styles.highlight}>ii</Text>
+      </Text>
     </View>
   );
 }
 
-const createStyles = (colors: Palette) =>
-  StyleSheet.create({
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: space[2],
-    },
-    orb: {
-      width: 12,
-      height: 12,
-      borderRadius: radius.full,
-      backgroundColor: colors.primary,
-    },
-    orbLarge: {
-      width: 16,
-      height: 16,
-    },
-    word: {
-      fontWeight: "700",
-      fontSize: fontSize.lg,
-      color: colors.ink,
-      letterSpacing: -0.3,
-    },
-    wordLarge: {
-      fontSize: fontSize.xl,
-      letterSpacing: -0.4,
-    },
-  });
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[2],
+  },
+  highlight: { color: brandColors.coral },
+  word: {
+    fontWeight: "700",
+    fontSize: fontSize.lg,
+    letterSpacing: -0.3,
+  },
+  wordLarge: {
+    fontSize: fontSize.xl,
+    letterSpacing: -0.4,
+  },
+});

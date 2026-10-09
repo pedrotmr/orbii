@@ -1,4 +1,5 @@
 import {
+  Circle,
   HStack,
   Image,
   ProgressView,
@@ -16,8 +17,11 @@ import {
   frame,
   lineLimit,
   minimumScaleFactor,
+  offset,
   padding,
   progressViewStyle,
+  rotationEffect,
+  strokeBorder,
   tint,
   truncationMode,
 } from "@expo/ui/swift-ui/modifiers";
@@ -30,8 +34,10 @@ function OrbitLiveActivityWidget(
 ) {
   "widget";
 
+  // Expo serializes this body without imports or closures. Keep its helpers local.
+
   const accentColor = environment.isLuminanceReduced
-    ? "#FFFFFF"
+    ? (props.reducedLuminanceColor ?? props.accentColor)
     : props.accentColor;
   const progress =
     props.totalCount > 0
@@ -46,6 +52,49 @@ function OrbitLiveActivityWidget(
       ? "Today’s Orbit complete"
       : `${props.completedCount} of ${props.totalCount} habits complete`;
   const compactProgress = `${props.completedCount}/${props.totalCount}`;
+  const logoColor = environment.isLuminanceReduced
+    ? accentColor
+    : (props.logoColor ?? accentColor);
+  const logoDotColor = environment.isLuminanceReduced
+    ? accentColor
+    : (props.logoDotColor ?? accentColor);
+  const renderMark = (size: number) => {
+    const scale = size / 64;
+
+    return (
+      <ZStack
+        alignment="center"
+        modifiers={[
+          frame({ width: size, height: size }),
+          accessibilityHidden(),
+        ]}
+      >
+        <Circle
+          modifiers={[
+            foregroundStyle("transparent"),
+            strokeBorder({
+              content: logoColor,
+              style: {
+                lineWidth: 7 * scale,
+                lineCap: "round",
+                dash: [110 * scale, 24 * scale],
+              },
+              shape: "circle",
+            }),
+            frame({ width: 49 * scale, height: 49 * scale }),
+            rotationEffect(-34),
+          ]}
+        />
+        <Circle
+          modifiers={[
+            foregroundStyle(logoDotColor),
+            frame({ width: 9 * scale, height: 9 * scale }),
+            offset({ x: 15 * scale, y: -16 * scale }),
+          ]}
+        />
+      </ZStack>
+    );
+  };
   const renderHabitRows = () =>
     props.habits.map((habit) => (
       <HStack
@@ -105,12 +154,7 @@ function OrbitLiveActivityWidget(
                 accessibilityHidden(),
               ]}
             />
-            <Image
-              systemName="circle.grid.2x2.fill"
-              size={props.spacing.logoSize}
-              color={accentColor}
-              modifiers={[accessibilityHidden()]}
-            />
+            {renderMark(props.spacing.logoSize)}
           </ZStack>
           <Text
             modifiers={[
@@ -153,12 +197,7 @@ function OrbitLiveActivityWidget(
     ),
     bannerSmall: (
       <HStack alignment="center" spacing={props.spacing.compactGap}>
-        <Image
-          systemName="circle.grid.2x2.fill"
-          size={14}
-          color={accentColor}
-          modifiers={[accessibilityHidden()]}
-        />
+        {renderMark(18)}
         <Text
           modifiers={[
             font({ size: 13, weight: "semibold", design: "rounded" }),
@@ -181,9 +220,7 @@ function OrbitLiveActivityWidget(
         </Text>
       </HStack>
     ),
-    compactLeading: (
-      <Image systemName="circle.grid.2x2.fill" color={accentColor} size={16} />
-    ),
+    compactLeading: renderMark(22),
     compactTrailing: (
       <Text
         modifiers={[font({ size: 12, weight: "semibold", design: "rounded" })]}
@@ -202,17 +239,10 @@ function OrbitLiveActivityWidget(
             accessibilityLabel(progressAccessibilityLabel),
           ]}
         />
-        <Image
-          systemName="circle.grid.2x2.fill"
-          size={10}
-          color={accentColor}
-          modifiers={[accessibilityHidden()]}
-        />
+        {renderMark(16)}
       </ZStack>
     ),
-    expandedLeading: (
-      <Image systemName="circle.grid.2x2.fill" color={accentColor} size={18} />
-    ),
+    expandedLeading: renderMark(24),
     expandedCenter: (
       <VStack alignment="leading" spacing={props.spacing.microGap}>
         <Text
