@@ -174,10 +174,25 @@ test("order backfill uses creation order and preserves later manual order", asyn
 test("order backfill includes habits whose owner has no user record", async () => {
   const t = convexTest(schema, modules);
   const owner = withIdentity(t, "owner-without-user-record");
-  await insertHabit(t, "owner-without-user-record", "first");
-  await insertHabit(t, "owner-without-user-record", "second");
+  const firstHabitId = await insertHabit(
+    t,
+    "owner-without-user-record",
+    "first",
+  );
+  const secondHabitId = await insertHabit(
+    t,
+    "owner-without-user-record",
+    "second",
+  );
 
   await t.mutation(internal.habits.backfillOrder, {});
+
+  await expect(
+    t.run(async (ctx) => ({
+      first: (await ctx.db.get(firstHabitId))?.order,
+      second: (await ctx.db.get(secondHabitId))?.order,
+    })),
+  ).resolves.toEqual({ first: 0, second: 1 });
 
   await expect(owner.query(api.habits.list, {})).resolves.toMatchObject([
     { id: "first" },
