@@ -4,20 +4,21 @@ Instructions for AI coding agents in this repository.
 
 ## Product
 
-**Orbii** keeps many habits in an Orbit and surfaces a small daily focus set. Users pick up to capacity from a fixed-size offer, commit, complete — success is “Today’s Orbit complete,” not coverage of the full Orbit. V1 is for the creator + a few trusted users.
+**Orbii** keeps many habits in an Orbit and surfaces a small daily focus set. Users choose from 1 up to the reveal offer size, commit, and complete — success is “Today’s Orbit complete,” not coverage of the full Orbit. V2 is for the creator + a few trusted users.
 
 **Source of truth is GitHub Issues — not markdown trees in this repo.**
 
-| Artifact                             | Where                                                                            |
-| ------------------------------------ | -------------------------------------------------------------------------------- |
-| Canonical V1 spec + locked decisions | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15)         |
-| Wayfinder map / frontier             | [Wayfinder: path to trusted-user V1](https://github.com/pedrotmr/orbii/issues/1) |
-| Work tickets                         | Issues labelled `ready-for-agent` (claim with assignee)                          |
-| Visual reference only                | `design-ideas/` (not production code)                                            |
+| Artifact                              | Where                                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| Canonical V2 spec + current decisions | [Spec: Orbii V2 (approved)](https://github.com/pedrotmr/orbii/issues/50)   |
+| V1 spec (frozen history)              | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15)   |
+| Wayfinder map / frontier              | [Wayfinder: path to Orbii V2](https://github.com/pedrotmr/orbii/issues/51) |
+| Work tickets                          | Issues labelled `ready-for-agent` (claim with assignee)                    |
+| Visual reference only                 | `design-ideas/` (not production code)                                      |
 
 ## Workspace layout
 
-Turborepo + pnpm. Mobile-only V1 (no web app).
+Turborepo + pnpm. Mobile-only Expo app; no web app in V2.
 
 | Path                | Role                                                       |
 | ------------------- | ---------------------------------------------------------- |
@@ -30,10 +31,12 @@ Turborepo + pnpm. Mobile-only V1 (no web app).
 ## Invariants
 
 - Orbit ≠ today’s checklist. Never score the day as “X of N Orbit habits.”
-- UI does not invent offer, capacity, phase, or streak rules — Convex is source of truth (once wired).
+- UI does not invent offer, capacity, phase, or streak rules — Convex is the source of truth.
 - Streak = consecutive local calendar days with a **completed** committed Orbit (miss = break).
-- Offer size is fixed at 5 in V1; capacity is 1–5 (default 2).
-- No XP, smart scheduling, notifications, or web app unless Spec #15 gets a dated addendum.
+- Offer size is `min(5, Orbit size)`. The saved default capacity is 1–5 (default 2) and guides the user; the selected count from 1 through the offer size defines today’s capacity.
+- Points and rewards follow Spec V2: habit awards, a fixed +20 completion bonus, and confirmed reward redemptions update one spendable balance. Points never score Orbit coverage.
+- Daily reminders are opt-in and follow Spec V2.
+- Social, smart scheduling, a web app, and a public App Store launch are out of scope for V2.
 - Do not import `design-ideas/` into the production apps.
 
 ## Commands
@@ -63,7 +66,7 @@ pnpm --filter @orbii/mobile start
 
 - **Backend:** schema in `packages/backend/convex/schema.ts`; feature modules beside it; pure ritual helpers in `convex/lib/`; tests in `packages/backend/tests/*.test.ts`.
 - **Convex project:** team `pedrotr`, project `orbii`, dev deployment `posh-otter-652` (`https://posh-otter-652.convex.cloud`). Local secrets in `packages/backend/.env.local` and `apps/mobile/.env.local` (see `packages/backend/README.md`). Never commit those files.
-- **Clients:** import `@orbii/backend` helpers / generated `api` when Convex is wired. Mutations are the write source of truth.
+- **Clients:** import `@orbii/backend` helpers / generated `api`. Mutations are the write source of truth.
 - **Tokens:** never hardcode colors, radii, or shadows in apps — import `@orbii/tokens`.
 
 ## Conventions
@@ -108,9 +111,9 @@ PRs: short description, linked GitHub issue, test results, screenshots for UI. C
 
 ## Session continuation
 
-- **Before coding:** open the [wayfinder map](https://github.com/pedrotmr/orbii/issues/1); claim an unblocked `ready-for-agent` issue; read [Spec #15](https://github.com/pedrotmr/orbii/issues/15) if the area touches product rules.
-- **While coding:** non-obvious product choices → dated comment on Spec #15 or a wayfinder grilling ticket — no parallel markdown decision log in git.
-- **If scope diverges from the Spec:** update Spec #15 before merging.
+- **Before coding:** open the [Wayfinder: path to Orbii V2](https://github.com/pedrotmr/orbii/issues/51); claim an unblocked `ready-for-agent` issue; read [Spec: Orbii V2 (approved)](https://github.com/pedrotmr/orbii/issues/50) for product rules. Spec V1 remains frozen history.
+- **While coding:** non-obvious product choices → dated comment on Spec V2 or a wayfinder grilling ticket — no parallel markdown decision log in git.
+- **If scope diverges from Spec V2:** update the spec before merging.
 - **Before ending a session:** leave the GitHub issue truthful (progress comment, close if done, unassign if blocked).
 
 <!-- convex-ai-start -->
