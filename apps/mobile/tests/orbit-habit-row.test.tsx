@@ -60,6 +60,31 @@ test("a regular row tap still opens edit", async () => {
   expect(onEdit).toHaveBeenCalledWith(habit.id);
 });
 
+test("closing a swipe restores edit activation for screen readers", async () => {
+  const onEdit = jest.fn();
+  await render(
+    <OrbitHabitRow
+      habit={habit}
+      busy={false}
+      first
+      last
+      onEdit={onEdit}
+      onRemove={jest.fn()}
+    />,
+  );
+
+  const row = screen.getByRole("button", { name: "Edit Take a walk" });
+  const swipeable = screen.getByTestId("reanimated-swipeable");
+
+  await fireEvent(swipeable, "swipeableOpenStartDrag");
+  await fireEvent(swipeable, "swipeableOpen");
+  await fireEvent(swipeable, "swipeableCloseStartDrag");
+  await fireEvent(swipeable, "swipeableClose");
+  await fireEvent.press(row);
+
+  expect(onEdit).toHaveBeenCalledWith(habit.id);
+});
+
 test("screen reader remove action keeps the confirmation and haptic", async () => {
   const onRemove = jest.fn();
   await render(

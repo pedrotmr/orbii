@@ -95,7 +95,10 @@ export default function OrbitHabitRow({
           setSwipeOpen(true);
           selectionFeedback();
         }}
-        onSwipeableClose={() => setSwipeOpen(false)}
+        onSwipeableClose={() => {
+          swipeGestureStarted.current = false;
+          setSwipeOpen(false);
+        }}
       >
         <Pressable
           accessibilityActions={[{ name: "remove", label: "Remove habit" }]}
