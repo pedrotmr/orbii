@@ -1,6 +1,8 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
+import { type Habit } from "@orbii/backend";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { Alert } from "react-native";
+import type { HabitInput } from "../src/habits/create/habit-input";
 import HabitCreateScreen from "../src/habits/create/habit-create-screen";
 import { deferred } from "./support/deferred";
 import {
@@ -45,7 +47,7 @@ test("blank names cannot submit from the button or keyboard", async () => {
 
 test("saving sends the trimmed name and suggested symbol, and only closes after success", async () => {
   const pending = deferred();
-  const save = jest.fn(() => pending.promise);
+  const save = jest.fn((_input: HabitInput) => pending.promise);
   await render(<HabitCreateScreen onSave={save} />);
   await enterName("  Take a cold shower  ");
   await press("Add to Orbit");
@@ -103,7 +105,7 @@ test("a failed save keeps the draft, displays an error, and can retry", async ()
 });
 
 test("manual icon and category choices survive renaming and are saved", async () => {
-  const save = jest.fn(async () => {});
+  const save = jest.fn(async (_input: HabitInput) => {});
   await render(<HabitCreateScreen onSave={save} />);
   await enterName("Take a cold shower");
   await press("Change icon, Cold shower");
@@ -147,6 +149,79 @@ test("an untouched form closes without a discard prompt", async () => {
   await press("Close habit creation");
   expect(navigatedBack).toHaveBeenCalledTimes(1);
   expect(Alert.alert).not.toHaveBeenCalled();
+});
+
+test("editing starts with saved values and closes without an untouched-change prompt", async () => {
+  const habit: Habit = {
+    id: "custom-walk",
+    name: "Take a walk",
+    glyph: "symbol:walk",
+    category: "mind",
+  };
+
+  await render(
+    <HabitCreateScreen initialHabit={habit} onSave={jest.fn(async () => {})} />,
+  );
+
+  expect(screen.getByText("Edit habit")).toBeOnTheScreen();
+  expect(screen.getByDisplayValue(habit.name)).toBeOnTheScreen();
+  expect(
+    screen.getByRole("button", { name: "Change icon, Walk" }),
+  ).toBeOnTheScreen();
+  expect(screen.getByRole("radio", { name: "mind" })).toBeChecked();
+  await press("Close habit editing");
+  expect(Alert.alert).not.toHaveBeenCalled();
+});
+
+test("editing an unknown saved glyph preserves it when saving the name", async () => {
+  const habit: Habit = {
+    id: "custom-legacy-walk",
+    name: "Take a walk",
+    glyph: "legacy:walking-person",
+    category: "body",
+  };
+  const save = jest.fn(async (_input: HabitInput) => {});
+
+  await render(<HabitCreateScreen initialHabit={habit} onSave={save} />);
+  expect(
+    screen.getByText(habit.glyph, { includeHiddenElements: true }),
+  ).toBeOnTheScreen();
+  await press("Change icon, saved icon");
+  await fireEvent.press(screen.getByRole("radio", { name: "Read" }));
+  await press("Back to habit");
+  await enterName("Take a longer walk");
+  await press("Save changes");
+
+  expect(save).toHaveBeenCalledWith({
+    name: "Take a longer walk",
+    glyph: habit.glyph,
+    category: habit.category,
+  });
+});
+
+test("choosing a new icon replaces an unknown saved glyph", async () => {
+  const habit: Habit = {
+    id: "custom-legacy-walk",
+    name: "Take a walk",
+    glyph: "legacy:walking-person",
+    category: "body",
+  };
+  const save = jest.fn(async (_input: HabitInput) => {});
+
+  await render(<HabitCreateScreen initialHabit={habit} onSave={save} />);
+  expect(
+    screen.getByText(habit.glyph, { includeHiddenElements: true }),
+  ).toBeOnTheScreen();
+  await press("Change icon, saved icon");
+  await fireEvent.press(screen.getByRole("radio", { name: "Read" }));
+  await press("Use icon");
+  await press("Save changes");
+
+  expect(save).toHaveBeenCalledWith({
+    name: habit.name,
+    glyph: "symbol:read",
+    category: habit.category,
+  });
 });
 
 test("dirty form removal can keep the draft or discard it without saving", async () => {

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import SettingsTimezoneSection from "../src/settings/timezone/settings-timezone-section";
 
 test("device timezone restores an edited draft even when already saved", async () => {
-  const save = jest.fn(async () => true);
+  const save = jest.fn(async (_timezone: string) => true);
   await render(
     <SettingsTimezoneSection
       timezone="Europe/London"

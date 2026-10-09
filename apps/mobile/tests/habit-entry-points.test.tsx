@@ -20,10 +20,25 @@ const savedHabit: Habit = {
   category: "body",
 };
 
+const secondHabit: Habit = {
+  id: "custom-read",
+  name: "Read a book",
+  glyph: "symbol:read",
+  category: "learn",
+};
+
 test("Orbit opens the creation sheet and displays a newly received habit", async () => {
   const remove = jest.fn();
+  const reorder = jest.fn();
   const view = await render(
-    <OrbitContent habits={[]} busy={false} error={null} onRemove={remove} />,
+    <OrbitContent
+      habits={[]}
+      busy={false}
+      error={null}
+      gridResetKey={0}
+      onRemove={remove}
+      onReorder={reorder}
+    />,
   );
   await fireEvent.press(screen.getByRole("button", { name: "Add habit" }));
   expect(router.push).toHaveBeenCalledWith("/habit-create");
@@ -33,11 +48,92 @@ test("Orbit opens the creation sheet and displays a newly received habit", async
       habits={[savedHabit]}
       busy={false}
       error={null}
+      gridResetKey={0}
       onRemove={remove}
+      onReorder={reorder}
     />,
   );
   expect(screen.getByText("Take a cold shower")).toBeOnTheScreen();
   expect(screen.getByText("1 habit")).toBeOnTheScreen();
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Edit Take a cold shower" }),
+  );
+  expect(router.push).toHaveBeenLastCalledWith({
+    pathname: "/habit-create",
+    params: { habitKey: savedHabit.id },
+  });
+  expect(reorder).not.toHaveBeenCalled();
+});
+
+test("Orbit persists the order returned after a drag", async () => {
+  const reorder = jest.fn();
+  await render(
+    <OrbitContent
+      habits={[savedHabit, secondHabit]}
+      busy={false}
+      error={null}
+      gridResetKey={0}
+      onRemove={jest.fn()}
+      onReorder={reorder}
+    />,
+  );
+
+  await fireEvent(screen.getByTestId("sortable-grid"), "dragEnd", {
+    data: [secondHabit, savedHabit],
+    fromIndex: 0,
+    toIndex: 1,
+  });
+
+  expect(reorder).toHaveBeenCalledWith([secondHabit.id, savedHabit.id]);
+});
+
+test("Orbit resets its sortable grid when a drag is rejected while busy", async () => {
+  const habits = [savedHabit, secondHabit];
+  const onRemove = jest.fn();
+  const onReorder = jest.fn();
+  const view = await render(
+    <OrbitContent
+      habits={habits}
+      busy={false}
+      error={null}
+      gridResetKey={0}
+      onRemove={onRemove}
+      onReorder={onReorder}
+    />,
+  );
+
+  await fireEvent(screen.getByTestId("sortable-grid"), "dragEnd", {
+    data: [secondHabit, savedHabit],
+    fromIndex: 0,
+    toIndex: 1,
+  });
+
+  expect(
+    screen
+      .getAllByRole("button", { name: /^Edit / })
+      .map((button) => button.props.accessibilityLabel),
+  ).toEqual([`Edit ${secondHabit.name}`, `Edit ${savedHabit.name}`]);
+
+  await view.rerender(
+    <OrbitContent
+      habits={habits}
+      busy
+      error="Another update is in progress. Try reordering again."
+      gridResetKey={1}
+      onRemove={onRemove}
+      onReorder={onReorder}
+    />,
+  );
+
+  expect(
+    screen.getByText("Another update is in progress. Try reordering again."),
+  ).toBeOnTheScreen();
+  expect(
+    screen
+      .getAllByRole("button", { name: /^Edit / })
+      .map((button) => button.props.accessibilityLabel),
+  ).toEqual([`Edit ${savedHabit.name}`, `Edit ${secondHabit.name}`]);
+  expect(onReorder).toHaveBeenCalledWith([secondHabit.id, savedHabit.id]);
 });
 
 test("onboarding opens the same sheet and can continue only after receiving a saved habit", async () => {
@@ -72,7 +168,14 @@ test("onboarding opens the same sheet and can continue only after receiving a sa
 
 test("both entry points prevent opening a new sheet while their parent is busy", async () => {
   const orbit = await render(
-    <OrbitContent habits={[]} busy error={null} onRemove={jest.fn()} />,
+    <OrbitContent
+      habits={[]}
+      busy
+      error={null}
+      gridResetKey={0}
+      onRemove={jest.fn()}
+      onReorder={jest.fn()}
+    />,
   );
   expect(screen.getByRole("button", { name: "Add habit" })).toBeDisabled();
   await fireEvent.press(screen.getByRole("button", { name: "Add habit" }));

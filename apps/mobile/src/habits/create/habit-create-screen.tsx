@@ -1,4 +1,4 @@
-import { type HabitCategory } from "@orbii/backend";
+import { type Habit, type HabitCategory } from "@orbii/backend";
 import { type Palette, space } from "@orbii/tokens";
 import { usePreventRemove, useRouter } from "expo-router";
 import { useRef, useState } from "react";
@@ -19,6 +19,7 @@ import {
 import {
   defaultHabitSymbol,
   suggestHabitSymbol,
+  findHabitSymbol,
   symbolGlyph,
   type HabitSymbol,
 } from "../../components/habits/habit-symbol-catalog";
@@ -31,17 +32,27 @@ import { type HabitInput } from "./habit-input";
 import HabitSymbolPicker from "./picker/habit-symbol-picker";
 
 interface HabitCreateScreenProps {
+  initialHabit?: Habit;
   onSave: (input: HabitInput) => Promise<unknown>;
 }
 
-export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
+export default function HabitCreateScreen({
+  initialHabit,
+  onSave,
+}: HabitCreateScreenProps) {
   const router = useRouter();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const [name, setName] = useState("");
-  const [chosenSymbol, setChosenSymbol] = useState<HabitSymbol | null>(null);
+  const isEditing = initialHabit !== undefined;
+  const initialSymbol = initialHabit
+    ? (findHabitSymbol(initialHabit.glyph) ?? null)
+    : null;
+  const [name, setName] = useState(() => initialHabit?.name ?? "");
+  const [chosenSymbol, setChosenSymbol] = useState<HabitSymbol | null>(
+    () => initialSymbol,
+  );
   const [chosenCategory, setChosenCategory] = useState<HabitCategory | null>(
-    null,
+    () => initialHabit?.category ?? null,
   );
   const [choosingIcon, setChoosingIcon] = useState(false);
   const [pendingSymbol, setPendingSymbol] =
@@ -51,9 +62,24 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const submitting = useRef(false);
   const suggested = suggestHabitSymbol(name);
-  const symbol = chosenSymbol ?? suggested ?? defaultHabitSymbol;
+  const hasUnsupportedSavedGlyph =
+    isEditing && initialHabit !== undefined && !initialSymbol && !chosenSymbol;
+  const symbol =
+    chosenSymbol ??
+    (hasUnsupportedSavedGlyph ? defaultHabitSymbol : suggested) ??
+    defaultHabitSymbol;
+  const iconGlyph = hasUnsupportedSavedGlyph
+    ? initialHabit.glyph
+    : symbolGlyph(symbol.id);
+  const iconLabel = hasUnsupportedSavedGlyph ? "saved icon" : symbol.label;
   const category = chosenCategory ?? suggested?.category ?? "life";
-  const dirty = Boolean(name.trim() || chosenSymbol || chosenCategory);
+  const dirty = isEditing
+    ? name.trim() !== initialHabit.name ||
+      (initialSymbol
+        ? symbol.id !== initialSymbol.id
+        : chosenSymbol !== null) ||
+      category !== initialHabit.category
+    : Boolean(name.trim() || chosenSymbol || chosenCategory);
   const disablePrevention = usePreventRemove(
     !leaving && (dirty || busy || choosingIcon),
     ({ repeat }) => {
@@ -67,8 +93,10 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
       }
 
       Alert.alert(
-        "Discard this habit?",
-        "Your habit hasn’t been added to your Orbit yet.",
+        isEditing ? "Discard changes?" : "Discard this habit?",
+        isEditing
+          ? "Your changes haven’t been saved yet."
+          : "Your habit hasn’t been added to your Orbit yet.",
         [
           { text: "Keep editing", style: "cancel" },
           {
@@ -105,7 +133,10 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
     try {
       await onSave({
         name: name.trim(),
-        glyph: symbolGlyph(symbol.id),
+        glyph:
+          isEditing && initialHabit && !initialSymbol && !chosenSymbol
+            ? initialHabit.glyph
+            : symbolGlyph(symbol.id),
         category,
       });
       completionFeedback();
@@ -114,7 +145,9 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
       close();
     } catch {
       setError(
-        "We couldn’t add your habit. Check your connection and try again. Your draft is still here.",
+        isEditing
+          ? "We couldn’t save your changes. Check your connection and try again. Your draft is still here."
+          : "We couldn’t add your habit. Check your connection and try again. Your draft is still here.",
       );
     } finally {
       submitting.current = false;
@@ -141,6 +174,7 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
       behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}
     >
       <HabitSheetHeader
+        isEditing={isEditing}
         choosingIcon={choosingIcon}
         busy={busy}
         onBack={() => setChoosingIcon(false)}
@@ -166,7 +200,8 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
           ) : (
             <HabitCreateForm
               name={name}
-              symbol={symbol}
+              iconGlyph={iconGlyph}
+              iconLabel={iconLabel}
               category={category}
               busy={busy}
               onNameChange={setName}
@@ -188,7 +223,15 @@ export default function HabitCreateScreen({ onSave }: HabitCreateScreenProps) {
           <PrimaryButton label="Use icon" onPress={useIcon} />
         ) : (
           <PrimaryButton
-            label={busy ? "Adding…" : "Add to Orbit"}
+            label={
+              busy
+                ? isEditing
+                  ? "Saving…"
+                  : "Adding…"
+                : isEditing
+                  ? "Save changes"
+                  : "Add to Orbit"
+            }
             disabled={busy || !name.trim()}
             onPress={() => void save()}
           />

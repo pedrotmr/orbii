@@ -4,6 +4,7 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { convex } from "../src/convexClient";
 import { discardSliceClientUserId } from "../src/discard-slice-identity";
@@ -35,52 +36,54 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <SafeAreaProvider>
-          <ThemeProvider
-            value={{
-              ...navigationTheme,
-              colors: {
-                ...navigationTheme.colors,
-                background: colors.bg,
-                card: colors.bg,
-                text: colors.ink,
-                primary: colors.primary,
-                border: colors.line,
-              },
-            }}
-          >
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                ...(process.env.EXPO_OS === "android"
-                  ? { statusBarStyle }
-                  : {}),
-                contentStyle: { backgroundColor: colors.bg },
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          <SafeAreaProvider>
+            <ThemeProvider
+              value={{
+                ...navigationTheme,
+                colors: {
+                  ...navigationTheme.colors,
+                  background: colors.bg,
+                  card: colors.bg,
+                  text: colors.ink,
+                  primary: colors.primary,
+                  border: colors.line,
+                },
               }}
             >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="welcome" />
-              <Stack.Screen name="setup" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="habit-create"
-                options={{
-                  ...(process.env.EXPO_OS === "ios"
-                    ? { presentation: "modal" }
-                    : {
-                        presentation: "formSheet",
-                        sheetAllowedDetents: [0.9, 1],
-                        sheetGrabberVisible: true,
-                      }),
-                  contentStyle: { backgroundColor: colors.surface },
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  ...(process.env.EXPO_OS === "android"
+                    ? { statusBarStyle }
+                    : {}),
+                  contentStyle: { backgroundColor: colors.bg },
                 }}
-              />
-            </Stack>
-          </ThemeProvider>
-        </SafeAreaProvider>
-      </ConvexProviderWithClerk>
-    </ClerkProvider>
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="welcome" />
+                <Stack.Screen name="setup" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="habit-create"
+                  options={{
+                    ...(process.env.EXPO_OS === "ios"
+                      ? { presentation: "modal" }
+                      : {
+                          presentation: "formSheet",
+                          sheetAllowedDetents: [0.9, 1],
+                          sheetGrabberVisible: true,
+                        }),
+                    contentStyle: { backgroundColor: colors.surface },
+                  }}
+                />
+              </Stack>
+            </ThemeProvider>
+          </SafeAreaProvider>
+        </ConvexProviderWithClerk>
+      </ClerkProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,7 +1,0 @@
-diff --git a/bundle/react-stub.ts b/bundle/react-stub.ts
-index dc78634f06d13b7272197056d0f829ab9e0f793f..018b6e4c1375981ceb5cb9ddbf342b0293bf49c8 100644
---- a/bundle/react-stub.ts
-+++ b/bundle/react-stub.ts
-@@ -30,0 +31,2 @@
-+
-+export const memo = <T>(component: T): T => component;

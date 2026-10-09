@@ -22,6 +22,7 @@ export default defineSchema({
       v.literal("learn"),
       v.literal("life"),
     ),
+    order: v.optional(v.number()),
   })
     .index("by_clerkUserId", ["clerkUserId"])
     .index("by_clerkUserId_habitKey", ["clerkUserId", "habitKey"]),

@@ -13,26 +13,30 @@ interface OrbitContentProps {
   habits: Habit[];
   busy: boolean;
   error: string | null;
+  gridResetKey: number;
   showLiveActivityButton?: boolean;
   showLiveActivityUnsupported?: boolean;
   onRestoreLiveActivity?: () => void;
   onRemove: (id: string) => void;
+  onReorder: (habitKeys: string[]) => void;
 }
 
 export default function OrbitContent({
   habits,
   busy,
   error,
+  gridResetKey,
   showLiveActivityButton,
   showLiveActivityUnsupported,
   onRestoreLiveActivity,
   onRemove,
+  onReorder,
 }: OrbitContentProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const router = useRouter();
-  return (
-    <ScreenScaffold tabbed>
+  const header = (
+    <View style={styles.listHeader}>
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>
           Your Orbit
@@ -81,15 +85,33 @@ export default function OrbitContent({
         </Pressable>
       </View>
       {error ? <InlineError message={error} /> : null}
-      <OrbitHabitList habits={habits} busy={busy} onRemove={onRemove} />
-      <Text style={styles.note}>
-        They all belong here. They don’t all belong on today’s list.
-      </Text>
+    </View>
+  );
+  const footer = (
+    <Text style={styles.note}>
+      They all belong here. They don’t all belong on today’s list.
+    </Text>
+  );
+  return (
+    <ScreenScaffold tabbed scrollable={false}>
+      <OrbitHabitList
+        habits={habits}
+        busy={busy}
+        gridResetKey={gridResetKey}
+        header={header}
+        footer={footer}
+        onRemove={onRemove}
+        onEdit={(habitKey) =>
+          router.push({ pathname: "/habit-create", params: { habitKey } })
+        }
+        onReorder={onReorder}
+      />
     </ScreenScaffold>
   );
 }
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
+    listHeader: { gap: space[6] },
     heading: { gap: space[2] },
     title: {
       fontSize: 34,

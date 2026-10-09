@@ -4,16 +4,13 @@ import { PencilSimpleIcon } from "phosphor-react-native/src/icons/PencilSimple";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import HabitIcon from "../../../components/habits/habit-icon";
-import {
-  type HabitSymbol,
-  symbolGlyph,
-} from "../../../components/habits/habit-symbol-catalog";
 import { useTheme, useThemedStyles } from "../../../theme/use-theme";
 import HabitCategoryPicker from "./habit-category-picker";
 
 interface HabitCreateFormProps {
   name: string;
-  symbol: HabitSymbol;
+  iconGlyph: string;
+  iconLabel: string;
   category: HabitCategory;
   busy: boolean;
   onNameChange: (name: string) => void;
@@ -24,7 +21,8 @@ interface HabitCreateFormProps {
 
 export default function HabitCreateForm({
   name,
-  symbol,
+  iconGlyph,
+  iconLabel,
   category,
   busy,
   onNameChange,
@@ -41,7 +39,7 @@ export default function HabitCreateForm({
       <View style={styles.identity}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Change icon, ${symbol.label}`}
+          accessibilityLabel={`Change icon, ${iconLabel}`}
           accessibilityHint="Choose from the symbol collection"
           accessibilityState={{ disabled: busy }}
           disabled={busy}
@@ -51,7 +49,7 @@ export default function HabitCreateForm({
             pressed && styles.pressed,
           ]}
         >
-          <HabitIcon glyph={symbolGlyph(symbol.id)} size={88} />
+          <HabitIcon glyph={iconGlyph} size={88} />
           <View style={styles.editBadge}>
             <PencilSimpleIcon size={16} color={colors.ink} />
           </View>
