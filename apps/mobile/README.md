@@ -200,7 +200,7 @@ pnpm --filter @orbii/mobile exec expo run:ios --device
 For later sessions, start Metro and open the installed development app:
 
 ```bash
-pnpm --filter @orbii/mobile start -- --dev-client
+pnpm --filter @orbii/mobile dev:client
 ```
 
 Commit today’s Orbit to start its Live Activity. If you dismiss it, return to
