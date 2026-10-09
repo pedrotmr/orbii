@@ -33,8 +33,8 @@ export default function OrbitContent({
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const router = useRouter();
-  return (
-    <ScreenScaffold tabbed nestable>
+  const header = (
+    <View style={styles.listHeader}>
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>
           Your Orbit
@@ -83,23 +83,32 @@ export default function OrbitContent({
         </Pressable>
       </View>
       {error ? <InlineError message={error} /> : null}
+    </View>
+  );
+  const footer = (
+    <Text style={styles.note}>
+      They all belong here. They don’t all belong on today’s list.
+    </Text>
+  );
+  return (
+    <ScreenScaffold tabbed scrollable={false}>
       <OrbitHabitList
         habits={habits}
         busy={busy}
+        header={header}
+        footer={footer}
         onRemove={onRemove}
         onEdit={(habitKey) =>
           router.push({ pathname: "/habit-create", params: { habitKey } })
         }
         onReorder={onReorder}
       />
-      <Text style={styles.note}>
-        They all belong here. They don’t all belong on today’s list.
-      </Text>
     </ScreenScaffold>
   );
 }
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
+    listHeader: { gap: space[6] },
     heading: { gap: space[2] },
     title: {
       fontSize: 34,
@@ -133,5 +142,6 @@ const createStyles = (colors: Palette) =>
       fontSize: 14,
       lineHeight: 22,
       paddingHorizontal: space[2],
+      marginTop: space[6],
     },
   });
