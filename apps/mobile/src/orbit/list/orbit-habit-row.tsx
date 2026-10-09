@@ -98,16 +98,23 @@ export default function OrbitHabitRow({
         onSwipeableClose={() => setSwipeOpen(false)}
       >
         <Pressable
+          accessibilityActions={[{ name: "remove", label: "Remove habit" }]}
           accessibilityLabel={`Edit ${habit.name}`}
-          accessibilityHint="Tap to edit, or press and hold anywhere to reorder"
+          accessibilityHint="Tap to edit, use actions to remove, or press and hold anywhere to reorder"
           accessibilityRole="button"
           accessibilityState={{ disabled: busy }}
           disabled={busy}
+          onAccessibilityAction={({ nativeEvent }) => {
+            if (nativeEvent.actionName === "remove") {
+              selectionFeedback();
+              confirmRemove();
+            }
+          }}
           onPressIn={() => {
             swipeGestureStarted.current = false;
           }}
           onPress={() => {
-            if (!swipeGestureStarted.current) {
+            if (!swipeGestureStarted.current && !swipeOpen) {
               onEdit(habit.id);
             }
           }}

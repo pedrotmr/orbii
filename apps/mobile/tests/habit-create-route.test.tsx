@@ -1,5 +1,5 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
-import { type Habit } from "@orbii/backend";
+import { api, type Habit } from "@orbii/backend";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useMutation, useQuery } from "convex/react";
 import { randomUUID } from "expo-crypto";
@@ -41,9 +41,12 @@ test("retry keeps the same habit key and payload, while a new creation gets a ne
     .fn<(...args: unknown[]) => Promise<unknown>>()
     .mockRejectedValueOnce(new Error("Connection lost"))
     .mockResolvedValue("habit-id");
+  const update = jest.fn<(...args: unknown[]) => Promise<unknown>>();
   jest
     .mocked(useMutation)
-    .mockReturnValue(add as unknown as ReturnType<typeof useMutation>);
+    .mockImplementation(
+      (reference) => (reference === api.habits.add ? add : update) as never,
+    );
   jest
     .mocked(randomUUID)
     .mockReturnValueOnce("00000000-0000-4000-8000-000000000001")
@@ -58,6 +61,7 @@ test("retry keeps the same habit key and payload, while a new creation gets a ne
   expect(navigatedBack).not.toHaveBeenCalled();
   await fireEvent.press(screen.getByRole("button", { name: "Add to Orbit" }));
   expect(add).toHaveBeenCalledTimes(2);
+  expect(update).not.toHaveBeenCalled();
   expect(add.mock.calls[0]).toEqual([
     {
       habitKey: "custom-00000000-0000-4000-8000-000000000001",
@@ -90,14 +94,17 @@ test("an Orbit habit opens prefilled and saves through the update mutation", asy
     glyph: "symbol:cold",
     category: "body",
   };
+  const add = jest.fn<(...args: unknown[]) => Promise<unknown>>();
   const update = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+  jest
+    .mocked(useMutation)
+    .mockImplementation(
+      (reference) => (reference === api.habits.add ? add : update) as never,
+    );
   jest.mocked(useLocalSearchParams).mockReturnValue({
     habitKey: habit.id,
   } as never);
   jest.mocked(useQuery).mockReturnValue([habit] as never);
-  jest
-    .mocked(useMutation)
-    .mockReturnValue(update as unknown as ReturnType<typeof useMutation>);
 
   await render(<HabitCreateRoute />);
 
@@ -116,6 +123,7 @@ test("an Orbit habit opens prefilled and saves through the update mutation", asy
     glyph: habit.glyph,
     category: habit.category,
   });
+  expect(add).not.toHaveBeenCalled();
   expect(navigatedBack).toHaveBeenCalledTimes(1);
 });
 

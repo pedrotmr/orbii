@@ -156,7 +156,7 @@ test("editing starts with saved values and closes without an untouched-change pr
     id: "custom-walk",
     name: "Take a walk",
     glyph: "symbol:walk",
-    category: "body",
+    category: "mind",
   };
 
   await render(
@@ -168,8 +168,54 @@ test("editing starts with saved values and closes without an untouched-change pr
   expect(
     screen.getByRole("button", { name: "Change icon, Walk" }),
   ).toBeOnTheScreen();
+  expect(screen.getByRole("radio", { name: "mind" })).toBeChecked();
   await press("Close habit editing");
   expect(Alert.alert).not.toHaveBeenCalled();
+});
+
+test("editing an unknown saved glyph preserves it when saving the name", async () => {
+  const habit: Habit = {
+    id: "custom-legacy-walk",
+    name: "Take a walk",
+    glyph: "legacy:walking-person",
+    category: "body",
+  };
+  const save = jest.fn(async (_input: HabitInput) => {});
+
+  await render(<HabitCreateScreen initialHabit={habit} onSave={save} />);
+  await press("Change icon, Walk");
+  await fireEvent.press(screen.getByRole("radio", { name: "Read" }));
+  await press("Back to habit");
+  await enterName("Take a longer walk");
+  await press("Save changes");
+
+  expect(save).toHaveBeenCalledWith({
+    name: "Take a longer walk",
+    glyph: habit.glyph,
+    category: habit.category,
+  });
+});
+
+test("choosing a new icon replaces an unknown saved glyph", async () => {
+  const habit: Habit = {
+    id: "custom-legacy-walk",
+    name: "Take a walk",
+    glyph: "legacy:walking-person",
+    category: "body",
+  };
+  const save = jest.fn(async (_input: HabitInput) => {});
+
+  await render(<HabitCreateScreen initialHabit={habit} onSave={save} />);
+  await press("Change icon, Walk");
+  await fireEvent.press(screen.getByRole("radio", { name: "Read" }));
+  await press("Use icon");
+  await press("Save changes");
+
+  expect(save).toHaveBeenCalledWith({
+    name: habit.name,
+    glyph: "symbol:read",
+    category: habit.category,
+  });
 });
 
 test("dirty form removal can keep the draft or discard it without saving", async () => {

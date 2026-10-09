@@ -45,7 +45,7 @@ export default function HabitCreateScreen({
   const insets = useSafeAreaInsets();
   const isEditing = initialHabit !== undefined;
   const initialSymbol = initialHabit
-    ? (findHabitSymbol(initialHabit.glyph) ?? defaultHabitSymbol)
+    ? (findHabitSymbol(initialHabit.glyph) ?? null)
     : null;
   const [name, setName] = useState(() => initialHabit?.name ?? "");
   const [chosenSymbol, setChosenSymbol] = useState<HabitSymbol | null>(
@@ -66,7 +66,9 @@ export default function HabitCreateScreen({
   const category = chosenCategory ?? suggested?.category ?? "life";
   const dirty = isEditing
     ? name.trim() !== initialHabit.name ||
-      symbol.id !== (initialSymbol?.id ?? defaultHabitSymbol.id) ||
+      (initialSymbol
+        ? symbol.id !== initialSymbol.id
+        : chosenSymbol !== null) ||
       category !== initialHabit.category
     : Boolean(name.trim() || chosenSymbol || chosenCategory);
   const disablePrevention = usePreventRemove(
@@ -122,7 +124,10 @@ export default function HabitCreateScreen({
     try {
       await onSave({
         name: name.trim(),
-        glyph: symbolGlyph(symbol.id),
+        glyph:
+          isEditing && initialHabit && !initialSymbol && !chosenSymbol
+            ? initialHabit.glyph
+            : symbolGlyph(symbol.id),
         category,
       });
       completionFeedback();
