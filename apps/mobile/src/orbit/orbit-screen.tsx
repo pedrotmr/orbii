@@ -2,7 +2,7 @@ import { api } from "@orbii/backend";
 import { useMutation, useQuery } from "convex/react";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Alert, AppState, Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import BootSpinner from "../components/boot-spinner";
 import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
@@ -28,6 +28,27 @@ export default function OrbitScreen() {
   const day = useQuery(api.day.get, { localDate });
   const habits = useQuery(api.habits.list, {});
   const removeHabit = useMutation(api.habits.remove);
+  const reorderHabits = useMutation(api.habits.reorder).withOptimisticUpdate(
+    (localStore, args) => {
+      const currentHabits = localStore.getQuery(api.habits.list, {});
+
+      if (!currentHabits) {
+        return;
+      }
+
+      const habitsByKey = new Map(
+        currentHabits.map((habit) => [habit.id, habit]),
+      );
+      const reorderedHabits = args.habitKeys.flatMap((habitKey) => {
+        const habit = habitsByKey.get(habitKey);
+        return habit ? [habit] : [];
+      });
+
+      if (reorderedHabits.length === currentHabits.length) {
+        localStore.setQuery(api.habits.list, {}, reorderedHabits);
+      }
+    },
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveActivityAvailability, setLiveActivityAvailability] = useState<
@@ -125,22 +146,13 @@ export default function OrbitScreen() {
   const hasCommittedOrbit = day.session.phase === "active";
 
   const handleRemove = (habitKey: string) => {
-    Alert.alert(
-      "Remove habit",
-      "This habit will leave your Orbit and today’s focus.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => {
-            void run(async () => {
-              await removeHabit({ habitKey, localDate });
-            });
-          },
-        },
-      ],
-    );
+    void run(async () => {
+      await removeHabit({ habitKey, localDate });
+    });
+  };
+
+  const handleReorder = (habitKeys: string[]) => {
+    void run(() => reorderHabits({ habitKeys }));
   };
 
   const handleRestoreLiveActivity = () => {
@@ -183,6 +195,7 @@ export default function OrbitScreen() {
       }
       onRestoreLiveActivity={handleRestoreLiveActivity}
       onRemove={handleRemove}
+      onReorder={handleReorder}
     />
   );
 }

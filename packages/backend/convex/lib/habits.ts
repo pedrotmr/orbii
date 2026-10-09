@@ -7,6 +7,38 @@ export type Habit = {
   category: HabitCategory;
 };
 
+interface HabitOrderRecord {
+  _creationTime: number;
+  order?: number;
+}
+
+export const sortHabitsByOrder = <T extends HabitOrderRecord>(
+  habits: readonly T[],
+) => {
+  const allHaveOrder = habits.every((habit) => habit.order !== undefined);
+
+  return [...habits].sort((left, right) => {
+    if (!allHaveOrder) {
+      return left._creationTime - right._creationTime;
+    }
+
+    return (left.order ?? 0) - (right.order ?? 0);
+  });
+};
+
+export const nextHabitOrder = (habits: readonly HabitOrderRecord[]) => {
+  if (!habits.every((habit) => habit.order !== undefined)) {
+    return habits.length;
+  }
+
+  return (
+    habits.reduce(
+      (maxOrder, habit) => Math.max(maxOrder, habit.order ?? -1),
+      -1,
+    ) + 1
+  );
+};
+
 export const OFFER_SIZE = 5;
 export const DEFAULT_CAPACITY = 2;
 export const MIN_CAPACITY = 1;
