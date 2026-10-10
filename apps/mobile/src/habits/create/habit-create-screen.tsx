@@ -54,6 +54,9 @@ export default function HabitCreateScreen({
   const [chosenCategory, setChosenCategory] = useState<HabitCategory | null>(
     () => initialHabit?.category ?? null,
   );
+  const [pointValue, setPointValue] = useState(() =>
+    String(initialHabit?.pointValue ?? 20),
+  );
   const [choosingIcon, setChoosingIcon] = useState(false);
   const [pendingSymbol, setPendingSymbol] =
     useState<HabitSymbol>(defaultHabitSymbol);
@@ -73,13 +76,21 @@ export default function HabitCreateScreen({
     : symbolGlyph(symbol.id);
   const iconLabel = hasUnsupportedSavedGlyph ? "saved icon" : symbol.label;
   const category = chosenCategory ?? suggested?.category ?? "life";
+  const parsedPointValue = Number(pointValue);
+  const validPointValue =
+    /^\d+$/.test(pointValue) &&
+    parsedPointValue >= 1 &&
+    parsedPointValue <= 100;
   const dirty = isEditing
     ? name.trim() !== initialHabit.name ||
       (initialSymbol
         ? symbol.id !== initialSymbol.id
         : chosenSymbol !== null) ||
-      category !== initialHabit.category
-    : Boolean(name.trim() || chosenSymbol || chosenCategory);
+      category !== initialHabit.category ||
+      pointValue !== String(initialHabit.pointValue ?? 20)
+    : Boolean(
+        name.trim() || chosenSymbol || chosenCategory || pointValue !== "20",
+      );
   const disablePrevention = usePreventRemove(
     !leaving && (dirty || busy || choosingIcon),
     ({ repeat }) => {
@@ -123,7 +134,7 @@ export default function HabitCreateScreen({
   };
 
   const save = async () => {
-    if (!name.trim() || submitting.current) {
+    if (!name.trim() || !validPointValue || submitting.current) {
       return;
     }
 
@@ -138,6 +149,7 @@ export default function HabitCreateScreen({
             ? initialHabit.glyph
             : symbolGlyph(symbol.id),
         category,
+        pointValue: parsedPointValue,
       });
       completionFeedback();
       setLeaving(true);
@@ -203,9 +215,11 @@ export default function HabitCreateScreen({
               iconGlyph={iconGlyph}
               iconLabel={iconLabel}
               category={category}
+              pointValue={pointValue}
               busy={busy}
               onNameChange={setName}
               onCategoryChange={setChosenCategory}
+              onPointValueChange={setPointValue}
               onChooseIcon={openPicker}
               onSubmit={() => void save()}
             />
@@ -232,7 +246,7 @@ export default function HabitCreateScreen({
                   ? "Save changes"
                   : "Add to Orbit"
             }
-            disabled={busy || !name.trim()}
+            disabled={busy || !name.trim() || !validPointValue}
             onPress={() => void save()}
           />
         )}

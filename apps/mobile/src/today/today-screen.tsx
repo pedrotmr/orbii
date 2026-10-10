@@ -52,8 +52,12 @@ export default function TodayScreen() {
   }, [offeredIds, habits]);
 
   const committedHabits = useMemo(() => {
-    return resolveTodayHabits(committedIds, habits);
-  }, [committedIds, habits]);
+    return resolveTodayHabits(
+      committedIds,
+      habits,
+      day?.session.committedPointValues,
+    );
+  }, [committedIds, day?.session.committedPointValues, habits]);
 
   const selectedHabits = useMemo(() => {
     return resolveTodayHabits(day?.session.selectedIds, habits);

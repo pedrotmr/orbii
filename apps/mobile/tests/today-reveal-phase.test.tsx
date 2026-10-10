@@ -3,11 +3,11 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import TodayRevealPhase from "../src/today/reveal/today-reveal-phase";
 
 const offeredHabits = [
-  { id: "habit-1", name: "Walk", glyph: "↗" },
-  { id: "habit-2", name: "Read", glyph: "▭" },
-  { id: "habit-3", name: "Journal", glyph: "✎" },
-  { id: "habit-4", name: "Stretch", glyph: "∿" },
-  { id: "habit-5", name: "Meditate", glyph: "○" },
+  { id: "habit-1", name: "Walk", glyph: "↗", pointValue: 10 },
+  { id: "habit-2", name: "Read", glyph: "▭", pointValue: 20 },
+  { id: "habit-3", name: "Journal", glyph: "✎", pointValue: 20 },
+  { id: "habit-4", name: "Stretch", glyph: "∿", pointValue: 10 },
+  { id: "habit-5", name: "Meditate", glyph: "○", pointValue: 10 },
 ];
 
 test("usual count is guidance and every offered habit stays selectable", async () => {
@@ -28,8 +28,12 @@ test("usual count is guidance and every offered habit stays selectable", async (
   expect(screen.getByText("Your usual")).toBeOnTheScreen();
   expect(screen.getByText("2")).toBeOnTheScreen();
   expect(
-    screen.getByRole("checkbox", { name: "Walk", checked: false }),
+    screen.getByRole("checkbox", {
+      name: "Walk, 10 points",
+      checked: false,
+    }),
   ).toBeOnTheScreen();
+  expect(screen.getAllByText("10 points")).toHaveLength(3);
   expect(
     screen.getByRole("button", { name: "Commit today’s Orbit" }),
   ).toBeDisabled();
@@ -46,7 +50,9 @@ test("usual count is guidance and every offered habit stays selectable", async (
     />,
   );
 
-  const thirdHabit = screen.getByRole("checkbox", { name: "Journal" });
+  const thirdHabit = screen.getByRole("checkbox", {
+    name: "Journal, 20 points",
+  });
   expect(thirdHabit).toBeEnabled();
   await fireEvent.press(thirdHabit);
   expect(onToggle).toHaveBeenCalledWith("habit-3");

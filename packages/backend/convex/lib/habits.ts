@@ -1,11 +1,12 @@
 export type HabitCategory = "body" | "mind" | "learn" | "life";
 
-export type Habit = {
+export interface Habit {
   id: string;
   name: string;
   glyph: string;
   category: HabitCategory;
-};
+  pointValue?: number;
+}
 
 interface HabitOrderRecord {
   _creationTime: number;
@@ -44,6 +45,14 @@ export const DEFAULT_CAPACITY = 2;
 export const MIN_CAPACITY = 1;
 export const MAX_CAPACITY = 5;
 
+/** Easy starter seeds suggested first in setup. */
+export const EASY_STARTER_IDS = [
+  "walk",
+  "stretch",
+  "water",
+  "meditate",
+] as const;
+
 export const STARTER_HABITS: Habit[] = [
   { id: "walk", name: "Walk", glyph: "↗", category: "body" },
   { id: "stretch", name: "Stretch", glyph: "∿", category: "body" },
@@ -55,13 +64,9 @@ export const STARTER_HABITS: Habit[] = [
   { id: "food", name: "Track food", glyph: "▢", category: "life" },
 ];
 
-/** Easy seeds suggested first in setup. */
-export const EASY_STARTER_IDS = [
-  "walk",
-  "stretch",
-  "water",
-  "meditate",
-] as const;
+export const starterHabitPointValue = (habitId: string) => {
+  return EASY_STARTER_IDS.some((easyId) => easyId === habitId) ? 10 : 20;
+};
 
 export const clampDefaultCapacity = (n: number) => {
   const value = Number.isFinite(n) ? Math.floor(n) : DEFAULT_CAPACITY;

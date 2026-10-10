@@ -19,3 +19,25 @@ export const normalizeTimezone = (value: string) => {
 
   return trimmed;
 };
+
+export const localDateInTimezone = (
+  timeZone: string,
+  timestamp = Date.now(),
+) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(timestamp);
+  const dateParts = new Map(parts.map((part) => [part.type, part.value]));
+  const year = dateParts.get("year");
+  const month = dateParts.get("month");
+  const day = dateParts.get("day");
+
+  if (!year || !month || !day) {
+    throw new Error("Could not determine local date");
+  }
+
+  return `${year}-${month}-${day}`;
+};

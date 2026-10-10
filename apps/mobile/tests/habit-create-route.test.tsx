@@ -68,6 +68,7 @@ test("retry keeps the same habit key and payload, while a new creation gets a ne
       name: "Take a cold shower",
       glyph: "symbol:cold",
       category: "body",
+      pointValue: 20,
     },
   ]);
   expect(add.mock.calls[1]).toEqual(add.mock.calls[0]);
@@ -84,6 +85,7 @@ test("retry keeps the same habit key and payload, while a new creation gets a ne
     name: "Practice Spanish",
     glyph: "symbol:language",
     category: "learn",
+    pointValue: 20,
   });
 });
 
@@ -122,6 +124,7 @@ test("an Orbit habit opens prefilled and saves through the update mutation", asy
     name: "Take a walk",
     glyph: habit.glyph,
     category: habit.category,
+    pointValue: 20,
   });
   expect(add).not.toHaveBeenCalled();
   expect(navigatedBack).toHaveBeenCalledTimes(1);
