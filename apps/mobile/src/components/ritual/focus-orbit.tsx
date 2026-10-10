@@ -11,6 +11,7 @@ interface FocusOrbitProps {
   completed?: number;
   mode?: "ready" | "active" | "complete";
   compact?: boolean;
+  readyContext?: "today" | "usual";
 }
 
 export default function FocusOrbit({
@@ -18,6 +19,7 @@ export default function FocusOrbit({
   completed = 0,
   mode = "ready",
   compact,
+  readyContext = "today",
 }: FocusOrbitProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -25,13 +27,17 @@ export default function FocusOrbit({
   const diameter = Math.min(compact ? 214 : 240, width - space[6] * 2);
   const count = Math.max(1, total);
   const done = mode === "complete";
+  const readyLabel =
+    readyContext === "usual"
+      ? `Your usual ${total} ${total === 1 ? "habit" : "habits"}`
+      : `Room for ${total} ${total === 1 ? "habit" : "habits"}`;
   const label =
     mode === "ready"
-      ? `Room for ${total} ${total === 1 ? "habit" : "habits"}`
+      ? readyLabel
       : `${completed} of ${total} daily habits complete`;
   let caption = "completed";
   if (mode === "ready") {
-    caption = "room for today";
+    caption = readyContext === "usual" ? "usual count" : "room for today";
   } else if (done) {
     caption = "all done";
   }
