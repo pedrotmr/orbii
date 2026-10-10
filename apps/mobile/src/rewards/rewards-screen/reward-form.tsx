@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -48,9 +49,15 @@ export default function RewardForm({
           style={styles.scrim}
         />
         <KeyboardAvoidingView
+          style={styles.keyboardAvoiding}
           behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}
         >
-          <View accessibilityViewIsModal style={styles.sheet}>
+          <ScrollView
+            accessibilityViewIsModal
+            keyboardShouldPersistTaps="handled"
+            style={styles.sheet}
+            contentContainerStyle={styles.sheetContent}
+          >
             <View style={styles.heading}>
               <View style={styles.headingCopy}>
                 <Text style={styles.eyebrow}>YOUR NEXT LITTLE GOAL</Text>
@@ -115,7 +122,7 @@ export default function RewardForm({
               disabled={busy || !validName || !validCost}
               onPress={() => onSave(name.trim(), parsedCost)}
             />
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -125,19 +132,24 @@ export default function RewardForm({
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     backdrop: { flex: 1, justifyContent: "flex-end" },
+    keyboardAvoiding: { maxHeight: "90%" },
     scrim: {
       ...StyleSheet.absoluteFill,
       backgroundColor: colors.ink,
       opacity: 0.38,
     },
     sheet: {
+      flexGrow: 0,
+      maxHeight: "100%",
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      backgroundColor: colors.surface,
+    },
+    sheetContent: {
       gap: space[4],
       paddingHorizontal: space[6],
       paddingTop: space[3],
       paddingBottom: space[8],
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
-      backgroundColor: colors.surface,
     },
     heading: {
       flexDirection: "row",
