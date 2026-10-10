@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
   getHabitPointValue,
+  getSessionEarnedPoints,
   habitAwardIdempotencyKey,
   insertCompletionBonus,
   insertSessionPointAward,
@@ -112,7 +113,7 @@ export const get = query({
       args.localDate,
     );
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
-    const earnedPoints = doc?.earnedPoints ?? 0;
+    const earnedPoints = doc ? await getSessionEarnedPoints(ctx, doc) : 0;
 
     return {
       capacity: user.capacity,

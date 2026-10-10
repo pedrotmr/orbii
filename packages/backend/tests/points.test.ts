@@ -74,6 +74,83 @@ test("new and legacy habits default to Medium and starter seeds keep their autho
   });
 });
 
+test("legacy sessions recover earned totals from awards before the total was stored", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T20:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  await insertUser(t, "owner");
+  await t.run(async (ctx) => {
+    await ctx.db.insert("habits", {
+      clerkUserId: "owner",
+      habitKey: "walk",
+      name: "Walk",
+      glyph: "symbol:walk",
+      category: "body",
+      pointValue: 10,
+    });
+    await ctx.db.insert("habits", {
+      clerkUserId: "owner",
+      habitKey: "read",
+      name: "Read",
+      glyph: "symbol:book",
+      category: "learn",
+      pointValue: 30,
+    });
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", "owner"))
+      .unique();
+    if (!user) {
+      throw new Error("User not found");
+    }
+    await ctx.db.patch(user._id, { pointsBalance: 10 });
+    await ctx.db.insert("daySessions", {
+      clerkUserId: "owner",
+      localDate: "2026-01-01",
+      phase: "active",
+      offeredIds: ["walk", "read"],
+      selectedIds: ["walk", "read"],
+      committedIds: ["walk", "read"],
+      completedIds: [],
+      committedPointValues: [
+        { habitId: "walk", points: 10 },
+        { habitId: "read", points: 30 },
+      ],
+    });
+    await ctx.db.insert("pointTransactions", {
+      clerkUserId: "owner",
+      amount: 10,
+      sourceType: "habit_award",
+      sourceName: "Walk",
+      localDate: "2026-01-01",
+      idempotencyKey: "habit:2026-01-01:walk",
+    });
+  });
+
+  await expect(
+    owner.query(api.day.get, { localDate: "2026-01-01" }),
+  ).resolves.toMatchObject({ earnedPoints: 10 });
+  await owner.mutation(api.day.toggleComplete, {
+    localDate: "2026-01-01",
+    habitId: "walk",
+  });
+  await owner.mutation(api.day.toggleComplete, {
+    localDate: "2026-01-01",
+    habitId: "read",
+  });
+
+  await expect(
+    owner.query(api.day.get, { localDate: "2026-01-01" }),
+  ).resolves.toMatchObject({
+    session: { phase: "complete" },
+    earnedPoints: 60,
+  });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    pointsBalance: 60,
+  });
+});
+
 test("habit point values accept whole numbers from 1 through 100 and remain owner-scoped", async () => {
   const t = convexTest(schema, modules);
   const owner = withIdentity(t, "owner");
