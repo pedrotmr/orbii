@@ -9,7 +9,6 @@ import {
 } from "./daily-reminder-schedule";
 
 const STORAGE_PREFIX = "@orbii/daily-reminders/v1/";
-const PHASE_STORAGE_PREFIX = "@orbii/daily-reminder-phase/v1/";
 const NOTIFICATION_MARKER = "orbiiDailyReminder";
 const NOTIFICATION_CHANNEL_ID = "daily-reminders";
 
@@ -49,57 +48,6 @@ export const saveDailyReminderPreferences = async (
   await AsyncStorage.setItem(
     `${STORAGE_PREFIX}${userId}`,
     JSON.stringify(preferences),
-  );
-};
-
-export const loadDailyReminderPhase = async (
-  userId: string,
-  localDate: string,
-) => {
-  const serialized = await AsyncStorage.getItem(
-    `${PHASE_STORAGE_PREFIX}${userId}`,
-  );
-
-  if (!serialized) {
-    return "idle";
-  }
-
-  let value: unknown;
-
-  try {
-    value = JSON.parse(serialized);
-  } catch {
-    return "idle";
-  }
-
-  if (typeof value !== "object" || value === null) {
-    return "idle";
-  }
-
-  const stored = value as Record<string, unknown>;
-  const phase = stored.phase;
-
-  if (
-    stored.localDate === localDate &&
-    (phase === "idle" ||
-      phase === "reveal" ||
-      phase === "active" ||
-      phase === "complete")
-  ) {
-    return phase;
-  }
-
-  return "idle";
-};
-
-export const saveDailyReminderPhase = async (
-  userId: string,
-  localDate: string,
-  phase: DailyReminderPhase,
-) => {
-  await AsyncStorage.setItem(
-    `${PHASE_STORAGE_PREFIX}${userId}`,
-    JSON.stringify({ localDate, phase }),
   );
 };
 

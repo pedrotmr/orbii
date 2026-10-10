@@ -14,12 +14,10 @@ import {
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
 import { todayLocalInTimezone, useTodayLocal } from "../local-date";
-import { useDailyReminders } from "../reminders/daily-reminders-provider";
 import { resolveTodayHabits } from "../today/today-habit";
 import OrbitContent from "./body/orbit-content";
 
 export default function OrbitScreen() {
-  const reminders = useDailyReminders();
   const user = useQuery(api.users.get, {});
   const localDate = useTodayLocal(user?.timezone);
   const timezone = user?.timezone?.trim();
@@ -155,19 +153,6 @@ export default function OrbitScreen() {
   const handleRemove = (habitKey: string) => {
     void run(async () => {
       await removeHabit({ habitKey, localDate });
-
-      const session = day?.session;
-      const removalCompletesOrbit =
-        session?.phase === "active" &&
-        session.committedIds.includes(habitKey) &&
-        !session.completedIds.includes(habitKey) &&
-        session.committedIds
-          .filter((id) => id !== habitKey)
-          .every((id) => session.completedIds.includes(id));
-
-      if (removalCompletesOrbit) {
-        await reminders.markTodayPhase(localDate, "complete");
-      }
     });
   };
 

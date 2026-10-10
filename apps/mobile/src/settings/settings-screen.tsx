@@ -89,6 +89,16 @@ export default function SettingsScreen() {
     void reminders.setReminderEnabled(kind, enabled);
   };
 
+  const handleOpenReminderSettings = () => {
+    void run(async () => {
+      try {
+        await reminders.openSystemSettings();
+      } catch {
+        throw new Error("We couldn’t open system Settings. Try again.");
+      }
+    });
+  };
+
   return (
     <SettingsContent
       capacity={user.capacity}
@@ -106,7 +116,7 @@ export default function SettingsScreen() {
       onRewardsVisible={handleRewardsVisible}
       onTimezone={handleTimezone}
       onReminder={handleReminder}
-      onOpenReminderSettings={() => void reminders.openSystemSettings()}
+      onOpenReminderSettings={handleOpenReminderSettings}
       onSignOut={handleSignOut}
     />
   );

@@ -16,7 +16,6 @@ import {
 import { AppState, Linking } from "react-native";
 import type {
   DailyReminderKind,
-  DailyReminderPhase,
   DailyReminderPreferences,
 } from "./daily-reminder-schedule";
 import {
@@ -30,10 +29,8 @@ import {
   hasDailyReminderPermission,
   isOrbiiReminderResponse,
   loadDailyReminderPreferences,
-  loadDailyReminderPhase,
   requestDailyReminderPermission,
   saveDailyReminderPreferences,
-  saveDailyReminderPhase,
   syncDailyReminderQueue,
 } from "./daily-reminders";
 
@@ -42,10 +39,6 @@ interface DailyRemindersContextValue {
   isLoading: boolean;
   isSaving: boolean;
   permissionMessage: string | null;
-  markTodayPhase: (
-    localDate: string,
-    phase: DailyReminderPhase,
-  ) => Promise<void>;
   setReminderEnabled: (
     kind: DailyReminderKind,
     enabled: boolean,
@@ -77,11 +70,10 @@ export function DailyRemindersProvider({
     user !== undefined &&
     user !== null &&
     localDate === todayLocalInTimezone(timezone);
+  const day = useQuery(api.day.get, isLocalDateReady ? { localDate } : "skip");
+  const phase = day?.session.phase;
   const [preferences, setPreferences] = useState(emptyDailyReminderPreferences);
   const [isLoading, setIsLoading] = useState(true);
-  const [devicePhase, setDevicePhase] = useState<DailyReminderPhase | null>(
-    null,
-  );
   const [isSaving, setIsSaving] = useState(false);
   const [permissionMessage, setPermissionMessage] = useState<string | null>(
     null,
@@ -91,13 +83,21 @@ export function DailyRemindersProvider({
   const scheduledOperation = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
+    return () => {
+      scheduledOperation.current = scheduledOperation.current
+        .catch(() => undefined)
+        .then(() => cancelDailyReminderQueue())
+        .catch(() => undefined);
+    };
+  }, []);
+
+  useEffect(() => {
     let isCurrent = true;
     setIsLoading(true);
 
     if (!userId) {
       setPreferences(emptyDailyReminderPreferences);
       setIsLoading(false);
-      void cancelDailyReminderQueue();
       return () => {
         isCurrent = false;
       };
@@ -124,34 +124,6 @@ export function DailyRemindersProvider({
       isCurrent = false;
     };
   }, [userId]);
-
-  useEffect(() => {
-    let isCurrent = true;
-    setDevicePhase(null);
-
-    if (!userId) {
-      setDevicePhase("idle");
-      return () => {
-        isCurrent = false;
-      };
-    }
-
-    void loadDailyReminderPhase(userId, localDate)
-      .then((phase) => {
-        if (isCurrent) {
-          setDevicePhase(phase);
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          setDevicePhase("idle");
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [localDate, userId]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
@@ -197,7 +169,10 @@ export function DailyRemindersProvider({
 
   useEffect(() => {
     if (!userId || user === null) {
-      void cancelDailyReminderQueue();
+      scheduledOperation.current = scheduledOperation.current
+        .catch(() => undefined)
+        .then(() => cancelDailyReminderQueue())
+        .catch(() => undefined);
       return;
     }
 
@@ -205,7 +180,7 @@ export function DailyRemindersProvider({
       isLoading ||
       user === undefined ||
       !isLocalDateReady ||
-      devicePhase === null
+      phase === undefined
     ) {
       return;
     }
@@ -222,7 +197,7 @@ export function DailyRemindersProvider({
           await syncDailyReminderQueue({
             timeZone: timezone,
             preferences,
-            phase: devicePhase,
+            phase,
           });
         } catch {
           if (isCurrent) {
@@ -238,9 +213,9 @@ export function DailyRemindersProvider({
     };
   }, [
     appOpenRevision,
-    devicePhase,
     isLoading,
     isLocalDateReady,
+    phase,
     preferences,
     timezone,
     user === undefined,
@@ -288,21 +263,6 @@ export function DailyRemindersProvider({
     return () => Notifications.setNotificationHandler(null);
   }, []);
 
-  const markTodayPhase = useCallback(
-    async (date: string, phase: DailyReminderPhase) => {
-      if (!userId) {
-        return;
-      }
-
-      await saveDailyReminderPhase(userId, date, phase);
-
-      if (date === localDate) {
-        setDevicePhase(phase);
-      }
-    },
-    [localDate, userId],
-  );
-
   const setReminderEnabled = useCallback(
     async (kind: DailyReminderKind, enabled: boolean) => {
       if (saveLock.current || !userId) {
@@ -347,7 +307,6 @@ export function DailyRemindersProvider({
       isLoading,
       isSaving,
       permissionMessage,
-      markTodayPhase,
       setReminderEnabled,
       openSystemSettings,
     }),
@@ -356,7 +315,6 @@ export function DailyRemindersProvider({
       isSaving,
       openSystemSettings,
       permissionMessage,
-      markTodayPhase,
       preferences,
       setReminderEnabled,
     ],
