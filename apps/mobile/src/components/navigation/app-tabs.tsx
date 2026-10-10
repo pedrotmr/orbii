@@ -1,7 +1,11 @@
 import { NativeTabs } from "expo-router/native-tabs";
 import { useTheme } from "../../theme/use-theme";
 
-export default function AppTabs() {
+interface AppTabsProps {
+  rewardsVisible: boolean;
+}
+
+export default function AppTabs({ rewardsVisible }: AppTabsProps) {
   const { colors } = useTheme();
   return (
     <NativeTabs
@@ -23,6 +27,12 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Orbit</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="circle.grid.2x2" md="grid_view" />
       </NativeTabs.Trigger>
+      {rewardsVisible ? (
+        <NativeTabs.Trigger name="rewards" disableAutomaticContentInsets>
+          <NativeTabs.Trigger.Label>Rewards</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="gift" md="card_giftcard" />
+        </NativeTabs.Trigger>
+      ) : null}
       <NativeTabs.Trigger name="settings" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="slider.horizontal.3" md="tune" />

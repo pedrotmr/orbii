@@ -10,6 +10,7 @@ export default defineSchema({
     daysCompleted: v.number(),
     lastCompletedLocalDate: v.union(v.string(), v.null()),
     pointsBalance: v.optional(v.number()),
+    rewardsVisible: v.optional(v.boolean()),
   }).index("by_clerkUserId", ["clerkUserId"]),
 
   habits: defineTable({
@@ -72,5 +73,16 @@ export default defineSchema({
       "localDate",
       "sourceType",
     ])
+    .index("by_clerkUserId", ["clerkUserId"]),
+
+  rewards: defineTable({
+    clerkUserId: v.string(),
+    name: v.string(),
+    cost: v.number(),
+    status: v.union(v.literal("active"), v.literal("redeemed")),
+    redeemedAt: v.optional(v.number()),
+    redeemedLocalDate: v.optional(v.string()),
+  })
+    .index("by_clerkUserId_and_status", ["clerkUserId", "status"])
     .index("by_clerkUserId", ["clerkUserId"]),
 });
