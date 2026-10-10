@@ -29,7 +29,7 @@ export default function TodayCommittedRow({
   return (
     <AnimatedPressable
       accessibilityRole="checkbox"
-      accessibilityLabel={habit.name}
+      accessibilityLabel={`${habit.name}, ${habit.pointValue} points`}
       accessibilityHint={done ? "Mark as unfinished" : "Mark as completed"}
       accessibilityState={{ checked: done, disabled }}
       disabled={disabled}
@@ -49,6 +49,7 @@ export default function TodayCommittedRow({
       <HabitIcon glyph={habit.glyph} />
       <View style={styles.meta}>
         <Text style={[styles.name, done && styles.doneName]}>{habit.name}</Text>
+        <Text style={styles.points}>{habit.pointValue} points</Text>
         <Text style={styles.hint}>
           {done ? "Done for today" : "Tap when you’re done"}
         </Text>
@@ -100,6 +101,7 @@ const createStyles = (colors: Palette) =>
       fontWeight: "600",
     },
     doneName: { color: colors.muted },
+    points: { color: colors.primary, fontSize: 13, fontWeight: "600" },
     hint: { color: colors.muted, fontSize: 13 },
     check: {
       width: 34,

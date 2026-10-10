@@ -6,15 +6,18 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import HabitIcon from "../../../components/habits/habit-icon";
 import { useTheme, useThemedStyles } from "../../../theme/use-theme";
 import HabitCategoryPicker from "./habit-category-picker";
+import HabitPointValuePicker from "./habit-point-value-picker";
 
 interface HabitCreateFormProps {
   name: string;
   iconGlyph: string;
   iconLabel: string;
   category: HabitCategory;
+  pointValue: string;
   busy: boolean;
   onNameChange: (name: string) => void;
   onCategoryChange: (category: HabitCategory) => void;
+  onPointValueChange: (pointValue: string) => void;
   onChooseIcon: () => void;
   onSubmit: () => void;
 }
@@ -24,9 +27,11 @@ export default function HabitCreateForm({
   iconGlyph,
   iconLabel,
   category,
+  pointValue,
   busy,
   onNameChange,
   onCategoryChange,
+  onPointValueChange,
   onChooseIcon,
   onSubmit,
 }: HabitCreateFormProps) {
@@ -79,6 +84,11 @@ export default function HabitCreateForm({
         value={category}
         disabled={busy}
         onChange={onCategoryChange}
+      />
+      <HabitPointValuePicker
+        value={pointValue}
+        disabled={busy}
+        onChange={onPointValueChange}
       />
       <Text style={styles.note}>
         It belongs in your Orbit. It doesn’t have to happen every day.

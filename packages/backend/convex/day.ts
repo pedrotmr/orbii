@@ -3,6 +3,11 @@ import type { Habit } from "./lib/habits";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
+  getHabitPointValue,
+  habitAwardIdempotencyKey,
+  insertPointTransaction,
+} from "./lib/points";
+import {
   applyCompletionStats,
   applyMissedDayGap,
   commit as ritualCommit,
@@ -13,6 +18,7 @@ import {
   toggleSelect as ritualToggleSelect,
   type DaySession,
 } from "./lib/ritual";
+import { localDateInTimezone } from "./lib/timezone";
 
 const requireUser = async (ctx: { db: any }, clerkUserId: string) => {
   const user = await ctx.db
@@ -32,15 +38,15 @@ const listHabits = async (ctx: { db: any }, clerkUserId: string) => {
     .query("habits")
     .withIndex("by_clerkUserId", (q: any) => q.eq("clerkUserId", clerkUserId))
     .collect();
-  return rows.map(
-    (row: any) =>
-      ({
-        id: row.habitKey,
-        name: row.name,
-        glyph: row.glyph,
-        category: row.category,
-      }) satisfies Habit,
-  );
+  const habits: Habit[] = rows.map((row: any) => ({
+    id: row.habitKey,
+    name: row.name,
+    glyph: row.glyph,
+    category: row.category,
+    pointValue: getHabitPointValue(row.pointValue, row.habitKey),
+  }));
+
+  return habits;
 };
 
 const getSessionDoc = async (
@@ -63,6 +69,7 @@ const sessionFromDoc = (doc: {
   selectedIds: string[];
   committedIds: string[];
   completedIds: string[];
+  committedPointValues?: { habitId: string; points: number }[];
 }) => {
   return {
     localDate: doc.localDate,
@@ -71,6 +78,12 @@ const sessionFromDoc = (doc: {
     selectedIds: doc.selectedIds,
     committedIds: doc.committedIds,
     completedIds: doc.completedIds,
+    committedPointValues:
+      doc.committedPointValues ??
+      doc.committedIds.map((habitId) => ({
+        habitId,
+        points: getHabitPointValue(undefined, habitId),
+      })),
   } satisfies DaySession;
 };
 
@@ -183,7 +196,22 @@ export const commit = mutation({
     }
 
     const next = ritualCommit(sessionFromDoc(doc));
-    await ctx.db.patch(doc._id, next);
+    const habits = await listHabits(ctx, clerkUserId);
+    const habitsById = new Map(habits.map((habit) => [habit.id, habit]));
+    const committedPointValues = next.committedIds.map((habitId) => {
+      const habit = habitsById.get(habitId);
+
+      if (!habit) {
+        throw new Error("A selected habit is no longer in your Orbit");
+      }
+
+      return {
+        habitId,
+        points: getHabitPointValue(habit.pointValue, habitId),
+      };
+    });
+
+    await ctx.db.patch(doc._id, { ...next, committedPointValues });
   },
 });
 
@@ -203,6 +231,35 @@ export const toggleComplete = mutation({
 
     const before = sessionFromDoc(doc);
     const next = ritualToggleComplete(before, args.habitId);
+    const isFirstCheckoff = !before.completedIds.includes(args.habitId);
+
+    if (isFirstCheckoff) {
+      const habit = await ctx.db
+        .query("habits")
+        .withIndex("by_clerkUserId_habitKey", (q) =>
+          q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitId),
+        )
+        .unique();
+
+      if (!habit) {
+        throw new Error("Habit not found");
+      }
+
+      const pointValue =
+        before.committedPointValues.find(
+          (snapshot) => snapshot.habitId === args.habitId,
+        )?.points ?? getHabitPointValue(undefined, args.habitId);
+      const localDate = localDateInTimezone(user.timezone);
+
+      await insertPointTransaction(ctx, clerkUserId, user._id, {
+        amount: pointValue,
+        sourceType: "habit_award",
+        sourceName: habit.name,
+        localDate,
+        idempotencyKey: habitAwardIdempotencyKey(localDate, args.habitId),
+      });
+    }
+
     await ctx.db.patch(doc._id, next);
 
     if (before.phase !== "complete" && next.phase === "complete") {

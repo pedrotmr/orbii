@@ -45,6 +45,50 @@ test("blank names cannot submit from the button or keyboard", async () => {
   expect(save).not.toHaveBeenCalled();
 });
 
+test("new habits default to Medium points and can save a custom value", async () => {
+  const save = jest.fn(async (_input: HabitInput) => {});
+  await render(<HabitCreateScreen onSave={save} />);
+
+  expect(
+    screen.getByRole("radio", { name: "Medium 20", checked: true }),
+  ).toBeOnTheScreen();
+  await enterName("Practice Spanish");
+  await fireEvent.changeText(screen.getByLabelText("Custom point value"), "47");
+  await press("Add to Orbit");
+
+  expect(save).toHaveBeenCalledWith({
+    name: "Practice Spanish",
+    glyph: "symbol:language",
+    category: "learn",
+    pointValue: 47,
+  });
+});
+
+test("custom point values must be whole numbers from 1 to 100", async () => {
+  const save = jest.fn(async (_input: HabitInput) => {});
+  await render(<HabitCreateScreen onSave={save} />);
+  await enterName("Practice Spanish");
+  await fireEvent.changeText(
+    screen.getByLabelText("Custom point value"),
+    "101",
+  );
+
+  expect(
+    screen.getByText("Enter a whole number from 1 to 100."),
+  ).toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Add to Orbit" })).toBeDisabled();
+  expect(save).not.toHaveBeenCalled();
+
+  await fireEvent.changeText(
+    screen.getByLabelText("Custom point value"),
+    "100",
+  );
+  await press("Add to Orbit");
+  expect(save).toHaveBeenCalledWith(
+    expect.objectContaining({ pointValue: 100 }),
+  );
+});
+
 test("saving sends the trimmed name and suggested symbol, and only closes after success", async () => {
   const pending = deferred();
   const save = jest.fn((_input: HabitInput) => pending.promise);
@@ -55,6 +99,7 @@ test("saving sends the trimmed name and suggested symbol, and only closes after 
     name: "Take a cold shower",
     glyph: "symbol:cold",
     category: "body",
+    pointValue: 20,
   });
   expect(screen.getByRole("button", { name: "Adding…" })).toBeDisabled();
   expect(navigatedBack).not.toHaveBeenCalled();
@@ -123,6 +168,7 @@ test("manual icon and category choices survive renaming and are saved", async ()
     name: "Drink water",
     glyph: "symbol:piano",
     category: "mind",
+    pointValue: 20,
   });
 });
 
@@ -196,6 +242,7 @@ test("editing an unknown saved glyph preserves it when saving the name", async (
     name: "Take a longer walk",
     glyph: habit.glyph,
     category: habit.category,
+    pointValue: 20,
   });
 });
 
@@ -221,6 +268,7 @@ test("choosing a new icon replaces an unknown saved glyph", async () => {
     name: habit.name,
     glyph: "symbol:read",
     category: habit.category,
+    pointValue: 20,
   });
 });
 
