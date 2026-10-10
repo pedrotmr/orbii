@@ -68,15 +68,17 @@ export default function TodayOfferRow({
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     row: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: space[3],
-      minHeight: 76,
-      padding: space[4],
+      width: "48%",
+      minHeight: 88,
+      alignItems: "flex-start",
+      justifyContent: "flex-end",
+      gap: space[2],
+      padding: space[3],
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.surface,
+      position: "relative",
     },
     selected: {
       borderColor: colors.primary,
@@ -84,15 +86,18 @@ const createStyles = (colors: Palette) =>
     },
     disabled: { opacity: 0.5 },
     name: {
-      flex: 1,
       fontSize: 17,
       lineHeight: 23,
       color: colors.ink,
       fontWeight: "600",
+      maxWidth: "88%",
     },
     check: {
       width: 26,
       height: 26,
+      position: "absolute",
+      top: space[2],
+      right: space[2],
       borderRadius: radius.full,
       borderWidth: 1.5,
       borderColor: colors.muted,
