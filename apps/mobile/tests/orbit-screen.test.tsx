@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useMutation, useQuery } from "convex/react";
 import { Alert } from "react-native";
 import OrbitScreen from "../src/orbit/orbit-screen";
+import { useDailyReminders } from "../src/reminders/daily-reminders-provider";
 import { resetNavigation } from "./support/navigation";
 
 jest.mock("@orbii/backend", () => ({
@@ -32,6 +33,9 @@ jest.mock("../src/local-date", () => ({
 jest.mock("../src/live-activity/use-sync-orbit-live-activity", () => ({
   useSyncOrbitLiveActivity: jest.fn(),
 }));
+jest.mock("../src/reminders/daily-reminders-provider", () => ({
+  useDailyReminders: jest.fn(),
+}));
 jest.mock("expo-haptics", () => ({
   selectionAsync: jest.fn(async () => undefined),
 }));
@@ -52,7 +56,13 @@ const secondHabit: Habit = {
 
 const habits = [savedHabit, secondHabit];
 const user = { timezone: "UTC" };
-const day = {
+const day: {
+  session: {
+    phase: "idle" | "reveal" | "active" | "complete";
+    committedIds: string[];
+    completedIds: string[];
+  };
+} = {
   session: {
     phase: "idle",
     committedIds: [],
@@ -68,15 +78,28 @@ let removeHabit: jest.Mock<
 let reorderHabit: jest.Mock<
   (args: { habitKeys: string[] }) => Promise<unknown>
 >;
+let markTodayPhase: jest.Mock<
+  (
+    localDate: string,
+    phase: "idle" | "reveal" | "active" | "complete",
+  ) => Promise<void>
+>;
 
 beforeEach(() => {
   resetNavigation();
+  day.session.phase = "idle";
+  day.session.committedIds = [];
+  day.session.completedIds = [];
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
   removePromise = new Promise<void>((resolve) => {
     finishRemove = () => resolve();
   });
   removeHabit = jest.fn(() => removePromise);
   reorderHabit = jest.fn(async () => undefined);
+  markTodayPhase = jest.fn(async () => undefined);
+  jest.mocked(useDailyReminders).mockReturnValue({
+    markTodayPhase,
+  } as never);
 
   jest.mocked(useQuery).mockImplementation((reference, ..._args) => {
     if (reference === api.users.get) {
@@ -98,6 +121,30 @@ beforeEach(() => {
       withOptimisticUpdate: () => reorderHabit,
     } as never;
   });
+});
+
+test("records a same-device completion when removing the last unchecked habit", async () => {
+  day.session.phase = "active";
+  day.session.committedIds = [savedHabit.id, secondHabit.id];
+  day.session.completedIds = [secondHabit.id];
+  await render(<OrbitScreen />);
+
+  await fireEvent(
+    screen.getByRole("button", { name: "Edit Take a walk" }),
+    "accessibilityAction",
+    {
+      nativeEvent: { actionName: "remove" },
+    },
+  );
+  const buttons = jest.mocked(Alert.alert).mock.lastCall?.[2];
+
+  await act(async () => {
+    buttons?.find((button) => button.text === "Remove")?.onPress?.();
+    finishRemove();
+    await removePromise;
+  });
+
+  expect(markTodayPhase).toHaveBeenCalledWith("2026-10-09", "complete");
 });
 
 test("a drag finishing during a remove shows feedback and resets the grid", async () => {
