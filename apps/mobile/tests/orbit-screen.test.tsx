@@ -4,7 +4,6 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useMutation, useQuery } from "convex/react";
 import { Alert } from "react-native";
 import OrbitScreen from "../src/orbit/orbit-screen";
-import { useDailyReminders } from "../src/reminders/daily-reminders-provider";
 import { resetNavigation } from "./support/navigation";
 
 jest.mock("@orbii/backend", () => ({
@@ -32,9 +31,6 @@ jest.mock("../src/local-date", () => ({
 }));
 jest.mock("../src/live-activity/use-sync-orbit-live-activity", () => ({
   useSyncOrbitLiveActivity: jest.fn(),
-}));
-jest.mock("../src/reminders/daily-reminders-provider", () => ({
-  useDailyReminders: jest.fn(),
 }));
 jest.mock("expo-haptics", () => ({
   selectionAsync: jest.fn(async () => undefined),
@@ -78,12 +74,6 @@ let removeHabit: jest.Mock<
 let reorderHabit: jest.Mock<
   (args: { habitKeys: string[] }) => Promise<unknown>
 >;
-let markTodayPhase: jest.Mock<
-  (
-    localDate: string,
-    phase: "idle" | "reveal" | "active" | "complete",
-  ) => Promise<void>
->;
 
 beforeEach(() => {
   resetNavigation();
@@ -96,10 +86,6 @@ beforeEach(() => {
   });
   removeHabit = jest.fn(() => removePromise);
   reorderHabit = jest.fn(async () => undefined);
-  markTodayPhase = jest.fn(async () => undefined);
-  jest.mocked(useDailyReminders).mockReturnValue({
-    markTodayPhase,
-  } as never);
 
   jest.mocked(useQuery).mockImplementation((reference, ..._args) => {
     if (reference === api.users.get) {
@@ -123,7 +109,7 @@ beforeEach(() => {
   });
 });
 
-test("records a same-device completion when removing the last unchecked habit", async () => {
+test("removing the last unchecked habit leaves phase updates to Convex", async () => {
   day.session.phase = "active";
   day.session.committedIds = [savedHabit.id, secondHabit.id];
   day.session.completedIds = [secondHabit.id];
@@ -144,7 +130,10 @@ test("records a same-device completion when removing the last unchecked habit", 
     await removePromise;
   });
 
-  expect(markTodayPhase).toHaveBeenCalledWith("2026-10-09", "complete");
+  expect(removeHabit).toHaveBeenCalledWith({
+    habitKey: savedHabit.id,
+    localDate: "2026-10-09",
+  });
 });
 
 test("a drag finishing during a remove shows feedback and resets the grid", async () => {

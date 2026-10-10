@@ -21,9 +21,22 @@ interface BuildDailyReminderScheduleArgs {
   days?: number;
 }
 
-const REMINDER_HOURS: Record<DailyReminderKind, number> = {
+export const DAILY_REMINDER_HOURS: Record<DailyReminderKind, number> = {
   morning: 8,
   evening: 20,
+};
+
+const reminderTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  hourCycle: "h12",
+  timeZone: "UTC",
+});
+
+export const formatDailyReminderTime = (kind: DailyReminderKind) => {
+  return reminderTimeFormatter.format(
+    new Date(Date.UTC(2000, 0, 1, DAILY_REMINDER_HOURS[kind])),
+  );
 };
 
 const REMINDER_COPY: Record<DailyReminderKind, string> = {
@@ -136,7 +149,7 @@ export const buildDailyReminderSchedule = ({
 
       const date = localDateTimeToInstant(
         localDate,
-        REMINDER_HOURS[kind],
+        DAILY_REMINDER_HOURS[kind],
         timeZone,
       );
 

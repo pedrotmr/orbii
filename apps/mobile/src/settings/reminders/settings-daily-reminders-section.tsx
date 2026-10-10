@@ -1,9 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { type Palette, radius, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
-import type {
-  DailyReminderKind,
-  DailyReminderPreferences,
+import {
+  formatDailyReminderTime,
+  type DailyReminderKind,
+  type DailyReminderPreferences,
 } from "../../reminders/daily-reminder-schedule";
 import { useTheme, useThemedStyles } from "../../theme/use-theme";
 
@@ -39,7 +40,9 @@ export default function SettingsDailyRemindersSection({
           />
           <View style={styles.meta}>
             <Text style={styles.label}>Morning</Text>
-            <Text style={styles.time}>8:00 AM</Text>
+            <Text style={styles.time}>
+              {formatDailyReminderTime("morning")}
+            </Text>
           </View>
           <Switch
             accessibilityLabel="Morning reminder"
@@ -61,7 +64,9 @@ export default function SettingsDailyRemindersSection({
           />
           <View style={styles.meta}>
             <Text style={styles.label}>Evening</Text>
-            <Text style={styles.time}>8:00 PM</Text>
+            <Text style={styles.time}>
+              {formatDailyReminderTime("evening")}
+            </Text>
           </View>
           <Switch
             accessibilityLabel="Evening reminder"

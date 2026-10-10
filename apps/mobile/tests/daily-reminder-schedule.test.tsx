@@ -1,7 +1,15 @@
 import { expect, test } from "@jest/globals";
-import { buildDailyReminderSchedule } from "../src/reminders/daily-reminder-schedule";
+import {
+  buildDailyReminderSchedule,
+  formatDailyReminderTime,
+} from "../src/reminders/daily-reminder-schedule";
 
 const enabledReminders = { morning: true, evening: true };
+
+test("settings labels follow the scheduled reminder hours", () => {
+  expect(formatDailyReminderTime("morning")).toBe("8:00 AM");
+  expect(formatDailyReminderTime("evening")).toBe("8:00 PM");
+});
 
 test("builds a 30-day queue at the saved timezone's 08:00 and 20:00", () => {
   const reminders = buildDailyReminderSchedule({

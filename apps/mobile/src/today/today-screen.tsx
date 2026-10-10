@@ -12,7 +12,6 @@ import {
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
 import { todayLocalInTimezone, useTodayLocal } from "../local-date";
-import { useDailyReminders } from "../reminders/daily-reminders-provider";
 import TodayActivePhase from "./active/today-active-phase";
 import TodayHeader from "./chrome/today-header";
 import TodayCompletePhase from "./complete/today-complete-phase";
@@ -30,7 +29,6 @@ export default function TodayScreen() {
   const [actionBusy, setActionBusy] = useState(false);
   const busyRef = useRef(false);
   const user = useQuery(api.users.get, {});
-  const reminders = useDailyReminders();
   const localDate = useTodayLocal(user?.timezone);
   const timezone = user?.timezone?.trim();
   const isLocalDateReady =
@@ -125,7 +123,6 @@ export default function TodayScreen() {
           onReveal={() =>
             void run(async () => {
               await startReveal({ localDate });
-              await reminders.markTodayPhase(localDate, "reveal");
               setReleasedOrbit(null);
             })
           }
@@ -147,7 +144,6 @@ export default function TodayScreen() {
           onCommit={() =>
             void run(async () => {
               await commit({ localDate });
-              await reminders.markTodayPhase(localDate, "active");
 
               try {
                 if (!(await isOrbitLiveActivitySupported())) {
@@ -178,7 +174,6 @@ export default function TodayScreen() {
           onShuffle={() =>
             void run(async () => {
               await rereveal({ localDate });
-              await reminders.markTodayPhase(localDate, "reveal");
             })
           }
         />
@@ -198,14 +193,12 @@ export default function TodayScreen() {
                   day.session.committedIds.length
               ) {
                 completionFeedback();
-                await reminders.markTodayPhase(localDate, "complete");
               }
             })
           }
           onReshuffle={() =>
             void run(async () => {
               await rereveal({ localDate });
-              await reminders.markTodayPhase(localDate, "reveal");
               setReleasedOrbit({
                 localDate,
                 count: day.session.committedIds.length,

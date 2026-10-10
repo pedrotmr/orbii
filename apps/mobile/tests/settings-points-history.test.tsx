@@ -16,7 +16,6 @@ jest.mock("../src/reminders/daily-reminders-provider", () => ({
     isLoading: false,
     isSaving: false,
     permissionMessage: null,
-    markTodayPhase: async () => undefined,
     setReminderEnabled: async () => true,
     openSystemSettings: async () => undefined,
   }),
