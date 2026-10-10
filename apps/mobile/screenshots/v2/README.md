@@ -29,3 +29,10 @@ inert callbacks. No backend writes were made.
   active goals, including an eligible goal.
 - `rewards-tab-setting.png` — the Rewards tab visibility setting explains that
   hiding it preserves rewards and point balance.
+
+## Reward redemption
+
+`reward-redemption-confirmation.png` was captured on an iPhone 17 Pro simulator
+running iOS 26.5 from the production reward card and native confirmation alert.
+The sample balance covers the reward cost, and the confirmation callback is
+inert so the screenshot does not redeem a reward or write backend data.
