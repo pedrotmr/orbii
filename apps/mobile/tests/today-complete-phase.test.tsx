@@ -11,7 +11,12 @@ const habit = {
 
 test("empty completed state keeps celebration and stats without an invented ring or habits card", async () => {
   await render(
-    <TodayCompletePhase streak={3} daysCompleted={7} committedHabits={[]} />,
+    <TodayCompletePhase
+      streak={3}
+      daysCompleted={7}
+      earnedPoints={20}
+      committedHabits={[]}
+    />,
   );
 
   expect(screen.getByText("Today’s Orbit\ncomplete.")).toBeOnTheScreen();
@@ -26,6 +31,7 @@ test("nonempty completed state keeps the ring and completed habits", async () =>
     <TodayCompletePhase
       streak={3}
       daysCompleted={7}
+      earnedPoints={30}
       committedHabits={[habit]}
     />,
   );
@@ -34,4 +40,18 @@ test("nonempty completed state keeps the ring and completed habits", async () =>
     screen.getByLabelText("1 of 1 daily habits complete"),
   ).toBeOnTheScreen();
   expect(screen.getByText("Read")).toBeOnTheScreen();
+});
+
+test("completion celebration shows the points earned today", async () => {
+  await render(
+    <TodayCompletePhase
+      streak={3}
+      daysCompleted={7}
+      earnedPoints={60}
+      committedHabits={[habit]}
+    />,
+  );
+
+  expect(screen.getByText("60")).toBeOnTheScreen();
+  expect(screen.getByText("points earned today")).toBeOnTheScreen();
 });

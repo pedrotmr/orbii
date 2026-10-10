@@ -35,6 +35,10 @@ export const habitAwardIdempotencyKey = (
   return `habit:${localDate}:${habitId}`;
 };
 
+export const completionBonusIdempotencyKey = (localDate: string) => {
+  return `completion:${localDate}`;
+};
+
 export type PointTransactionSource =
   "habit_award" | "completion_bonus" | "reward_redemption";
 
