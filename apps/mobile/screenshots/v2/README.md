@@ -18,3 +18,14 @@ and point values on the two committed habits. No backend writes were made.
 - `habit-points-edit.png` — editing a starter habit with Easy (10) selected.
 - `habit-points-reveal.png` — the offered habits show their saved point values.
 - `habit-points-active.png` — committed Today rows show their point values.
+
+## Rewards progress
+
+The following iPhone 17 Pro simulator captures (iOS 26.5) use the production
+reward card and Rewards visibility setting with deterministic sample data and
+inert callbacks. No backend writes were made.
+
+- `reward-goals.png` — one shared point balance updates progress for multiple
+  active goals, including an eligible goal.
+- `rewards-tab-setting.png` — the Rewards tab visibility setting explains that
+  hiding it preserves rewards and point balance.
