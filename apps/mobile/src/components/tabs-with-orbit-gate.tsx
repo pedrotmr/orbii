@@ -6,7 +6,8 @@ import AppTabs from "./navigation/app-tabs";
 
 export default function TabsWithOrbitGate() {
   const habits = useQuery(api.habits.list, {});
-  if (habits === undefined) {
+  const user = useQuery(api.users.get, {});
+  if (habits === undefined || user === undefined) {
     return <BootSpinner />;
   }
 
@@ -14,5 +15,5 @@ export default function TabsWithOrbitGate() {
     return <Redirect href="/setup" />;
   }
 
-  return <AppTabs />;
+  return <AppTabs rewardsVisible={user?.rewardsVisible ?? true} />;
 }

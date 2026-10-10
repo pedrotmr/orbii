@@ -5,26 +5,31 @@ import InlineError from "../../components/states/inline-error";
 import { useThemedStyles } from "../../theme/use-theme";
 import SettingsSignOutSection from "../account/settings-sign-out-section";
 import SettingsCapacitySection from "../capacity/settings-capacity-section";
+import SettingsRewardsSection from "../rewards/settings-rewards-section";
 import SettingsTimezoneSection from "../timezone/settings-timezone-section";
 
 interface SettingsContentProps {
   capacity: number;
+  rewardsVisible: boolean;
   timezone: string;
   deviceTimezone: string;
   busy: boolean;
   error: string | null;
   onCapacity: (value: number) => void;
+  onRewardsVisible: (visible: boolean) => void;
   onTimezone: (value: string) => Promise<boolean>;
   onSignOut: () => void;
 }
 
 export default function SettingsContent({
   capacity,
+  rewardsVisible,
   timezone,
   deviceTimezone,
   busy,
   error,
   onCapacity,
+  onRewardsVisible,
   onTimezone,
   onSignOut,
 }: SettingsContentProps) {
@@ -49,6 +54,12 @@ export default function SettingsContent({
         deviceTimezone={deviceTimezone}
         busy={busy}
         onSave={onTimezone}
+      />
+      <Text style={styles.section}>Points</Text>
+      <SettingsRewardsSection
+        visible={rewardsVisible}
+        busy={busy}
+        onChange={onRewardsVisible}
       />
       <SettingsSignOutSection busy={busy} onSignOut={onSignOut} />
       {error ? <InlineError message={error} /> : null}
