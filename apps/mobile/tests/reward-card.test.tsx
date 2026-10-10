@@ -94,6 +94,7 @@ test("reward card shows zero progress for an invalid zero cost", async () => {
     <RewardCard
       reward={reward}
       busy={false}
+      onRedeem={() => undefined}
       onEdit={() => undefined}
       onDelete={() => undefined}
     />,
