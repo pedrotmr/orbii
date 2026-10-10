@@ -12,6 +12,7 @@ export default function SettingsScreen() {
   const { signOut } = useAuth();
   const user = useQuery(api.users.get, {});
   const setCapacity = useMutation(api.users.setCapacity);
+  const setRewardsVisible = useMutation(api.users.setRewardsVisible);
   const setTimezone = useMutation(api.users.setTimezone);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +58,16 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleRewardsVisible = (visible: boolean) => {
+    if (visible === user?.rewardsVisible) {
+      return;
+    }
+
+    void run(async () => {
+      await setRewardsVisible({ visible });
+    });
+  };
+
   const handleTimezone = async (timezone: string) => {
     return await run(async () => {
       await setTimezone({ timezone });
@@ -72,11 +83,13 @@ export default function SettingsScreen() {
   return (
     <SettingsContent
       capacity={user.capacity}
+      rewardsVisible={user.rewardsVisible}
       timezone={user.timezone}
       deviceTimezone={deviceTz}
       busy={busy}
       error={error}
       onCapacity={handleCapacity}
+      onRewardsVisible={handleRewardsVisible}
       onTimezone={handleTimezone}
       onSignOut={handleSignOut}
     />
