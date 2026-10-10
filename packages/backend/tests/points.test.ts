@@ -74,7 +74,7 @@ test("new and legacy habits default to Medium and starter seeds keep their autho
   });
 });
 
-test("legacy sessions recover earned totals from awards before the total was stored", async () => {
+test("legacy sessions recover earned totals from every stored award before the total was stored", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-01-01T20:00:00.000Z"));
   const t = convexTest(schema, modules);
@@ -104,7 +104,7 @@ test("legacy sessions recover earned totals from awards before the total was sto
     if (!user) {
       throw new Error("User not found");
     }
-    await ctx.db.patch(user._id, { pointsBalance: 10 });
+    await ctx.db.patch(user._id, { pointsBalance: 60 });
     await ctx.db.insert("daySessions", {
       clerkUserId: "owner",
       localDate: "2026-01-01",
@@ -118,19 +118,22 @@ test("legacy sessions recover earned totals from awards before the total was sto
         { habitId: "read", points: 30 },
       ],
     });
-    await ctx.db.insert("pointTransactions", {
-      clerkUserId: "owner",
-      amount: 10,
-      sourceType: "habit_award",
-      sourceName: "Walk",
-      localDate: "2026-01-01",
-      idempotencyKey: "habit:2026-01-01:walk",
-    });
+    for (let index = 0; index < 6; index += 1) {
+      const habitId = index === 0 ? "walk" : "legacy-" + String(index);
+      await ctx.db.insert("pointTransactions", {
+        clerkUserId: "owner",
+        amount: 10,
+        sourceType: "habit_award",
+        sourceName: "Habit " + String(index + 1),
+        localDate: "2026-01-01",
+        idempotencyKey: "habit:2026-01-01:" + habitId,
+      });
+    }
   });
 
   await expect(
     owner.query(api.day.get, { localDate: "2026-01-01" }),
-  ).resolves.toMatchObject({ earnedPoints: 10 });
+  ).resolves.toMatchObject({ earnedPoints: 60 });
   await owner.mutation(api.day.toggleComplete, {
     localDate: "2026-01-01",
     habitId: "walk",
@@ -144,10 +147,10 @@ test("legacy sessions recover earned totals from awards before the total was sto
     owner.query(api.day.get, { localDate: "2026-01-01" }),
   ).resolves.toMatchObject({
     session: { phase: "complete" },
-    earnedPoints: 60,
+    earnedPoints: 110,
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
-    pointsBalance: 60,
+    pointsBalance: 110,
   });
 });
 

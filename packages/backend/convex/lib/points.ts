@@ -1,6 +1,6 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { OFFER_SIZE, starterHabitPointValue } from "./habits";
+import { starterHabitPointValue } from "./habits";
 
 export const DEFAULT_HABIT_POINT_VALUE = 20;
 export const MIN_HABIT_POINT_VALUE = 1;
@@ -75,7 +75,7 @@ export const getSessionEarnedPoints = async (
             .eq("localDate", daySession.localDate)
             .eq("sourceType", sourceType),
         )
-        .take(sourceType === "habit_award" ? OFFER_SIZE : 1),
+        .collect(),
     ),
   );
 
