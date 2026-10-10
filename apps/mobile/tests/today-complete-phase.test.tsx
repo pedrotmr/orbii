@@ -2,7 +2,12 @@ import { expect, test } from "@jest/globals";
 import { render, screen } from "@testing-library/react-native";
 import TodayCompletePhase from "../src/today/complete/today-complete-phase";
 
-const habit = { id: "habit-1", name: "Read", glyph: "symbol:book" };
+const habit = {
+  id: "habit-1",
+  name: "Read",
+  glyph: "symbol:book",
+  pointValue: 20,
+};
 
 test("empty completed state keeps celebration and stats without an invented ring or habits card", async () => {
   await render(

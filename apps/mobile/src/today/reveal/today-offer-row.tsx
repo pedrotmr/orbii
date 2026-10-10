@@ -29,7 +29,7 @@ export default function TodayOfferRow({
   return (
     <AnimatedPressable
       accessibilityRole="checkbox"
-      accessibilityLabel={habit.name}
+      accessibilityLabel={`${habit.name}, ${habit.pointValue} points`}
       accessibilityState={{ checked: selected, disabled }}
       disabled={disabled}
       onPress={() => {
@@ -47,6 +47,7 @@ export default function TodayOfferRow({
     >
       <HabitIcon glyph={habit.glyph} selected={selected} />
       <Text style={styles.name}>{habit.name}</Text>
+      <Text style={styles.points}>{habit.pointValue} points</Text>
       <View style={[styles.check, selected && styles.checked]}>
         {selected ? (
           <Animated.View
@@ -91,6 +92,12 @@ const createStyles = (colors: Palette) =>
       color: colors.ink,
       fontWeight: "600",
       maxWidth: "88%",
+    },
+    points: {
+      color: colors.primary,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
     },
     check: {
       width: 26,

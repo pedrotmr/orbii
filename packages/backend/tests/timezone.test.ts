@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { normalizeTimezone } from "../convex/lib/timezone";
+import { localDateInTimezone, normalizeTimezone } from "../convex/lib/timezone";
 
 describe("normalizeTimezone", () => {
   test("trims whitespace", () => {
@@ -23,4 +23,13 @@ describe("normalizeTimezone", () => {
       "Invalid timezone",
     );
   });
+});
+
+test("localDateInTimezone derives a stable calendar day from the saved timezone", () => {
+  expect(
+    localDateInTimezone("America/Los_Angeles", Date.UTC(2026, 0, 1, 2)),
+  ).toBe("2025-12-31");
+  expect(localDateInTimezone("Asia/Tokyo", Date.UTC(2025, 11, 31, 15))).toBe(
+    "2026-01-01",
+  );
 });

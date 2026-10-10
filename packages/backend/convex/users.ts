@@ -27,6 +27,7 @@ export const ensure = mutation({
       streak: 0,
       daysCompleted: 0,
       lastCompletedLocalDate: null,
+      pointsBalance: 0,
     });
   },
 });
@@ -44,7 +45,10 @@ export const get = query({
       return null;
     }
 
-    return user;
+    return {
+      ...user,
+      pointsBalance: user.pointsBalance ?? 0,
+    };
   },
 });
 

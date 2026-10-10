@@ -2,6 +2,11 @@ import { offerSizeFor, type Habit } from "./habits";
 
 export type DayPhase = "idle" | "reveal" | "active" | "complete";
 
+export interface CommittedHabitPointValue {
+  habitId: string;
+  points: number;
+}
+
 export type DaySession = {
   localDate: string;
   phase: DayPhase;
@@ -9,6 +14,7 @@ export type DaySession = {
   selectedIds: string[];
   committedIds: string[];
   completedIds: string[];
+  committedPointValues: CommittedHabitPointValue[];
 };
 
 export type UserStats = {
@@ -53,6 +59,7 @@ export const emptyDay = (localDate: string) => {
     selectedIds: [] as string[],
     committedIds: [] as string[],
     completedIds: [] as string[],
+    committedPointValues: [] as CommittedHabitPointValue[],
   } satisfies DaySession;
 };
 
@@ -82,6 +89,7 @@ export const startReveal = (
       selectedIds: [] as string[],
       committedIds: [] as string[],
       completedIds: [] as string[],
+      committedPointValues: [] as CommittedHabitPointValue[],
     } satisfies DaySession,
   };
 };
@@ -183,6 +191,9 @@ export const scrubHabitFromSession = (session: DaySession, habitId: string) => {
     selectedIds: without(session.selectedIds),
     committedIds: without(session.committedIds),
     completedIds: without(session.completedIds),
+    committedPointValues: (session.committedPointValues ?? []).filter(
+      (snapshot) => snapshot.habitId !== habitId,
+    ),
   } satisfies DaySession;
 
   if (next.phase === "reveal" && next.offeredIds.length === 0) {
