@@ -53,7 +53,7 @@ const withAppVariant = ({ config }) => ({
       monochromeImage: "./assets/android-icon-monochrome.png",
     },
   },
-  plugins: config.plugins.map((plugin) => {
+  plugins: (config.plugins ?? []).map((plugin) => {
     if (Array.isArray(plugin) && plugin[0] === "expo-splash-screen") {
       return [
         plugin[0],

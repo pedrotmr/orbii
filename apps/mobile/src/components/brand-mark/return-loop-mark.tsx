@@ -20,8 +20,7 @@ export default function ReturnLoopMark({ size }: ReturnLoopMarkProps) {
         strokeWidth={7}
         strokeDasharray="110 24"
         strokeLinecap="round"
-        rotation={-34}
-        origin="32,32"
+        transform="rotate(-34 32 32)"
       />
       <Circle cx={47} cy={16} r={4.5} fill={brandColors.coral} />
     </Svg>
