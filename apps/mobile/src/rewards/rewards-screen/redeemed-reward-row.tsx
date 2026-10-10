@@ -11,19 +11,29 @@ interface RedeemedRewardRowProps {
 export default function RedeemedRewardRow({ reward }: RedeemedRewardRowProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const redeemedDate = reward.redeemedLocalDate
+    ? "Redeemed " + reward.redeemedLocalDate
+    : "Redeemed";
+  const accessibilityLabel =
+    reward.name +
+    ", " +
+    redeemedDate +
+    ", redeemed for " +
+    reward.cost.toLocaleString() +
+    " points";
 
   return (
-    <View accessibilityLabel={reward.name + " redeemed"} style={styles.card}>
+    <View
+      accessible
+      accessibilityLabel={accessibilityLabel}
+      style={styles.card}
+    >
       <View style={styles.icon}>
         <Ionicons name="checkmark" size={20} color={colors.success} />
       </View>
       <View style={styles.copy}>
         <Text style={styles.name}>{reward.name}</Text>
-        <Text style={styles.date}>
-          {reward.redeemedLocalDate
-            ? "Redeemed " + reward.redeemedLocalDate
-            : "Redeemed"}
-        </Text>
+        <Text style={styles.date}>{redeemedDate}</Text>
       </View>
       <Text style={styles.cost}>−{reward.cost.toLocaleString()} pts</Text>
     </View>

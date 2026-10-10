@@ -80,7 +80,7 @@ export const listRedeemed = query({
     const clerkUserId = await requireClerkUserId(ctx);
     const rewards = await ctx.db
       .query("rewards")
-      .withIndex("by_clerkUserId_and_status", (q) =>
+      .withIndex("by_clerkUserId_status_redeemedAt", (q) =>
         q.eq("clerkUserId", clerkUserId).eq("status", "redeemed"),
       )
       .order("desc")
