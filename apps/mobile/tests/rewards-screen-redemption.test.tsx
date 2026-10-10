@@ -88,3 +88,21 @@ test("eligible reward redemption requires explicit confirmation and shows the co
 
   expect(redeemReward).toHaveBeenCalledWith({ rewardId: reward.id });
 });
+
+test("active goals render while redeemed reward history loads", async () => {
+  jest.mocked(usePaginatedQuery).mockImplementation((reference) => {
+    return (reference as unknown as string) ===
+      (api.rewards.list as unknown as string)
+      ? (activePage as never)
+      : ({
+          results: [],
+          status: "LoadingFirstPage",
+          loadMore: jest.fn(),
+        } as never);
+  });
+
+  await render(<RewardsScreen />);
+
+  expect(screen.getByText("A concert")).toBeOnTheScreen();
+  expect(screen.getByText("Loading redeemed rewards…")).toBeOnTheScreen();
+});

@@ -56,11 +56,7 @@ export default function RewardsScreen() {
     }
   };
 
-  if (
-    user === undefined ||
-    status === "LoadingFirstPage" ||
-    redeemedStatus === "LoadingFirstPage"
-  ) {
+  if (user === undefined || status === "LoadingFirstPage") {
     return <BootSpinner label="Loading rewards" />;
   }
 
@@ -222,7 +218,9 @@ export default function RewardsScreen() {
           These rewards are saved here and can’t be changed.
         </Text>
       </View>
-      {redeemedRewards.length > 0 ? (
+      {redeemedStatus === "LoadingFirstPage" ? (
+        <Text style={styles.emptyRedeemed}>Loading redeemed rewards…</Text>
+      ) : redeemedRewards.length > 0 ? (
         <View style={styles.list}>
           {redeemedRewards.map((reward) => (
             <RedeemedRewardRow key={reward.id} reward={reward} />
