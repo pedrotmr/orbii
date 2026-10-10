@@ -90,7 +90,7 @@ export default function RewardForm({
                   accessibilityLabel="Point cost"
                   editable={!busy}
                   keyboardType="number-pad"
-                  onChangeText={setCost}
+                  onChangeText={(text) => setCost(text.replace(/[^0-9]/g, ""))}
                   placeholder="200"
                   placeholderTextColor={colors.muted}
                   selectionColor={colors.primary}
