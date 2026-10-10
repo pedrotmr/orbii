@@ -36,3 +36,10 @@ inert callbacks. No backend writes were made.
 running iOS 26.5 from the production reward card and native confirmation alert.
 The sample balance covers the reward cost, and the confirmation callback is
 inert so the screenshot does not redeem a reward or write backend data.
+
+## Points history
+
+`points-history.png` was captured on an iPhone 17 Pro simulator running iOS
+26.5 with the production transaction row and deterministic sample data. It
+shows a habit award, the daily completion bonus, and a reward redemption debit.
+No backend writes were made for this capture.
