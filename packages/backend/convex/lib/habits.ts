@@ -64,7 +64,8 @@ export const EASY_STARTER_IDS = [
 ] as const;
 
 export const clampDefaultCapacity = (n: number) => {
-  return Math.max(MIN_CAPACITY, Math.min(MAX_CAPACITY, Math.floor(n)));
+  const value = Number.isFinite(n) ? Math.floor(n) : DEFAULT_CAPACITY;
+  return Math.max(MIN_CAPACITY, Math.min(MAX_CAPACITY, value));
 };
 
 export const offerSizeFor = (orbitSize: number) => {

@@ -159,7 +159,6 @@ export const toggleSelect = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    await requireUser(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
     if (!doc) {
@@ -177,7 +176,6 @@ export const commit = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    await requireUser(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
     if (!doc) {
@@ -231,7 +229,6 @@ export const rereveal = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    await requireUser(ctx, clerkUserId);
     const habits = await listHabits(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
