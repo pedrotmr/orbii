@@ -3,6 +3,7 @@ import type { Habit } from "./lib/habits";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
+  completionBonusIdempotencyKey,
   getHabitPointValue,
   habitAwardIdempotencyKey,
   insertPointTransaction,
@@ -111,10 +112,21 @@ export const get = query({
       args.localDate,
     );
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const transactions = await ctx.db
+      .query("pointTransactions")
+      .withIndex("by_clerkUserId_localDate", (q) =>
+        q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate),
+      )
+      .collect();
+    const earnedPoints = transactions.reduce((total, transaction) => {
+      return total + Math.max(0, transaction.amount);
+    }, 0);
+
     return {
       capacity: user.capacity,
       streak: stats.streak,
       daysCompleted: user.daysCompleted,
+      earnedPoints,
       session: doc ? sessionFromDoc(doc) : emptyDay(args.localDate),
     };
   },
@@ -232,6 +244,9 @@ export const toggleComplete = mutation({
     const before = sessionFromDoc(doc);
     const next = ritualToggleComplete(before, args.habitId);
     const isFirstCheckoff = !before.completedIds.includes(args.habitId);
+    const completedOrbit =
+      before.phase !== "complete" && next.phase === "complete";
+    const transactionLocalDate = localDateInTimezone(user.timezone);
 
     if (isFirstCheckoff) {
       const habit = await ctx.db
@@ -249,20 +264,30 @@ export const toggleComplete = mutation({
         before.committedPointValues.find(
           (snapshot) => snapshot.habitId === args.habitId,
         )?.points ?? getHabitPointValue(undefined, args.habitId);
-      const localDate = localDateInTimezone(user.timezone);
 
       await insertPointTransaction(ctx, clerkUserId, user._id, {
         amount: pointValue,
         sourceType: "habit_award",
         sourceName: habit.name,
-        localDate,
-        idempotencyKey: habitAwardIdempotencyKey(localDate, args.habitId),
+        localDate: transactionLocalDate,
+        idempotencyKey: habitAwardIdempotencyKey(
+          transactionLocalDate,
+          args.habitId,
+        ),
       });
     }
 
     await ctx.db.patch(doc._id, next);
 
-    if (before.phase !== "complete" && next.phase === "complete") {
+    if (completedOrbit) {
+      await insertPointTransaction(ctx, clerkUserId, user._id, {
+        amount: 20,
+        sourceType: "completion_bonus",
+        sourceName: "Completion bonus",
+        localDate: transactionLocalDate,
+        idempotencyKey: completionBonusIdempotencyKey(transactionLocalDate),
+      });
+
       const stats = applyCompletionStats(
         {
           streak: user.streak,

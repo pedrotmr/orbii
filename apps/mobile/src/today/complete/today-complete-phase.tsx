@@ -9,12 +9,14 @@ import { useTheme, useThemedStyles } from "../../theme/use-theme";
 interface TodayCompletePhaseProps {
   streak: number;
   daysCompleted: number;
+  earnedPoints: number;
   committedHabits: TodayHabit[];
 }
 
 export default function TodayCompletePhase({
   streak,
   daysCompleted,
+  earnedPoints,
   committedHabits,
 }: TodayCompletePhaseProps) {
   const { colors } = useTheme();
@@ -53,6 +55,10 @@ export default function TodayCompletePhase({
           </View>
         </>
       ) : null}
+      <View style={styles.pointsEarned}>
+        <Text style={styles.pointsValue}>{earnedPoints}</Text>
+        <Text style={styles.pointsLabel}>points earned today</Text>
+      </View>
       <View style={styles.stats}>
         <View style={styles.stat}>
           <Text style={styles.value}>{streak}</Text>
@@ -88,6 +94,21 @@ const createStyles = (colors: Palette) =>
       borderRadius: radius.lg,
       backgroundColor: colors.surface,
     },
+    pointsEarned: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: space[2],
+      padding: space[4],
+      borderRadius: radius.md,
+      backgroundColor: colors.primarySoft,
+    },
+    pointsValue: {
+      color: colors.primary,
+      fontSize: 24,
+      fontWeight: "700",
+      fontVariant: ["tabular-nums"],
+    },
+    pointsLabel: { color: colors.ink, fontSize: 15, fontWeight: "600" },
     habit: { flexDirection: "row", gap: space[3], alignItems: "center" },
     name: { flex: 1, fontSize: 16, lineHeight: 23, color: colors.ink },
     stats: {
