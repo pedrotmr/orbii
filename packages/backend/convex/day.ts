@@ -19,6 +19,7 @@ import {
   toggleSelect as ritualToggleSelect,
   type DaySession,
 } from "./lib/ritual";
+import { localDateInTimezone } from "./lib/timezone";
 
 const requireUser = async (ctx: { db: any }, clerkUserId: string) => {
   const user = await ctx.db
@@ -139,6 +140,11 @@ export const startRevealMutation = mutation({
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
     const user = await requireUser(ctx, clerkUserId);
+
+    if (args.localDate !== localDateInTimezone(user.timezone)) {
+      throw new Error("Only today's local date can start a reveal");
+    }
+
     const habits = await listHabits(ctx, clerkUserId);
     const existing = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
