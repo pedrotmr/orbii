@@ -10,6 +10,17 @@ jest.mock("@clerk/expo", () => ({
 jest.mock("expo-router", () => ({
   useRouter: () => require("./support/navigation").router,
 }));
+jest.mock("../src/reminders/daily-reminders-provider", () => ({
+  useDailyReminders: () => ({
+    preferences: { morning: false, evening: false },
+    isLoading: false,
+    isSaving: false,
+    permissionMessage: null,
+    markTodayPhase: async () => undefined,
+    setReminderEnabled: async () => true,
+    openSystemSettings: async () => undefined,
+  }),
+}));
 jest.mock("convex/react", () => ({
   useMutation: jest.fn(),
   useQuery: jest.fn(),
