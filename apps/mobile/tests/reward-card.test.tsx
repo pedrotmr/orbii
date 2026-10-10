@@ -6,6 +6,7 @@ import RewardCard from "../src/rewards/rewards-screen/reward-card";
 test("reward card shows shared-balance progress, eligibility, and edit actions", async () => {
   const onEdit = jest.fn();
   const onDelete = jest.fn();
+  const onRedeem = jest.fn();
   const reward: ActiveReward = {
     id: "reward-id" as ActiveReward["id"],
     name: "Quiet Saturday",
@@ -21,6 +22,7 @@ test("reward card shows shared-balance progress, eligibility, and edit actions",
       busy={false}
       onEdit={onEdit}
       onDelete={onDelete}
+      onRedeem={onRedeem}
     />,
   );
 
@@ -40,6 +42,42 @@ test("reward card shows shared-balance progress, eligibility, and edit actions",
 
   expect(onEdit).toHaveBeenCalledTimes(1);
   expect(onDelete).toHaveBeenCalledTimes(1);
+  expect(
+    screen.getByRole("button", {
+      name: "Redeem Quiet Saturday for 380 points",
+    }),
+  ).toBeDisabled();
+  expect(onRedeem).not.toHaveBeenCalled();
+});
+
+test("eligible rewards expose a redemption action", async () => {
+  const onRedeem = jest.fn();
+  const reward: ActiveReward = {
+    id: "reward-id" as ActiveReward["id"],
+    name: "Quiet Saturday",
+    cost: 200,
+    pointsProgress: 200,
+    pointsRemaining: 0,
+    isEligible: true,
+  };
+
+  await render(
+    <RewardCard
+      reward={reward}
+      busy={false}
+      onEdit={jest.fn()}
+      onDelete={jest.fn()}
+      onRedeem={onRedeem}
+    />,
+  );
+
+  await fireEvent.press(
+    screen.getByRole("button", {
+      name: "Redeem Quiet Saturday for 200 points",
+    }),
+  );
+
+  expect(onRedeem).toHaveBeenCalledTimes(1);
 });
 
 test("reward card shows zero progress for an invalid zero cost", async () => {
@@ -56,6 +94,7 @@ test("reward card shows zero progress for an invalid zero cost", async () => {
     <RewardCard
       reward={reward}
       busy={false}
+      onRedeem={() => undefined}
       onEdit={() => undefined}
       onDelete={() => undefined}
     />,
@@ -84,6 +123,7 @@ test("reward card shows the ready-goal label when the balance covers its cost", 
       busy={false}
       onEdit={() => undefined}
       onDelete={() => undefined}
+      onRedeem={() => undefined}
     />,
   );
 

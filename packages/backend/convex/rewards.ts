@@ -3,6 +3,8 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
+import { insertPointTransaction } from "./lib/points";
+import { localDateInTimezone } from "./lib/timezone";
 
 const normalizeRewardDraft = (name: string, cost: number) => {
   const normalizedName = name.trim();
@@ -70,6 +72,33 @@ export const list = query({
   },
 });
 
+export const listRedeemed = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
+    const rewards = await ctx.db
+      .query("rewards")
+      .withIndex("by_clerkUserId_status_redeemedAt", (q) =>
+        q.eq("clerkUserId", clerkUserId).eq("status", "redeemed"),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    return {
+      ...rewards,
+      page: rewards.page.map((reward) => ({
+        id: reward._id,
+        name: reward.name,
+        cost: reward.cost,
+        redeemedAt: reward.redeemedAt ?? null,
+        redeemedLocalDate: reward.redeemedLocalDate ?? null,
+      })),
+    };
+  },
+});
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -110,5 +139,47 @@ export const deleteReward = mutation({
     const clerkUserId = await requireClerkUserId(ctx);
     await getOwnedActiveReward(ctx, clerkUserId, args.rewardId);
     await ctx.db.delete(args.rewardId);
+  },
+});
+
+export const redeem = mutation({
+  args: {
+    rewardId: v.id("rewards"),
+  },
+  handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
+    const reward = await getOwnedActiveReward(ctx, clerkUserId, args.rewardId);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if ((user.pointsBalance ?? 0) < reward.cost) {
+      throw new Error("Not enough points to redeem this reward");
+    }
+
+    const redeemedAt = Date.now();
+    const redeemedLocalDate = localDateInTimezone(user.timezone, redeemedAt);
+    const inserted = await insertPointTransaction(ctx, clerkUserId, user._id, {
+      amount: -reward.cost,
+      sourceType: "reward_redemption",
+      sourceName: reward.name,
+      localDate: redeemedLocalDate,
+      idempotencyKey: `redemption:${reward._id}`,
+    });
+
+    if (!inserted) {
+      throw new Error("Reward redemption already recorded");
+    }
+
+    await ctx.db.patch(reward._id, {
+      status: "redeemed",
+      redeemedAt,
+      redeemedLocalDate,
+    });
   },
 });

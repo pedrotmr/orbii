@@ -84,5 +84,10 @@ export default defineSchema({
     redeemedLocalDate: v.optional(v.string()),
   })
     .index("by_clerkUserId_and_status", ["clerkUserId", "status"])
+    .index("by_clerkUserId_status_redeemedAt", [
+      "clerkUserId",
+      "status",
+      "redeemedAt",
+    ])
     .index("by_clerkUserId", ["clerkUserId"]),
 });
