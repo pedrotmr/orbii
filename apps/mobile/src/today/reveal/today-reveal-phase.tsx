@@ -65,6 +65,7 @@ export default function TodayRevealPhase({
         accessibilityLabel="Refresh the offer"
         accessibilityState={{ disabled: busy }}
         disabled={busy}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         onPress={() => {
           selectionFeedback();
           onShuffle();

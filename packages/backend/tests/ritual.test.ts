@@ -33,6 +33,7 @@ describe("capacity and offer", () => {
     expect(clampDefaultCapacity(2)).toBe(2);
     expect(clampDefaultCapacity(9)).toBe(5);
     expect(clampDefaultCapacity(0)).toBe(1);
+    expect(clampDefaultCapacity(Number.NaN)).toBe(2);
   });
 
   test("offer size is min(5, orbit)", () => {
