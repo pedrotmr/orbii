@@ -67,5 +67,10 @@ export default defineSchema({
   })
     .index("by_clerkUserId_idempotencyKey", ["clerkUserId", "idempotencyKey"])
     .index("by_clerkUserId_localDate", ["clerkUserId", "localDate"])
+    .index("by_clerkUserId_localDate_sourceType", [
+      "clerkUserId",
+      "localDate",
+      "sourceType",
+    ])
     .index("by_clerkUserId", ["clerkUserId"]),
 });
