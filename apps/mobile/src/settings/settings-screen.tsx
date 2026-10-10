@@ -1,6 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { api } from "@orbii/backend";
 import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import BootSpinner from "../components/boot-spinner";
 import ScreenScaffold from "../components/layout/screen-scaffold";
@@ -10,6 +11,7 @@ import SettingsContent from "./body/settings-content";
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
+  const router = useRouter();
   const user = useQuery(api.users.get, {});
   const setCapacity = useMutation(api.users.setCapacity);
   const setRewardsVisible = useMutation(api.users.setRewardsVisible);
@@ -89,6 +91,7 @@ export default function SettingsScreen() {
       busy={busy}
       error={error}
       onCapacity={handleCapacity}
+      onPointHistory={() => router.push("/points-history")}
       onRewardsVisible={handleRewardsVisible}
       onTimezone={handleTimezone}
       onSignOut={handleSignOut}
