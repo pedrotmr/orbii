@@ -19,7 +19,6 @@ import {
   toggleSelect as ritualToggleSelect,
   type DaySession,
 } from "./lib/ritual";
-import { localDateInTimezone } from "./lib/timezone";
 
 const requireUser = async (ctx: { db: any }, clerkUserId: string) => {
   const user = await ctx.db
@@ -112,10 +111,11 @@ export const get = query({
       args.localDate,
     );
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const sessionLocalDate = doc?.localDate ?? args.localDate;
     const transactions = await ctx.db
       .query("pointTransactions")
       .withIndex("by_clerkUserId_localDate", (q) =>
-        q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate),
+        q.eq("clerkUserId", clerkUserId).eq("localDate", sessionLocalDate),
       )
       .collect();
     const earnedPoints = transactions.reduce((total, transaction) => {
@@ -246,7 +246,7 @@ export const toggleComplete = mutation({
     const isFirstCheckoff = !before.completedIds.includes(args.habitId);
     const completedOrbit =
       before.phase !== "complete" && next.phase === "complete";
-    const transactionLocalDate = localDateInTimezone(user.timezone);
+    const sessionLocalDate = before.localDate;
 
     if (isFirstCheckoff) {
       const habit = await ctx.db
@@ -269,9 +269,9 @@ export const toggleComplete = mutation({
         amount: pointValue,
         sourceType: "habit_award",
         sourceName: habit.name,
-        localDate: transactionLocalDate,
+        localDate: sessionLocalDate,
         idempotencyKey: habitAwardIdempotencyKey(
-          transactionLocalDate,
+          sessionLocalDate,
           args.habitId,
         ),
       });
@@ -284,8 +284,8 @@ export const toggleComplete = mutation({
         amount: 20,
         sourceType: "completion_bonus",
         sourceName: "Completion bonus",
-        localDate: transactionLocalDate,
-        idempotencyKey: completionBonusIdempotencyKey(transactionLocalDate),
+        localDate: sessionLocalDate,
+        idempotencyKey: completionBonusIdempotencyKey(sessionLocalDate),
       });
 
       const stats = applyCompletionStats(
@@ -294,7 +294,7 @@ export const toggleComplete = mutation({
           daysCompleted: user.daysCompleted,
           lastCompletedLocalDate: user.lastCompletedLocalDate,
         },
-        args.localDate,
+        sessionLocalDate,
       );
       await ctx.db.patch(user._id, {
         streak: stats.streak,

@@ -3,7 +3,6 @@
 import { convexTest } from "convex-test";
 import { afterEach, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
-import { localDateInTimezone } from "../convex/lib/timezone";
 import schema from "../convex/schema";
 
 const modules = import.meta.glob("../convex/**/*.ts");
@@ -121,7 +120,7 @@ test("habit point values accept whole numbers from 1 through 100 and remain owne
   ).rejects.toThrow("Habit not found");
 });
 
-test("a commitment snapshot awards once per saved-timezone day across edits and re-reveal", async () => {
+test("a commitment snapshot awards once per saved session date across edits and re-reveal", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-01-01T20:00:00.000Z"));
   const t = convexTest(schema, modules);
@@ -144,27 +143,29 @@ test("a commitment snapshot awards once per saved-timezone day across edits and 
     pointValue: 30,
   });
 
-  const clientLocalDate = "1999-07-03";
+  const firstSessionDate = "1999-07-03";
   await owner.mutation(api.day.startRevealMutation, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
   });
-  const reveal = await owner.query(api.day.get, { localDate: clientLocalDate });
+  const reveal = await owner.query(api.day.get, {
+    localDate: firstSessionDate,
+  });
   expect(reveal?.session.offeredIds).toEqual(
     expect.arrayContaining(["walk", "read"]),
   );
   await owner.mutation(api.day.toggleSelect, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "walk",
   });
   await owner.mutation(api.day.toggleSelect, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "read",
   });
-  await owner.mutation(api.day.commit, { localDate: clientLocalDate });
+  await owner.mutation(api.day.commit, { localDate: firstSessionDate });
 
   await expect(
     otherUser.mutation(api.day.toggleComplete, {
-      localDate: clientLocalDate,
+      localDate: firstSessionDate,
       habitId: "walk",
     }),
   ).rejects.toThrow("No day session");
@@ -173,7 +174,7 @@ test("a commitment snapshot awards once per saved-timezone day across edits and 
   });
 
   const committed = await owner.query(api.day.get, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
   });
   expect(committed?.session.committedPointValues).toEqual([
     { habitId: "walk", points: 10 },
@@ -188,7 +189,7 @@ test("a commitment snapshot awards once per saved-timezone day across edits and 
     pointValue: 40,
   });
   await owner.mutation(api.day.toggleComplete, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "walk",
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
@@ -196,48 +197,48 @@ test("a commitment snapshot awards once per saved-timezone day across edits and 
   });
 
   await owner.mutation(api.day.toggleComplete, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "walk",
   });
   await owner.mutation(api.day.toggleComplete, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "walk",
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 10,
   });
 
-  await owner.mutation(api.day.rereveal, { localDate: clientLocalDate });
+  await owner.mutation(api.day.rereveal, { localDate: firstSessionDate });
   const rerevealed = await owner.query(api.day.get, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
   });
   expect(rerevealed?.session.committedPointValues).toEqual([]);
   await owner.mutation(api.day.toggleSelect, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "walk",
   });
-  await owner.mutation(api.day.commit, { localDate: clientLocalDate });
+  await owner.mutation(api.day.commit, { localDate: firstSessionDate });
   await owner.mutation(api.day.toggleComplete, {
-    localDate: clientLocalDate,
+    localDate: firstSessionDate,
     habitId: "walk",
   });
-  const nextClientLocalDate = "1999-07-04";
+  const nextSessionDate = "1999-07-04";
   vi.setSystemTime(new Date("2026-01-02T20:00:00.000Z"));
   await owner.mutation(api.day.startRevealMutation, {
-    localDate: nextClientLocalDate,
+    localDate: nextSessionDate,
   });
   await owner.mutation(api.day.toggleSelect, {
-    localDate: nextClientLocalDate,
+    localDate: nextSessionDate,
     habitId: "walk",
   });
-  await owner.mutation(api.day.commit, { localDate: nextClientLocalDate });
+  await owner.mutation(api.day.commit, { localDate: nextSessionDate });
   await owner.mutation(api.day.toggleComplete, {
-    localDate: nextClientLocalDate,
+    localDate: nextSessionDate,
     habitId: "walk",
   });
   await owner.mutation(api.habits.remove, {
     habitKey: "walk",
-    localDate: nextClientLocalDate,
+    localDate: nextSessionDate,
   });
 
   const pointTransactions = await t.run(async (ctx) => {
@@ -257,6 +258,12 @@ test("a commitment snapshot awards once per saved-timezone day across edits and 
     "Long walk",
     "Long walk",
   ]);
+  expect(
+    habitTransactions.map(({ idempotencyKey }) => idempotencyKey).sort(),
+  ).toEqual([
+    `habit:${firstSessionDate}:walk`,
+    `habit:${nextSessionDate}:walk`,
+  ]);
   const completionTransactions = pointTransactions.filter(
     (transaction) => transaction.sourceType === "completion_bonus",
   );
@@ -264,17 +271,17 @@ test("a commitment snapshot awards once per saved-timezone day across edits and 
   expect(completionTransactions.map(({ amount }) => amount)).toEqual([20, 20]);
   expect(
     completionTransactions.map(({ idempotencyKey }) => idempotencyKey).sort(),
-  ).toEqual(["completion:2026-01-01", "completion:2026-01-02"]);
+  ).toEqual([
+    `completion:${firstSessionDate}`,
+    `completion:${nextSessionDate}`,
+  ]);
   expect(new Set(pointTransactions.map(({ localDate }) => localDate))).toEqual(
-    new Set(["2026-01-01", "2026-01-02"]),
+    new Set([firstSessionDate, nextSessionDate]),
   );
-  for (const transaction of pointTransactions) {
-    expect(Number.isFinite(transaction._creationTime)).toBe(true);
-    expect(transaction.localDate).not.toBe(clientLocalDate);
-    expect(transaction.localDate).toBe(
-      localDateInTimezone("America/Los_Angeles", transaction._creationTime),
-    );
-  }
+  expect(habitTransactions.map(({ localDate }) => localDate).sort()).toEqual([
+    firstSessionDate,
+    nextSessionDate,
+  ]);
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 90,
   });
@@ -437,7 +444,7 @@ test("only full completion earns one timezone-local bonus and daily earned total
   ]);
 });
 
-test("completion bonus date comes from the saved timezone, not the day argument", async () => {
+test("catch-up completion awards and daily earned points use the saved session date", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-01-01T07:30:00.000Z"));
   const t = convexTest(schema, modules);
@@ -451,39 +458,60 @@ test("completion bonus date comes from the saved timezone, not the day argument"
     pointValue: 10,
   });
 
-  const clientLocalDate = "2099-01-01";
+  const sessionLocalDate = "2025-12-30";
+  const physicalLocalDate = "2025-12-31";
   await owner.mutation(api.day.startRevealMutation, {
-    localDate: clientLocalDate,
+    localDate: sessionLocalDate,
   });
   await owner.mutation(api.day.toggleSelect, {
-    localDate: clientLocalDate,
+    localDate: sessionLocalDate,
     habitId: "walk",
   });
-  await owner.mutation(api.day.commit, { localDate: clientLocalDate });
+  await owner.mutation(api.day.commit, { localDate: sessionLocalDate });
   await owner.mutation(api.day.toggleComplete, {
-    localDate: clientLocalDate,
+    localDate: sessionLocalDate,
     habitId: "walk",
   });
 
-  const bonus = await t.run(async (ctx) => {
+  const sessionTransactions = await t.run(async (ctx) => {
     return await ctx.db
       .query("pointTransactions")
-      .withIndex("by_clerkUserId_idempotencyKey", (q) =>
-        q
-          .eq("clerkUserId", "owner")
-          .eq("idempotencyKey", "completion:2025-12-31"),
+      .withIndex("by_clerkUserId_localDate", (q) =>
+        q.eq("clerkUserId", "owner").eq("localDate", sessionLocalDate),
       )
-      .unique();
+      .collect();
   });
+  expect(sessionTransactions).toHaveLength(2);
+  expect(
+    sessionTransactions.map(({ idempotencyKey }) => idempotencyKey).sort(),
+  ).toEqual([
+    `completion:${sessionLocalDate}`,
+    `habit:${sessionLocalDate}:walk`,
+  ]);
+  const bonus = sessionTransactions.find(
+    (transaction) => transaction.sourceType === "completion_bonus",
+  );
   expect(bonus).toMatchObject({
     amount: 20,
     sourceType: "completion_bonus",
     sourceName: "Completion bonus",
-    localDate: "2025-12-31",
-    idempotencyKey: "completion:2025-12-31",
+    localDate: sessionLocalDate,
+    idempotencyKey: `completion:${sessionLocalDate}`,
   });
-  expect(bonus?.localDate).not.toBe(clientLocalDate);
+  await expect(
+    owner.query(api.day.get, { localDate: sessionLocalDate }),
+  ).resolves.toMatchObject({
+    session: { localDate: sessionLocalDate, phase: "complete" },
+    earnedPoints: 30,
+  });
+  await expect(
+    owner.query(api.day.get, { localDate: physicalLocalDate }),
+  ).resolves.toMatchObject({
+    session: { localDate: physicalLocalDate, phase: "idle" },
+    earnedPoints: 0,
+  });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 30,
+    lastCompletedLocalDate: sessionLocalDate,
   });
 });
