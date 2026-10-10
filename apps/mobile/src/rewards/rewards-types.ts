@@ -5,6 +5,10 @@ export type ActiveReward = FunctionReturnType<
   typeof api.rewards.list
 >["page"][number];
 
+export type RedeemedReward = FunctionReturnType<
+  typeof api.rewards.listRedeemed
+>["page"][number];
+
 export interface RewardDraft {
   rewardId?: ActiveReward["id"];
   name: string;
