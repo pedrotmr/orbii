@@ -212,6 +212,7 @@ export default function TodayScreen() {
         <TodayCompletePhase
           streak={day.streak}
           daysCompleted={day.daysCompleted}
+          earnedPoints={day.earnedPoints}
           committedHabits={committedHabits}
         />
       ) : null}

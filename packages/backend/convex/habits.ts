@@ -11,9 +11,11 @@ import {
 import {
   DEFAULT_HABIT_POINT_VALUE,
   getHabitPointValue,
+  insertCompletionBonus,
   validateHabitPointValue,
 } from "./lib/points";
 import { applyCompletionStats, scrubHabitFromSession } from "./lib/ritual";
+import { requireSavedTimezoneToday } from "./lib/timezone";
 
 const MAX_HABIT_NAME_LENGTH = 50;
 const MAX_HABIT_GLYPH_LENGTH = 50;
@@ -226,22 +228,38 @@ export const remove = mutation({
       )
       .unique();
 
+    const sessionDoc = args.localDate
+      ? await ctx.db
+          .query("daySessions")
+          .withIndex("by_clerkUserId_localDate", (q) =>
+            q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate!),
+          )
+          .unique()
+      : null;
+    let user = null;
+    let sessionLocalDate: string | null = null;
+
+    if (sessionDoc && args.localDate) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+        .unique();
+
+      if (!user) {
+        throw new Error("User not found — call users.ensure first");
+      }
+
+      sessionLocalDate = requireSavedTimezoneToday(
+        args.localDate,
+        user.timezone,
+      );
+    }
+
     if (existing) {
       await ctx.db.delete(existing._id);
     }
 
-    if (!args.localDate) {
-      return;
-    }
-
-    const sessionDoc = await ctx.db
-      .query("daySessions")
-      .withIndex("by_clerkUserId_localDate", (q) =>
-        q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate!),
-      )
-      .unique();
-
-    if (!sessionDoc) {
+    if (!sessionDoc || !user || !sessionLocalDate) {
       return;
     }
 
@@ -274,22 +292,22 @@ export const remove = mutation({
     });
 
     if (!wasComplete && scrubbed.phase === "complete") {
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
-        .unique();
-
-      if (user) {
-        const nextStats = applyCompletionStats(
-          {
-            streak: user.streak,
-            daysCompleted: user.daysCompleted,
-            lastCompletedLocalDate: user.lastCompletedLocalDate,
-          },
-          args.localDate,
-        );
-        await ctx.db.patch(user._id, nextStats);
-      }
+      await insertCompletionBonus(
+        ctx,
+        clerkUserId,
+        user._id,
+        sessionDoc._id,
+        sessionLocalDate,
+      );
+      const nextStats = applyCompletionStats(
+        {
+          streak: user.streak,
+          daysCompleted: user.daysCompleted,
+          lastCompletedLocalDate: user.lastCompletedLocalDate,
+        },
+        sessionLocalDate,
+      );
+      await ctx.db.patch(user._id, nextStats);
     }
   },
 });
