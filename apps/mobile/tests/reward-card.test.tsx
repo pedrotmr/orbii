@@ -123,6 +123,7 @@ test("reward card shows the ready-goal label when the balance covers its cost", 
       busy={false}
       onEdit={() => undefined}
       onDelete={() => undefined}
+      onRedeem={() => undefined}
     />,
   );
 

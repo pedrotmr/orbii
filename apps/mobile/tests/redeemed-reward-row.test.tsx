@@ -14,7 +14,11 @@ test("redeemed reward history shows the saved details without actions", async ()
 
   await render(<RedeemedRewardRow reward={reward} />);
 
-  expect(screen.getByLabelText("Cabin weekend redeemed")).toBeOnTheScreen();
+  expect(
+    screen.getByLabelText(
+      "Cabin weekend, Redeemed 2026-10-10, redeemed for 175 points",
+    ),
+  ).toBeOnTheScreen();
   expect(screen.getByText("Cabin weekend")).toBeOnTheScreen();
   expect(screen.getByText("Redeemed 2026-10-10")).toBeOnTheScreen();
   expect(screen.getByText("−175 pts")).toBeOnTheScreen();

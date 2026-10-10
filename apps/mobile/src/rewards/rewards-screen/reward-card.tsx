@@ -96,7 +96,7 @@ export default function RewardCard({
         style={({ pressed }) => [
           styles.redeemButton,
           (!reward.isEligible || busy) && styles.redeemDisabled,
-          pressed && !busy && reward.isEligible && styles.pressed,
+          pressed && !busy && reward.isEligible && styles.redeemPressed,
         ]}
       >
         <Text
@@ -171,6 +171,7 @@ const createStyles = (colors: Palette) =>
       borderRadius: radius.md,
       backgroundColor: colors.primary,
     },
+    redeemPressed: { backgroundColor: colors.primaryDeep },
     redeemDisabled: { backgroundColor: colors.bgMid },
     redeemLabel: { color: colors.surface, fontSize: 15, fontWeight: "700" },
     redeemDisabledLabel: {

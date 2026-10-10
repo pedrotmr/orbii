@@ -237,6 +237,36 @@ test("active reward pagination reaches every active goal and omits redeemed rewa
   ).toBe(false);
 });
 
+test("redeemed rewards are ordered by redemption time instead of creation time", async () => {
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  await insertUser(t, "owner", 0);
+  const olderGoalId = await owner.mutation(api.rewards.create, {
+    name: "Older goal",
+    cost: 100,
+  });
+  const newerGoalId = await owner.mutation(api.rewards.create, {
+    name: "Newer goal",
+    cost: 100,
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.patch(olderGoalId, {
+      status: "redeemed",
+      redeemedAt: 200,
+      redeemedLocalDate: "2026-10-10",
+    });
+    await ctx.db.patch(newerGoalId, {
+      status: "redeemed",
+      redeemedAt: 100,
+      redeemedLocalDate: "2026-10-09",
+    });
+  });
+
+  const redeemed = await listRedeemedRewards(t, "owner");
+  expect(redeemed.page.map(({ id }) => id)).toEqual([olderGoalId, newerGoalId]);
+});
+
 test("redemption atomically deducts the current cost and records the saved-timezone date and name", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-11T06:45:00.000Z"));
