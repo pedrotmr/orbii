@@ -32,12 +32,17 @@ const REMINDER_COPY: Record<DailyReminderKind, string> = {
 };
 
 const getLocalDate = (date: Date, timeZone: string) => {
-  return new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(date);
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value]),
+  );
+
+  return values.year + "-" + values.month + "-" + values.day;
 };
 
 const getLocalDateTimeParts = (date: Date, timeZone: string) => {
