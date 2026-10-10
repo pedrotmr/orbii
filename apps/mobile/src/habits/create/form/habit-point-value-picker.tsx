@@ -1,4 +1,5 @@
 import { type Palette, radius, space } from "@orbii/tokens";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTheme, useThemedStyles } from "../../../theme/use-theme";
 
@@ -21,11 +22,11 @@ export default function HabitPointValuePicker({
 }: HabitPointValuePickerProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const customValue = presetValues.some(
-    (preset) => String(preset.value) === value,
-  )
-    ? ""
-    : value;
+  const [isFocused, setIsFocused] = useState(false);
+  const customValue =
+    !isFocused && presetValues.some((preset) => String(preset.value) === value)
+      ? ""
+      : value;
   const pointValue = Number(value);
   const isValid = /^\d+$/.test(value) && pointValue >= 1 && pointValue <= 100;
 
@@ -74,6 +75,8 @@ export default function HabitPointValuePicker({
           editable={!disabled}
           maxLength={3}
           onChangeText={onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           style={styles.input}
           selectionColor={colors.primary}
         />
