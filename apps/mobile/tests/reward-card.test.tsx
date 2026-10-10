@@ -67,3 +67,25 @@ test("reward card shows zero progress for an invalid zero cost", async () => {
     }).props.accessibilityValue,
   ).toEqual({ min: 0, max: 100, now: 0 });
 });
+
+test("reward card shows the ready-goal label when the balance covers its cost", async () => {
+  const reward: ActiveReward = {
+    id: "ready-reward-id" as ActiveReward["id"],
+    name: "Quiet Saturday",
+    cost: 200,
+    pointsProgress: 200,
+    pointsRemaining: 0,
+    isEligible: true,
+  };
+
+  await render(
+    <RewardCard
+      reward={reward}
+      busy={false}
+      onEdit={() => undefined}
+      onDelete={() => undefined}
+    />,
+  );
+
+  expect(screen.getByText("Enough points for this goal")).toBeOnTheScreen();
+});
