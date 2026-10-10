@@ -67,6 +67,13 @@ export default function RootLayout() {
                 <Stack.Screen name="setup" />
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen
+                  name="points-history"
+                  options={{
+                    headerShown: true,
+                    title: "Points history",
+                  }}
+                />
+                <Stack.Screen
                   name="habit-create"
                   options={{
                     ...(process.env.EXPO_OS === "ios"
