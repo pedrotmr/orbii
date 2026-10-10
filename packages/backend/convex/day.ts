@@ -3,10 +3,10 @@ import type { Habit } from "./lib/habits";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
-  completionBonusIdempotencyKey,
   getHabitPointValue,
   habitAwardIdempotencyKey,
-  insertPointTransaction,
+  insertCompletionBonus,
+  insertSessionPointAward,
 } from "./lib/points";
 import {
   applyCompletionStats,
@@ -19,7 +19,7 @@ import {
   toggleSelect as ritualToggleSelect,
   type DaySession,
 } from "./lib/ritual";
-import { localDateInTimezone } from "./lib/timezone";
+import { requireSavedTimezoneToday } from "./lib/timezone";
 
 const requireUser = async (ctx: { db: any }, clerkUserId: string) => {
   const user = await ctx.db
@@ -112,16 +112,7 @@ export const get = query({
       args.localDate,
     );
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
-    const sessionLocalDate = doc?.localDate ?? args.localDate;
-    const transactions = await ctx.db
-      .query("pointTransactions")
-      .withIndex("by_clerkUserId_localDate", (q) =>
-        q.eq("clerkUserId", clerkUserId).eq("localDate", sessionLocalDate),
-      )
-      .collect();
-    const earnedPoints = transactions.reduce((total, transaction) => {
-      return total + Math.max(0, transaction.amount);
-    }, 0);
+    const earnedPoints = doc?.earnedPoints ?? 0;
 
     return {
       capacity: user.capacity,
@@ -140,13 +131,13 @@ export const startRevealMutation = mutation({
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
     const user = await requireUser(ctx, clerkUserId);
-
-    if (args.localDate !== localDateInTimezone(user.timezone)) {
-      throw new Error("Only today's local date can start a reveal");
-    }
+    const sessionLocalDate = requireSavedTimezoneToday(
+      args.localDate,
+      user.timezone,
+    );
 
     const habits = await listHabits(ctx, clerkUserId);
-    const existing = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const existing = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
     if (existing?.phase === "complete") {
       throw new Error("Day already complete");
@@ -158,7 +149,7 @@ export const startRevealMutation = mutation({
         daysCompleted: user.daysCompleted,
         lastCompletedLocalDate: user.lastCompletedLocalDate,
       },
-      args.localDate,
+      sessionLocalDate,
     );
 
     if (stats.streak !== user.streak) {
@@ -168,7 +159,7 @@ export const startRevealMutation = mutation({
     const { session } = startReveal(
       habits,
       existing?.committedIds ?? [],
-      args.localDate,
+      sessionLocalDate,
     );
 
     if (existing) {
@@ -179,6 +170,7 @@ export const startRevealMutation = mutation({
     return await ctx.db.insert("daySessions", {
       clerkUserId,
       ...session,
+      earnedPoints: 0,
     });
   },
 });
@@ -190,7 +182,12 @@ export const toggleSelect = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const user = await requireUser(ctx, clerkUserId);
+    const sessionLocalDate = requireSavedTimezoneToday(
+      args.localDate,
+      user.timezone,
+    );
+    const doc = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
     if (!doc) {
       throw new Error("No day session");
@@ -207,7 +204,12 @@ export const commit = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const user = await requireUser(ctx, clerkUserId);
+    const sessionLocalDate = requireSavedTimezoneToday(
+      args.localDate,
+      user.timezone,
+    );
+    const doc = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
     if (!doc) {
       throw new Error("No day session");
@@ -241,7 +243,11 @@ export const toggleComplete = mutation({
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
     const user = await requireUser(ctx, clerkUserId);
-    const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const sessionLocalDate = requireSavedTimezoneToday(
+      args.localDate,
+      user.timezone,
+    );
+    const doc = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
     if (!doc) {
       throw new Error("No day session");
@@ -252,8 +258,6 @@ export const toggleComplete = mutation({
     const isFirstCheckoff = !before.completedIds.includes(args.habitId);
     const completedOrbit =
       before.phase !== "complete" && next.phase === "complete";
-    const sessionLocalDate = before.localDate;
-
     if (isFirstCheckoff) {
       const habit = await ctx.db
         .query("habits")
@@ -271,7 +275,7 @@ export const toggleComplete = mutation({
           (snapshot) => snapshot.habitId === args.habitId,
         )?.points ?? getHabitPointValue(undefined, args.habitId);
 
-      await insertPointTransaction(ctx, clerkUserId, user._id, {
+      await insertSessionPointAward(ctx, clerkUserId, user._id, doc._id, {
         amount: pointValue,
         sourceType: "habit_award",
         sourceName: habit.name,
@@ -286,13 +290,13 @@ export const toggleComplete = mutation({
     await ctx.db.patch(doc._id, next);
 
     if (completedOrbit) {
-      await insertPointTransaction(ctx, clerkUserId, user._id, {
-        amount: 20,
-        sourceType: "completion_bonus",
-        sourceName: "Completion bonus",
-        localDate: sessionLocalDate,
-        idempotencyKey: completionBonusIdempotencyKey(sessionLocalDate),
-      });
+      await insertCompletionBonus(
+        ctx,
+        clerkUserId,
+        user._id,
+        doc._id,
+        sessionLocalDate,
+      );
 
       const stats = applyCompletionStats(
         {
@@ -317,8 +321,13 @@ export const rereveal = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
+    const user = await requireUser(ctx, clerkUserId);
+    const sessionLocalDate = requireSavedTimezoneToday(
+      args.localDate,
+      user.timezone,
+    );
     const habits = await listHabits(ctx, clerkUserId);
-    const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
+    const doc = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
     if (!doc) {
       throw new Error("No day session");

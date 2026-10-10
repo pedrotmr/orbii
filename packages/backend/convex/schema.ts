@@ -42,6 +42,7 @@ export default defineSchema({
     selectedIds: v.array(v.string()),
     committedIds: v.array(v.string()),
     completedIds: v.array(v.string()),
+    earnedPoints: v.optional(v.number()),
     committedPointValues: v.optional(
       v.array(
         v.object({

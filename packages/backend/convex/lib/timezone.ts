@@ -41,3 +41,16 @@ export const localDateInTimezone = (
 
   return `${year}-${month}-${day}`;
 };
+
+export const requireSavedTimezoneToday = (
+  localDate: string,
+  timeZone: string,
+) => {
+  const today = localDateInTimezone(timeZone);
+
+  if (localDate !== today) {
+    throw new Error("Date must match today in your saved timezone");
+  }
+
+  return today;
+};
