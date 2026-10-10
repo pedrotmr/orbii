@@ -5,6 +5,7 @@ import { starterHabitPointValue } from "./habits";
 export const DEFAULT_HABIT_POINT_VALUE = 20;
 export const MIN_HABIT_POINT_VALUE = 1;
 export const MAX_HABIT_POINT_VALUE = 100;
+export const COMPLETION_BONUS_POINTS = 20;
 
 export const getHabitPointValue = (
   pointValue: number | undefined,
@@ -84,4 +85,59 @@ export const insertPointTransaction = async (
   });
 
   return true;
+};
+
+type SessionPointAwardInput = Omit<PointTransactionInput, "sourceType"> & {
+  sourceType: "habit_award" | "completion_bonus";
+};
+
+export const insertSessionPointAward = async (
+  ctx: MutationCtx,
+  clerkUserId: string,
+  userId: Id<"users">,
+  daySessionId: Id<"daySessions">,
+  transaction: SessionPointAwardInput,
+) => {
+  if (transaction.amount <= 0) {
+    throw new Error("Session point awards must be positive");
+  }
+
+  const inserted = await insertPointTransaction(
+    ctx,
+    clerkUserId,
+    userId,
+    transaction,
+  );
+
+  if (!inserted) {
+    return false;
+  }
+
+  const daySession = await ctx.db.get(daySessionId);
+
+  if (!daySession) {
+    throw new Error("Day session not found");
+  }
+
+  await ctx.db.patch(daySessionId, {
+    earnedPoints: (daySession.earnedPoints ?? 0) + transaction.amount,
+  });
+
+  return true;
+};
+
+export const insertCompletionBonus = (
+  ctx: MutationCtx,
+  clerkUserId: string,
+  userId: Id<"users">,
+  daySessionId: Id<"daySessions">,
+  localDate: string,
+) => {
+  return insertSessionPointAward(ctx, clerkUserId, userId, daySessionId, {
+    amount: COMPLETION_BONUS_POINTS,
+    sourceType: "completion_bonus",
+    sourceName: "Completion bonus",
+    localDate,
+    idempotencyKey: completionBonusIdempotencyKey(localDate),
+  });
 };
