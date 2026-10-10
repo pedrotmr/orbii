@@ -1,4 +1,4 @@
-import { clampCapacity, offerSizeFor, type Habit } from "./habits";
+import { offerSizeFor, type Habit } from "./habits";
 
 export type DayPhase = "idle" | "reveal" | "active" | "complete";
 
@@ -58,7 +58,6 @@ export const emptyDay = (localDate: string) => {
 
 export const startReveal = (
   habits: Habit[],
-  capacity: number,
   previousCommittedIds: string[],
   localDate: string,
   random = Math.random,
@@ -66,7 +65,6 @@ export const startReveal = (
   if (habits.length === 0) {
     throw new Error("Orbit is empty");
   }
-  const capacityUsed = clampCapacity(capacity, habits.length);
   const underserved = habits
     .map((h) => h.id)
     .filter((id) => !previousCommittedIds.includes(id));
@@ -77,7 +75,6 @@ export const startReveal = (
     random,
   );
   return {
-    capacityUsed,
     session: {
       localDate,
       phase: "reveal" as const,
@@ -89,11 +86,7 @@ export const startReveal = (
   };
 };
 
-export const toggleSelect = (
-  session: DaySession,
-  habitId: string,
-  capacity: number,
-) => {
+export const toggleSelect = (session: DaySession, habitId: string) => {
   if (session.phase !== "reveal") {
     throw new Error("Can only select during reveal");
   }
@@ -109,13 +102,10 @@ export const toggleSelect = (
     };
   }
 
-  if (session.selectedIds.length >= capacity) {
-    return session;
-  }
   return { ...session, selectedIds: [...session.selectedIds, habitId] };
 };
 
-export const commit = (session: DaySession, capacity: number) => {
+export const commit = (session: DaySession) => {
   if (session.phase !== "reveal") {
     throw new Error("Can only commit during reveal");
   }
@@ -124,11 +114,7 @@ export const commit = (session: DaySession, capacity: number) => {
     throw new Error("Select at least one habit");
   }
 
-  const committedIds = session.selectedIds.slice(0, Math.max(0, capacity));
-
-  if (committedIds.length === 0) {
-    throw new Error("Select at least one habit");
-  }
+  const committedIds = [...session.selectedIds];
 
   return {
     ...session,
@@ -162,7 +148,6 @@ export const toggleComplete = (session: DaySession, habitId: string) => {
 
 export const rereveal = (
   habits: Habit[],
-  capacity: number,
   session: DaySession,
   random = Math.random,
 ) => {
@@ -175,7 +160,6 @@ export const rereveal = (
   }
   const { session: next } = startReveal(
     habits,
-    capacity,
     session.committedIds,
     session.localDate,
     random,

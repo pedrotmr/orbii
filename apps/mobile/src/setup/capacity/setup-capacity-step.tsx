@@ -24,12 +24,12 @@ export default function SetupCapacityStep({
         Find your pace.
       </Text>
       <Text style={styles.body}>
-        How many habits can fit in a day? Start small. You can always change
-        this later.
+        How many habits do you usually want to focus on each day? This guides
+        your choices, but never limits them.
       </Text>
-      <FocusOrbit total={capacity} />
+      <FocusOrbit total={capacity} readyContext="usual" />
       <View style={styles.choice}>
-        <Text style={styles.label}>Daily capacity</Text>
+        <Text style={styles.label}>Your usual count</Text>
         <CapacityPicker
           value={capacity}
           disabled={busy}
