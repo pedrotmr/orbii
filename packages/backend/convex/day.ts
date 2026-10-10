@@ -136,7 +136,6 @@ export const startRevealMutation = mutation({
 
     const { session } = startReveal(
       habits,
-      user.capacity,
       existing?.committedIds ?? [],
       args.localDate,
     );
@@ -160,18 +159,14 @@ export const toggleSelect = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    const user = await requireUser(ctx, clerkUserId);
+    await requireUser(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
     if (!doc) {
       throw new Error("No day session");
     }
 
-    const next = ritualToggleSelect(
-      sessionFromDoc(doc),
-      args.habitId,
-      user.capacity,
-    );
+    const next = ritualToggleSelect(sessionFromDoc(doc), args.habitId);
     await ctx.db.patch(doc._id, next);
   },
 });
@@ -182,14 +177,14 @@ export const commit = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    const user = await requireUser(ctx, clerkUserId);
+    await requireUser(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
     if (!doc) {
       throw new Error("No day session");
     }
 
-    const next = ritualCommit(sessionFromDoc(doc), user.capacity);
+    const next = ritualCommit(sessionFromDoc(doc));
     await ctx.db.patch(doc._id, next);
   },
 });
@@ -236,7 +231,7 @@ export const rereveal = mutation({
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
-    const user = await requireUser(ctx, clerkUserId);
+    await requireUser(ctx, clerkUserId);
     const habits = await listHabits(ctx, clerkUserId);
     const doc = await getSessionDoc(ctx, clerkUserId, args.localDate);
 
@@ -244,7 +239,7 @@ export const rereveal = mutation({
       throw new Error("No day session");
     }
 
-    const next = ritualRereveal(habits, user.capacity, sessionFromDoc(doc));
+    const next = ritualRereveal(habits, sessionFromDoc(doc));
     await ctx.db.patch(doc._id, next);
   },
 });

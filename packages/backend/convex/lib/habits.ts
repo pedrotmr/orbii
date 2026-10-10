@@ -63,12 +63,8 @@ export const EASY_STARTER_IDS = [
   "meditate",
 ] as const;
 
-export const clampCapacity = (n: number, orbitSize: number) => {
-  const capped = Math.max(MIN_CAPACITY, Math.min(MAX_CAPACITY, Math.floor(n)));
-  if (orbitSize <= 0) {
-    return MIN_CAPACITY;
-  }
-  return Math.min(capped, orbitSize);
+export const clampDefaultCapacity = (n: number) => {
+  return Math.max(MIN_CAPACITY, Math.min(MAX_CAPACITY, Math.floor(n)));
 };
 
 export const offerSizeFor = (orbitSize: number) => {

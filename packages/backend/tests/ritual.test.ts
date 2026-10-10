@@ -1,8 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
-  DEFAULT_CAPACITY,
   OFFER_SIZE,
-  clampCapacity,
+  clampDefaultCapacity,
   offerSizeFor,
   type Habit,
 } from "../convex/lib/habits";
@@ -30,11 +29,10 @@ const habits: Habit[] = [
 ];
 
 describe("capacity and offer", () => {
-  test("clamps capacity to orbit size and 1–5", () => {
-    expect(clampCapacity(2, 8)).toBe(2);
-    expect(clampCapacity(9, 8)).toBe(5);
-    expect(clampCapacity(5, 3)).toBe(3);
-    expect(clampCapacity(0, 8)).toBe(1);
+  test("clamps the saved usual count to 1–5", () => {
+    expect(clampDefaultCapacity(2)).toBe(2);
+    expect(clampDefaultCapacity(9)).toBe(5);
+    expect(clampDefaultCapacity(0)).toBe(1);
   });
 
   test("offer size is min(5, orbit)", () => {
@@ -45,22 +43,20 @@ describe("capacity and offer", () => {
 
 describe("daily ritual", () => {
   test("happy path idle → reveal → commit → complete", () => {
-    const { session: revealed, capacityUsed } = startReveal(
+    const { session: revealed } = startReveal(
       habits,
-      DEFAULT_CAPACITY,
       [],
       "2026-08-24",
       () => 0.1,
     );
-    expect(capacityUsed).toBe(2);
     expect(revealed.phase).toBe("reveal");
     expect(revealed.offeredIds).toHaveLength(5);
 
-    let session = toggleSelect(revealed, revealed.offeredIds[0]!, 2);
-    session = toggleSelect(session, revealed.offeredIds[1]!, 2);
+    let session = toggleSelect(revealed, revealed.offeredIds[0]!);
+    session = toggleSelect(session, revealed.offeredIds[1]!);
     expect(session.selectedIds).toHaveLength(2);
 
-    session = commit(session, 2);
+    session = commit(session);
     expect(session.phase).toBe("active");
 
     session = toggleComplete(session, session.committedIds[0]!);
@@ -70,40 +66,63 @@ describe("daily ritual", () => {
   });
 
   test("cannot commit with zero selected", () => {
-    const { session } = startReveal(habits, 2, [], "2026-08-24", () => 0);
-    expect(() => commit(session, 2)).toThrow(/at least one/i);
+    const { session } = startReveal(habits, [], "2026-08-24", () => 0);
+    expect(() => commit(session)).toThrow(/at least one/i);
   });
 
-  test("commit trims selection to current capacity", () => {
+  test("selection may include any offered habit and commit preserves its count", () => {
     const { session: revealed } = startReveal(
       habits,
-      5,
       [],
       "2026-08-24",
       () => 0,
     );
-    let session = toggleSelect(revealed, revealed.offeredIds[0]!, 5);
-    session = toggleSelect(session, revealed.offeredIds[1]!, 5);
-    session = toggleSelect(session, revealed.offeredIds[2]!, 5);
-    expect(session.selectedIds).toHaveLength(3);
+    let session = toggleSelect(revealed, revealed.offeredIds[0]!);
 
-    session = commit(session, 1);
-    expect(session.committedIds).toEqual([revealed.offeredIds[0]!]);
+    for (const habitId of revealed.offeredIds.slice(1, 4)) {
+      session = toggleSelect(session, habitId);
+    }
+
+    expect(session.selectedIds).toEqual(revealed.offeredIds.slice(0, 4));
+
+    session = commit(session);
+    expect(session.committedIds).toEqual(revealed.offeredIds.slice(0, 4));
+  });
+
+  test("re-reveal releases an incomplete commitment and its checklist", () => {
+    const { session: revealed } = startReveal(
+      habits,
+      [],
+      "2026-08-24",
+      () => 0,
+    );
+    let session = toggleSelect(revealed, revealed.offeredIds[0]!);
+    session = toggleSelect(session, revealed.offeredIds[1]!);
+    session = commit(session);
+    session = toggleComplete(session, session.committedIds[0]!);
+
+    const next = rereveal(habits, session, () => 0.5);
+
+    expect(next.localDate).toBe("2026-08-24");
+    expect(next.phase).toBe("reveal");
+    expect(next.offeredIds).toHaveLength(5);
+    expect(next.selectedIds).toEqual([]);
+    expect(next.committedIds).toEqual([]);
+    expect(next.completedIds).toEqual([]);
   });
 
   test("rereveal blocked after complete", () => {
     const { session: revealed } = startReveal(
       habits,
-      2,
       [],
       "2026-08-24",
       () => 0,
     );
-    let session = toggleSelect(revealed, revealed.offeredIds[0]!, 2);
-    session = commit(session, 2);
+    let session = toggleSelect(revealed, revealed.offeredIds[0]!);
+    session = commit(session);
     session = toggleComplete(session, session.committedIds[0]!);
     expect(session.phase).toBe("complete");
-    expect(() => rereveal(habits, 2, session, () => 0)).toThrow(/complete/i);
+    expect(() => rereveal(habits, session, () => 0)).toThrow(/complete/i);
   });
 
   test("pickOffer prefers underserved ids", () => {
@@ -113,7 +132,7 @@ describe("daily ritual", () => {
   });
 
   test("empty orbit cannot reveal", () => {
-    expect(() => startReveal([], 2, [], "2026-08-24")).toThrow(/empty/i);
+    expect(() => startReveal([], [], "2026-08-24")).toThrow(/empty/i);
   });
 
   test("emptyDay helper", () => {
