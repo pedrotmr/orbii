@@ -1,4 +1,4 @@
-import { darkColors, space } from "@orbii/tokens";
+import { brandColors, darkColors, space } from "@orbii/tokens";
 import type { TodayHabit } from "../today/today-habit";
 
 export interface OrbitLiveActivityHabit {
@@ -13,6 +13,9 @@ export interface OrbitLiveActivityContent {
   completedCount: number;
   totalCount: number;
   accentColor: string;
+  reducedLuminanceColor: string;
+  logoColor: string;
+  logoDotColor: string;
   spacing: OrbitLiveActivitySpacing;
   habits: OrbitLiveActivityHabit[];
 }
@@ -56,6 +59,9 @@ export const createOrbitLiveActivityContent = ({
     completedCount: habits.filter((habit) => habit.isComplete).length,
     totalCount: habits.length,
     accentColor: darkColors.primary,
+    reducedLuminanceColor: brandColors.white,
+    logoColor: brandColors.teal,
+    logoDotColor: brandColors.coral,
     spacing: {
       horizontalInset: space[5],
       verticalInset: space[4],
@@ -66,7 +72,7 @@ export const createOrbitLiveActivityContent = ({
       compactGap: space[2],
       microGap: space[1],
       progressRingSize: space[6],
-      logoSize: space[2],
+      logoSize: space[4],
     },
     habits,
   };

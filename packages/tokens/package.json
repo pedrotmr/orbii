@@ -4,6 +4,10 @@
   "private": true,
   "main": "src/native.ts",
   "types": "src/native.ts",
+  "exports": {
+    ".": "./src/native.ts",
+    "./return-loop.json": "./src/return-loop.json"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .turbo"

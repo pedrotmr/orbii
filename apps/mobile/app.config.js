@@ -1,3 +1,5 @@
+import returnLoop from "@orbii/tokens/return-loop.json";
+
 const appVariant = process.env.APP_VARIANT ?? "development";
 const easProjectId = "cebd63af-63fc-4c5a-a302-dbae0bdcd6e8";
 
@@ -45,7 +47,29 @@ const withAppVariant = ({ config }) => ({
   android: {
     ...config.android,
     package: variant.bundleIdentifier,
+    adaptiveIcon: {
+      ...config.android?.adaptiveIcon,
+      backgroundColor: returnLoop.brand.fog,
+      monochromeImage: "./assets/android-icon-monochrome.png",
+    },
   },
+  plugins: (config.plugins ?? []).map((plugin) => {
+    if (Array.isArray(plugin) && plugin[0] === "expo-splash-screen") {
+      return [
+        plugin[0],
+        {
+          ...plugin[1],
+          backgroundColor: returnLoop.brand.fog,
+          dark: {
+            image: "./assets/splash-icon-dark.png",
+            backgroundColor: returnLoop.night,
+          },
+        },
+      ];
+    }
+
+    return plugin;
+  }),
   extra: {
     ...config.extra,
     appVariant,

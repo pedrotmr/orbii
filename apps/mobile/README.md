@@ -150,6 +150,25 @@ Orbii currently has only its Convex dev deployment. The Dev TestFlight build and
 
 Before the first workflow dispatch for each profile, complete any required Apple sign-in, iOS signing, and App Store Connect submission credential setup interactively in EAS. From `apps/mobile`, run `pnpm dlx eas-cli@24.8.0 credentials --platform ios` and follow the prompts for that profile. The GitHub workflows use `--non-interactive`, so they cannot answer EAS setup prompts. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path. Confirm native Clerk sign-in on the current SDK 58 preview before inviting TestFlight users; production is not ready until its account setup is complete.
 
+## Return Loop brand assets
+
+The Return Loop brand palette lives in `packages/tokens/src/return-loop.json`
+and supplies the logo, wordmark, and Expo splash/adaptive-icon configuration.
+The app retains its earlier interface palette in `packages/tokens/src/native.ts`
+for backgrounds, text, controls, and progress in light and dark mode. Logo colors
+are independent of the interface palette, including in the Live Activity.
+
+Production vector masters live in `assets/brand/`. The PNG exports are recreated
+from these masters, with no runtime imports from `design-ideas/`: a 1024px opaque
+White app icon, 432px transparent Android foreground and monochrome layers, and
+600px transparent light/dark splash marks. Android's mark is centered within the
+adaptive-icon safe zone. The sign-in/header mark uses the same vector geometry;
+the Live Activity draws it with native SwiftUI shapes.
+
+Icon and splash changes require a new native build; an EAS Update cannot replace
+the installed launcher icon or launch screen. No new environment variables or
+Convex deployment steps are required.
+
 ## Run
 
 Terminal A — Convex (if you are pushing function changes):

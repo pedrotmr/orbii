@@ -16,7 +16,6 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F4F7FA",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "package": "app.orbii.mobile"
@@ -34,10 +33,6 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F4F7FA",
-          "dark": {
-            "backgroundColor": "#181B18"
-          },
           "imageWidth": 200
         }
       ],
