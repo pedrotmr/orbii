@@ -37,6 +37,7 @@
         }
       ],
       "expo-status-bar",
+      "expo-notifications",
       "expo-widgets"
     ],
     "experiments": {

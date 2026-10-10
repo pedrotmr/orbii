@@ -1,11 +1,16 @@
 import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
+import type {
+  DailyReminderKind,
+  DailyReminderPreferences,
+} from "../../reminders/daily-reminder-schedule";
 import ScreenScaffold from "../../components/layout/screen-scaffold";
 import InlineError from "../../components/states/inline-error";
 import { useThemedStyles } from "../../theme/use-theme";
 import SettingsSignOutSection from "../account/settings-sign-out-section";
 import SettingsCapacitySection from "../capacity/settings-capacity-section";
 import SettingsPointsHistorySection from "../points-history/settings-points-history-section";
+import SettingsDailyRemindersSection from "../reminders/settings-daily-reminders-section";
 import SettingsRewardsSection from "../rewards/settings-rewards-section";
 import SettingsTimezoneSection from "../timezone/settings-timezone-section";
 
@@ -16,10 +21,16 @@ interface SettingsContentProps {
   deviceTimezone: string;
   busy: boolean;
   error: string | null;
+  reminderPreferences: DailyReminderPreferences;
+  remindersLoading: boolean;
+  remindersSaving: boolean;
+  reminderPermissionMessage: string | null;
   onCapacity: (value: number) => void;
   onPointHistory: () => void;
   onRewardsVisible: (visible: boolean) => void;
   onTimezone: (value: string) => Promise<boolean>;
+  onReminder: (kind: DailyReminderKind, enabled: boolean) => void;
+  onOpenReminderSettings: () => void;
   onSignOut: () => void;
 }
 
@@ -30,10 +41,16 @@ export default function SettingsContent({
   deviceTimezone,
   busy,
   error,
+  reminderPreferences,
+  remindersLoading,
+  remindersSaving,
+  reminderPermissionMessage,
   onCapacity,
   onPointHistory,
   onRewardsVisible,
   onTimezone,
+  onReminder,
+  onOpenReminderSettings,
   onSignOut,
 }: SettingsContentProps) {
   const styles = useThemedStyles(createStyles);
@@ -57,6 +74,13 @@ export default function SettingsContent({
         deviceTimezone={deviceTimezone}
         busy={busy}
         onSave={onTimezone}
+      />
+      <SettingsDailyRemindersSection
+        preferences={reminderPreferences}
+        disabled={remindersLoading || remindersSaving}
+        permissionMessage={reminderPermissionMessage}
+        onChange={onReminder}
+        onOpenSettings={onOpenReminderSettings}
       />
       <Text style={styles.section}>Points</Text>
       <SettingsRewardsSection

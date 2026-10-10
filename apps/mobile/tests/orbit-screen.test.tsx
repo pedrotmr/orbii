@@ -52,7 +52,13 @@ const secondHabit: Habit = {
 
 const habits = [savedHabit, secondHabit];
 const user = { timezone: "UTC" };
-const day = {
+const day: {
+  session: {
+    phase: "idle" | "reveal" | "active" | "complete";
+    committedIds: string[];
+    completedIds: string[];
+  };
+} = {
   session: {
     phase: "idle",
     committedIds: [],
@@ -71,6 +77,9 @@ let reorderHabit: jest.Mock<
 
 beforeEach(() => {
   resetNavigation();
+  day.session.phase = "idle";
+  day.session.committedIds = [];
+  day.session.completedIds = [];
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
   removePromise = new Promise<void>((resolve) => {
     finishRemove = () => resolve();
@@ -97,6 +106,33 @@ beforeEach(() => {
     return {
       withOptimisticUpdate: () => reorderHabit,
     } as never;
+  });
+});
+
+test("removing the last unchecked habit leaves phase updates to Convex", async () => {
+  day.session.phase = "active";
+  day.session.committedIds = [savedHabit.id, secondHabit.id];
+  day.session.completedIds = [secondHabit.id];
+  await render(<OrbitScreen />);
+
+  await fireEvent(
+    screen.getByRole("button", { name: "Edit Take a walk" }),
+    "accessibilityAction",
+    {
+      nativeEvent: { actionName: "remove" },
+    },
+  );
+  const buttons = jest.mocked(Alert.alert).mock.lastCall?.[2];
+
+  await act(async () => {
+    buttons?.find((button) => button.text === "Remove")?.onPress?.();
+    finishRemove();
+    await removePromise;
+  });
+
+  expect(removeHabit).toHaveBeenCalledWith({
+    habitKey: savedHabit.id,
+    localDate: "2026-10-09",
   });
 });
 
