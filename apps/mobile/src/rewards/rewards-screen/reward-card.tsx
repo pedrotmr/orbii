@@ -9,6 +9,7 @@ interface RewardCardProps {
   busy: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onRedeem: () => void;
 }
 
 export default function RewardCard({
@@ -16,6 +17,7 @@ export default function RewardCard({
   busy,
   onEdit,
   onDelete,
+  onRedeem,
 }: RewardCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -83,6 +85,30 @@ export default function RewardCard({
       >
         <View style={[styles.fill, { width: String(progressPercent) + "%" }]} />
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          "Redeem " + reward.name + " for " + reward.cost + " points"
+        }
+        accessibilityState={{ disabled: busy || !reward.isEligible }}
+        disabled={busy || !reward.isEligible}
+        onPress={onRedeem}
+        style={({ pressed }) => [
+          styles.redeemButton,
+          (!reward.isEligible || busy) && styles.redeemDisabled,
+          pressed && !busy && reward.isEligible && styles.pressed,
+        ]}
+      >
+        <Text
+          style={
+            reward.isEligible && !busy
+              ? styles.redeemLabel
+              : styles.redeemDisabledLabel
+          }
+        >
+          Redeem
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -137,5 +163,19 @@ const createStyles = (colors: Palette) =>
       height: "100%",
       borderRadius: radius.full,
       backgroundColor: colors.primary,
+    },
+    redeemButton: {
+      minHeight: 46,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.md,
+      backgroundColor: colors.primary,
+    },
+    redeemDisabled: { backgroundColor: colors.bgMid },
+    redeemLabel: { color: colors.surface, fontSize: 15, fontWeight: "700" },
+    redeemDisabledLabel: {
+      color: colors.muted,
+      fontSize: 15,
+      fontWeight: "600",
     },
   });
