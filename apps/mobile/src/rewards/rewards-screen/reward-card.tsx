@@ -19,10 +19,10 @@ export default function RewardCard({
 }: RewardCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const progressPercent = Math.min(
-    100,
-    Math.round((reward.pointsProgress / reward.cost) * 100),
-  );
+  const progressPercent =
+    reward.cost > 0
+      ? Math.min(100, Math.round((reward.pointsProgress / reward.cost) * 100))
+      : 0;
 
   return (
     <View style={styles.card}>

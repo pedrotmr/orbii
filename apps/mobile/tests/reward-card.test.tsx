@@ -41,3 +41,29 @@ test("reward card shows shared-balance progress, eligibility, and edit actions",
   expect(onEdit).toHaveBeenCalledTimes(1);
   expect(onDelete).toHaveBeenCalledTimes(1);
 });
+
+test("reward card shows zero progress for an invalid zero cost", async () => {
+  const reward: ActiveReward = {
+    id: "invalid-reward-id" as ActiveReward["id"],
+    name: "Invalid imported reward",
+    cost: 0,
+    pointsProgress: 0,
+    pointsRemaining: 0,
+    isEligible: false,
+  };
+
+  await render(
+    <RewardCard
+      reward={reward}
+      busy={false}
+      onEdit={() => undefined}
+      onDelete={() => undefined}
+    />,
+  );
+
+  expect(
+    screen.getByRole("progressbar", {
+      name: "Invalid imported reward progress",
+    }).props.accessibilityValue,
+  ).toEqual({ min: 0, max: 100, now: 0 });
+});
