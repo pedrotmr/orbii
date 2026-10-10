@@ -143,7 +143,7 @@ test("a commitment snapshot awards once per saved session date across edits and 
     pointValue: 30,
   });
 
-  const firstSessionDate = "1999-07-03";
+  const firstSessionDate = "2026-01-01";
   await owner.mutation(api.day.startRevealMutation, {
     localDate: firstSessionDate,
   });
@@ -222,7 +222,7 @@ test("a commitment snapshot awards once per saved session date across edits and 
     localDate: firstSessionDate,
     habitId: "walk",
   });
-  const nextSessionDate = "1999-07-04";
+  const nextSessionDate = "2026-01-02";
   vi.setSystemTime(new Date("2026-01-02T20:00:00.000Z"));
   await owner.mutation(api.day.startRevealMutation, {
     localDate: nextSessionDate,
@@ -458,8 +458,8 @@ test("catch-up completion awards and daily earned points use the saved session d
     pointValue: 10,
   });
 
-  const sessionLocalDate = "2025-12-30";
-  const physicalLocalDate = "2025-12-31";
+  const sessionLocalDate = "2025-12-31";
+  const physicalLocalDate = "2026-01-01";
   await owner.mutation(api.day.startRevealMutation, {
     localDate: sessionLocalDate,
   });
@@ -468,6 +468,7 @@ test("catch-up completion awards and daily earned points use the saved session d
     habitId: "walk",
   });
   await owner.mutation(api.day.commit, { localDate: sessionLocalDate });
+  vi.setSystemTime(new Date("2026-01-01T08:30:00.000Z"));
   await owner.mutation(api.day.toggleComplete, {
     localDate: sessionLocalDate,
     habitId: "walk",
@@ -513,5 +514,50 @@ test("catch-up completion awards and daily earned points use the saved session d
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 30,
     lastCompletedLocalDate: sessionLocalDate,
+  });
+});
+
+test("only today's saved-timezone date can start a new Orbit", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T07:30:00.000Z"));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  await insertUser(t, "owner", "America/Los_Angeles");
+  await owner.mutation(api.habits.add, {
+    habitKey: "walk",
+    name: "Walk",
+    glyph: "symbol:walk",
+    category: "body",
+    pointValue: 10,
+  });
+
+  const fabricatedDates = ["1999-07-03", "2026-01-01"];
+  for (const localDate of fabricatedDates) {
+    await expect(
+      owner.mutation(api.day.startRevealMutation, { localDate }),
+    ).rejects.toThrow("Only today's local date can start a reveal");
+  }
+
+  const fabricatedSessions = await t.run(async (ctx) => {
+    return await Promise.all(
+      fabricatedDates.map((localDate) =>
+        ctx.db
+          .query("daySessions")
+          .withIndex("by_clerkUserId_localDate", (q) =>
+            q.eq("clerkUserId", "owner").eq("localDate", localDate),
+          )
+          .unique(),
+      ),
+    );
+  });
+  expect(fabricatedSessions).toEqual([null, null]);
+
+  await owner.mutation(api.day.startRevealMutation, {
+    localDate: "2025-12-31",
+  });
+  await expect(
+    owner.query(api.day.get, { localDate: "2025-12-31" }),
+  ).resolves.toMatchObject({
+    session: { localDate: "2025-12-31", phase: "reveal" },
   });
 });
