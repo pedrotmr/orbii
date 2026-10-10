@@ -7,13 +7,15 @@ interface PointTransactionRowProps {
   transaction: PointTransaction;
 }
 
+const localDateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
 const formatLocalDate = (localDate: string) => {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${localDate}T12:00:00.000Z`));
+  return localDateFormatter.format(new Date(`${localDate}T12:00:00.000Z`));
 };
 
 export default function PointTransactionRow({
