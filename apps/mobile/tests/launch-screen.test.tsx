@@ -49,6 +49,12 @@ afterEach(() => {
 });
 
 test("app startup mounts the launch animation before hiding the native splash", async () => {
+  let resolveHide: () => void = () => undefined;
+  const dismissal = new Promise<void>((resolve) => {
+    resolveHide = resolve;
+  });
+  jest.mocked(SplashScreen.hideAsync).mockReturnValueOnce(dismissal);
+
   const RootLayout = require("../app/_layout").default;
   await render(<RootLayout />);
 
@@ -61,6 +67,11 @@ test("app startup mounts the launch animation before hiding the native splash", 
 
   await fireEvent(screen.getByTestId("launch-animation"), "animationLoaded");
   expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  expect(playAnimation).not.toHaveBeenCalled();
+
+  await act(async () => {
+    resolveHide();
+  });
   expect(playAnimation).toHaveBeenCalledTimes(1);
 
   await fireEvent(
