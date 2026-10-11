@@ -16,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/android-icon-foreground.png"
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "package": "app.orbii.mobile"
     },

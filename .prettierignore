@@ -1,0 +1,2 @@
+# Icon Composer owns its document format. Preserve imported bundles byte for byte.
+**/*.icon/**

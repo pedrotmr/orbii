@@ -42,6 +42,7 @@ const withAppVariant = ({ config }) => ({
   },
   ios: {
     ...config.ios,
+    icon: "./assets/orbii.icon",
     bundleIdentifier: variant.bundleIdentifier,
   },
   android: {
@@ -49,7 +50,7 @@ const withAppVariant = ({ config }) => ({
     package: variant.bundleIdentifier,
     adaptiveIcon: {
       ...config.android?.adaptiveIcon,
-      backgroundColor: returnLoop.brand.fog,
+      backgroundColor: returnLoop.brand.white,
       monochromeImage: "./assets/android-icon-monochrome.png",
     },
   },
