@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import LaunchScreen from "../src/components/launch-screen/launch-screen";
 import { convex } from "../src/convexClient";
 import { discardSliceClientUserId } from "../src/discard-slice-identity";
 import { useTheme } from "../src/theme/use-theme";
@@ -29,10 +30,6 @@ export default function RootLayout() {
   const statusBarStyle = scheme === "dark" ? "light" : "dark";
   useEffect(() => {
     void discardSliceClientUserId();
-  }, []);
-
-  useEffect(() => {
-    void SplashScreen.hideAsync();
   }, []);
 
   return (
@@ -84,6 +81,7 @@ export default function RootLayout() {
           </SafeAreaProvider>
         </ConvexProviderWithClerk>
       </ClerkProvider>
+      <LaunchScreen />
     </GestureHandlerRootView>
   );
 }

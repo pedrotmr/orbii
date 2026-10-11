@@ -1,0 +1,23 @@
+{
+  "name": "@orbii/brand",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical Orbii brand artwork and generated mobile assets",
+  "type": "module",
+  "exports": {
+    ".": "./src/assets.ts",
+    "./assets": "./src/assets.ts",
+    "./svg/*": "./svg/*",
+    "./png/*": "./png/*",
+    "./animations/*": "./animations/*"
+  },
+  "scripts": {
+    "generate": "node --experimental-strip-types generate-assets.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~6.0.3"
+  }
+}

@@ -2,6 +2,7 @@
   "name": "orbii",
   "private": true,
   "scripts": {
+    "brand:generate": "pnpm --filter @orbii/brand generate",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
@@ -9,8 +10,8 @@
     "lint": "eslint .",
     "mobile:testflight:staging": "gh workflow run mobile-staging.yml --ref main",
     "mobile:testflight:production": "gh workflow run mobile-release.yml --ref main",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" .github/workflows \"!**/.agents/**\" --ignore-path .gitignore --ignore-path apps/mobile/.gitignore",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" .github/workflows \"!**/.agents/**\" --ignore-path .gitignore --ignore-path apps/mobile/.gitignore",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" .github/workflows \"!**/.agents/**\" --ignore-path .gitignore --ignore-path apps/mobile/.gitignore --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" .github/workflows \"!**/.agents/**\" --ignore-path .gitignore --ignore-path apps/mobile/.gitignore --ignore-path .prettierignore",
     "clean": "turbo run clean && rm -rf node_modules",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
   },
