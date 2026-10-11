@@ -5,5 +5,5 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "generate-assets.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "generate-assets.ts"]
 }

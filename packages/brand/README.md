@@ -33,10 +33,16 @@ To import a new document, pass its **directory**, including the `.icon` suffix:
 pnpm brand:generate "/Users/you/Downloads/Untitled.icon"
 ```
 
-The import replaces the canonical bundle and then regenerates and synchronizes
-the mobile copies. Edit `packages/brand/icon/orbii.icon` in Icon Composer for
-later changes, then run the command without an argument. Downloads is never a
-build dependency. `ICTOOL_PATH` can override automatic Xcode tool discovery.
+The import stages and renders the new document before replacing the canonical
+bundle and synchronizing mobile copies. Validation or rendering failures preserve
+the existing source and outputs. Edit `packages/brand/icon/orbii.icon` in Icon
+Composer for later changes, then run the command without an argument. Downloads
+is never a build dependency. `ICTOOL_PATH` can override automatic Xcode discovery.
+
+`mobile-artwork.json` records generator-owned SVG and animation paths. Generation
+removes previously recorded copies when their canonical files are deleted,
+including when the optional animation folder is removed. Other mobile-owned files
+are preserved. Commit the updated manifest alongside artwork changes.
 
 Apple's `ictool` renders the actual document with the iOS 26 design generation
 pinned in `brand.config.json`, so newer Xcode installations do not silently
@@ -52,11 +58,13 @@ palette still comes from `@orbii/tokens`.
 
 ## Repeat in another project
 
-Copy `generate-assets.ts`, its package script, and `brand.config.json` into that
-project's `packages/brand`. Set the project name, light/dark SVG paths, icon
-background, and Apple design generation. Use the same `icon/<project>.icon`,
-`png/`, `svg/`, and `apps/mobile/assets/<project>.icon` paths. The animation folder
-is optional for projects without motion assets. Wire Expo's `ios.icon` to the
+Copy `generate-assets.ts`, its package script, `mobile-artwork.json`, and
+`brand.config.json` into that project's `packages/brand`. Set the project name,
+light/dark SVG paths, icon background, and Apple design generation. Start the
+ownership manifest with `[]` for a new project, or list existing generator-owned
+mobile artwork. Use the same `icon/<project>.icon`, `png/`, `svg/`, and
+`apps/mobile/assets/<project>.icon` paths. The animation folder is optional for
+projects without motion assets. Wire Expo's `ios.icon` to the
 Composer directory, the generic `icon` to `assets/icon.png`, and the Android
 foreground to `assets/adaptive-icon.png`. This extends Mira's manual copy process
 with a repeatable command; Mira's repository itself is unchanged.

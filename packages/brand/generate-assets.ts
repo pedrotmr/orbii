@@ -5,7 +5,10 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
+  renameSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -55,31 +58,24 @@ run("rsvg-convert", ["--version"]);
 
 const icon = join(brandRoot, "icon", `${config.name}.icon`);
 const importedSource = process.argv[2];
-if (importedSource && resolve(importedSource) !== icon) {
-  const source = resolve(importedSource);
-  if (!existsSync(join(source, "icon.json"))) {
-    throw new Error(`Not an Icon Composer document: ${source}`);
-  }
-
-  rmSync(icon, { recursive: true, force: true });
-  mkdirSync(dirname(icon), { recursive: true });
-  cpSync(source, icon, { recursive: true });
-}
-
-if (!existsSync(join(icon, "icon.json"))) {
+const source = importedSource ? resolve(importedSource) : icon;
+if (!existsSync(join(source, "icon.json"))) {
   throw new Error(
-    `Missing ${icon}. Pass an Icon Composer .icon directory to import it.`,
+    `Missing ${source}/icon.json. Pass an Icon Composer .icon directory to import it.`,
   );
 }
 
 const scratch = mkdtempSync(join(tmpdir(), `${config.name}-brand-`));
+const importedIcon = join(scratch, basename(icon));
+const importing = source !== icon;
+const renderedIcon = importing ? importedIcon : icon;
 const raster = (name: string) => join(scratch, name);
 // Remove file timestamps so regeneration leaves identical PNGs unchanged.
 const magick = (...args: string[]) =>
   run("magick", [...args.slice(0, -1), "-strip", args[args.length - 1]]);
 const renderIcon = (rendition: string, destination: string) => {
   run(ictool, [
-    icon,
+    renderedIcon,
     "--export-image",
     "--output-file",
     destination,
@@ -110,7 +106,96 @@ const renderMark = (source: string, destination: string) => {
   ]);
 };
 
+const replaceIcon = () => {
+  mkdirSync(dirname(icon), { recursive: true });
+  const staging = mkdtempSync(join(dirname(icon), `.${config.name}-import-`));
+  const next = join(staging, basename(icon));
+  const previous = join(staging, "previous.icon");
+  let preserveBackup = false;
+  try {
+    cpSync(importedIcon, next, { recursive: true });
+    if (existsSync(icon)) {
+      renameSync(icon, previous);
+    }
+
+    try {
+      renameSync(next, icon);
+    } catch (error) {
+      if (existsSync(previous)) {
+        try {
+          renameSync(previous, icon);
+        } catch (rollbackError) {
+          preserveBackup = true;
+          throw new Error(
+            `Could not restore ${icon}. The previous document is preserved at ${previous}.`,
+            { cause: rollbackError },
+          );
+        }
+      }
+      throw error;
+    }
+  } finally {
+    if (!preserveBackup) {
+      rmSync(staging, { recursive: true, force: true });
+    }
+  }
+};
+const collectFiles = (directory: string, prefix = "") => {
+  const files: string[] = [];
+  if (!existsSync(directory)) {
+    return files;
+  }
+
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const name = join(prefix, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectFiles(join(directory, entry.name), name));
+    } else if (entry.isFile()) {
+      files.push(name);
+    }
+  }
+  return files;
+};
+const synchronizeArtwork = (destination: string) => {
+  const manifest = join(brandRoot, "mobile-artwork.json");
+  const previous: string[] = JSON.parse(readFileSync(manifest, "utf8"));
+  const current = new Map<string, string>();
+  for (const [directory, prefix] of [
+    ["svg", ""],
+    ["animations", "animations"],
+  ]) {
+    const sourceDirectory = join(brandRoot, directory);
+    for (const file of collectFiles(sourceDirectory)) {
+      current.set(join(prefix, file), join(sourceDirectory, file));
+    }
+  }
+  // Only names recorded by an earlier generation may be removed.
+  for (const file of previous) {
+    const target = resolve(destination, file);
+    if (!target.startsWith(`${resolve(destination)}/`)) {
+      throw new Error(`Invalid mobile artwork path: ${file}`);
+    }
+
+    if (!current.has(file)) {
+      rmSync(target, { force: true });
+    }
+  }
+  for (const [file, sourceFile] of current) {
+    const target = join(destination, file);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(sourceFile, target);
+  }
+  writeFileSync(
+    manifest,
+    `${JSON.stringify([...current.keys()].sort(), null, 2)}\n`,
+  );
+};
+
 try {
+  if (importing) {
+    cpSync(source, importedIcon, { recursive: true });
+  }
+
   renderIcon("Default", raster("composed-light.png"));
   renderIcon("Dark", raster("composed-dark.png"));
   magick(
@@ -181,6 +266,11 @@ try {
     "apple-touch-icon.png",
     "favicon-32.png",
   ];
+  // A failed import or render leaves committed source and output untouched.
+  if (importing) {
+    replaceIcon();
+  }
+
   mkdirSync(join(brandRoot, "png"), { recursive: true });
   for (const file of files) {
     cpSync(raster(file), join(brandRoot, "png", file));
@@ -202,15 +292,7 @@ try {
     cpSync(raster(source), join(mobileAssets, target));
   }
 
-  cpSync(join(brandRoot, "svg"), join(mobileAssets, "brand"), {
-    recursive: true,
-  });
-  const animations = join(brandRoot, "animations");
-  if (existsSync(animations)) {
-    cpSync(animations, join(mobileAssets, "brand/animations"), {
-      recursive: true,
-    });
-  }
+  synchronizeArtwork(join(mobileAssets, "brand"));
   console.log(
     `Generated ${files.length} brand PNGs and synchronized ${config.name}.icon and mobile assets.`,
   );
