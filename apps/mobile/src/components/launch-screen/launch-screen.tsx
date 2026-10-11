@@ -89,7 +89,7 @@ export default function LaunchScreen() {
         },
       ]}
     >
-      {reduceMotion === false ? (
+      {reduceMotion !== true ? (
         <LottieView
           ref={animation}
           testID="launch-animation"

@@ -14,8 +14,9 @@ only two vector layers, trim-path keyframes, and dot position/scale keyframes:
 no fonts, raster images, expressions, external URLs, or playback dependencies.
 
 Import the JSON or dotLottie file into LottieFiles Creator to edit the timing and
-motion. JSON also opens in standard Lottie players. Playback is intended to run
-once and hold the final frame; looping is for review previews only.
+motion. JSON also opens in standard Lottie players. In the app, playback runs
+once and then reveals the app beneath the launch overlay. Standalone players
+can hold the final frame; looping is for review previews only.
 
 The root layout mounts `LaunchScreen`, which plays the themed JSON once after
 the static native launch screen. The app initializes underneath it. Reduced

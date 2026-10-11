@@ -71,6 +71,52 @@ test("app startup mounts the launch animation before hiding the native splash", 
   expect(screen.queryByTestId("launch-animation")).toBeNull();
 });
 
+test("player loads while motion preference is pending without starting playback", async () => {
+  let resolveMotion: (enabled: boolean) => void = () => undefined;
+  const preference = new Promise<boolean>((resolve) => {
+    resolveMotion = resolve;
+  });
+  jest
+    .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+    .mockReturnValue(preference);
+  const RootLayout = require("../app/_layout").default;
+  await render(<RootLayout />);
+
+  const animation = screen.getByTestId("launch-animation");
+  expect(animation.props.autoPlay).toBe(false);
+  await fireEvent(screen.getByTestId("launch-screen"), "layout");
+  await fireEvent(animation, "layout");
+  expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+  expect(playAnimation).not.toHaveBeenCalled();
+
+  await act(async () => {
+    resolveMotion(false);
+  });
+  expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+  expect(playAnimation).toHaveBeenCalledTimes(1);
+});
+
+test("pending motion preference can resolve to reduced motion without playback", async () => {
+  let resolveMotion: (enabled: boolean) => void = () => undefined;
+  const preference = new Promise<boolean>((resolve) => {
+    resolveMotion = resolve;
+  });
+  jest
+    .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+    .mockReturnValue(preference);
+  const RootLayout = require("../app/_layout").default;
+  await render(<RootLayout />);
+  await fireEvent(screen.getByTestId("launch-screen"), "layout");
+  await fireEvent(screen.getByTestId("launch-animation"), "layout");
+
+  await act(async () => {
+    resolveMotion(true);
+  });
+  expect(screen.queryByTestId("launch-screen")).toBeNull();
+  expect(playAnimation).not.toHaveBeenCalled();
+  expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+});
+
 test("reduced motion skips playback and releases the static splash after layout", async () => {
   jest
     .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
