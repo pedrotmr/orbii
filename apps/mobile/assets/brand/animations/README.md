@@ -17,10 +17,10 @@ Import the JSON or dotLottie file into LottieFiles Creator to edit the timing an
 motion. JSON also opens in standard Lottie players. Playback is intended to run
 once and hold the final frame; looping is for review previews only.
 
-These are animation assets, not an installed launch-flow change. The existing
-OS launch screen remains static. App integration would play this after the native
-launch screen, honor reduced motion by showing the final logo, and release the
-loading screen as soon as the app is ready.
+The root layout mounts `LaunchScreen`, which plays the themed JSON once after
+the static native launch screen. The app initializes underneath it. Reduced
+motion shows the final logo without playback; player failures and a three-second
+fallback release startup. Adding the Lottie native player requires a new binary.
 
-[Light/dark motion preview](../../../screenshots/return-loop/splash-animation.gif)
+[Light/dark motion preview](https://github.com/pedrotmr/orbii/blob/main/apps/mobile/screenshots/return-loop/splash-animation.gif)
 is rendered from the actual Lottie files.
