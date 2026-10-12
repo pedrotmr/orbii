@@ -13,6 +13,7 @@ import type * as habits from "../habits.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_habits from "../lib/habits.js";
 import type * as lib_index from "../lib/index.js";
+import type * as lib_points from "../lib/points.js";
 import type * as lib_ritual from "../lib/ritual.js";
 import type * as lib_timezone from "../lib/timezone.js";
 import type * as points from "../points.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/habits": typeof lib_habits;
   "lib/index": typeof lib_index;
+  "lib/points": typeof lib_points;
   "lib/ritual": typeof lib_ritual;
   "lib/timezone": typeof lib_timezone;
   points: typeof points;
