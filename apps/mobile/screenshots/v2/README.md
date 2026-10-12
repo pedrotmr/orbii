@@ -43,3 +43,11 @@ inert so the screenshot does not redeem a reward or write backend data.
 26.5 with the production transaction row and deterministic sample data. It
 shows a habit award, the daily completion bonus, and a reward redemption debit.
 No backend writes were made for this capture.
+
+## Daily reminders
+
+The iPhone 17 Pro simulator captures (iOS 26.5) use the production reminder
+settings section and local notification delivery. The settings image shows the
+default opt-out state; the delivery image shows Orbii reminders in Notification
+Center after permission was granted while the app was in the background. No
+server push or backend writes were used.

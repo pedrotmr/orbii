@@ -3,10 +3,12 @@ import { api } from "@orbii/backend";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import type { DailyReminderKind } from "../reminders/daily-reminder-schedule";
 import BootSpinner from "../components/boot-spinner";
 import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
 import { deviceTimezone } from "../local-date";
+import { useDailyReminders } from "../reminders/daily-reminders-provider";
 import SettingsContent from "./body/settings-content";
 
 export default function SettingsScreen() {
@@ -16,6 +18,7 @@ export default function SettingsScreen() {
   const setCapacity = useMutation(api.users.setCapacity);
   const setRewardsVisible = useMutation(api.users.setRewardsVisible);
   const setTimezone = useMutation(api.users.setTimezone);
+  const reminders = useDailyReminders();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const deviceTz = deviceTimezone();
@@ -82,6 +85,20 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleReminder = (kind: DailyReminderKind, enabled: boolean) => {
+    void reminders.setReminderEnabled(kind, enabled);
+  };
+
+  const handleOpenReminderSettings = () => {
+    void run(async () => {
+      try {
+        await reminders.openSystemSettings();
+      } catch {
+        throw new Error("We couldn’t open system Settings. Try again.");
+      }
+    });
+  };
+
   return (
     <SettingsContent
       capacity={user.capacity}
@@ -90,10 +107,16 @@ export default function SettingsScreen() {
       deviceTimezone={deviceTz}
       busy={busy}
       error={error}
+      reminderPreferences={reminders.preferences}
+      remindersLoading={reminders.isLoading}
+      remindersSaving={reminders.isSaving}
+      reminderPermissionMessage={reminders.permissionMessage}
       onCapacity={handleCapacity}
       onPointHistory={() => router.push("/points-history")}
       onRewardsVisible={handleRewardsVisible}
       onTimezone={handleTimezone}
+      onReminder={handleReminder}
+      onOpenReminderSettings={handleOpenReminderSettings}
       onSignOut={handleSignOut}
     />
   );
