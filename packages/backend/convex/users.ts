@@ -28,6 +28,7 @@ export const ensure = mutation({
       daysCompleted: 0,
       lastCompletedLocalDate: null,
       pointsBalance: 0,
+      rewardsVisible: true,
     });
   },
 });
@@ -48,7 +49,27 @@ export const get = query({
     return {
       ...user,
       pointsBalance: user.pointsBalance ?? 0,
+      rewardsVisible: user.rewardsVisible ?? true,
     };
+  },
+});
+
+export const setRewardsVisible = mutation({
+  args: {
+    visible: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const clerkUserId = await requireClerkUserId(ctx);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(user._id, { rewardsVisible: args.visible });
   },
 });
 
