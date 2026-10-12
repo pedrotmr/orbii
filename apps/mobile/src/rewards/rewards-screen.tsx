@@ -10,6 +10,7 @@ import GhostButton from "../components/ghost-button";
 import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
 import { useTheme, useThemedStyles } from "../theme/use-theme";
+import RedeemedRewardRow from "./rewards-screen/redeemed-reward-row";
 import RewardCard from "./rewards-screen/reward-card";
 import RewardForm from "./rewards-screen/reward-form";
 
@@ -22,9 +23,15 @@ export default function RewardsScreen() {
     {},
     { initialNumItems: 20 },
   );
+  const {
+    results: redeemedRewards,
+    status: redeemedStatus,
+    loadMore: loadMoreRedeemed,
+  } = usePaginatedQuery(api.rewards.listRedeemed, {}, { initialNumItems: 20 });
   const createReward = useMutation(api.rewards.create);
   const updateReward = useMutation(api.rewards.update);
   const deleteReward = useMutation(api.rewards.deleteReward);
+  const redeemReward = useMutation(api.rewards.redeem);
   const [draft, setDraft] = useState<RewardDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +110,26 @@ export default function RewardsScreen() {
     );
   };
 
+  const handleRedeem = (reward: ActiveReward) => {
+    const balanceAfterRedemption = user.pointsBalance - reward.cost;
+
+    Alert.alert(
+      "Redeem this reward?",
+      `Spend ${reward.cost.toLocaleString()} of your ${user.pointsBalance.toLocaleString()} points on ${reward.name}? You’ll have ${balanceAfterRedemption.toLocaleString()} points left. This can’t be undone.`,
+      [
+        { text: "Keep saving", style: "cancel" },
+        {
+          text: "Redeem",
+          onPress: () => {
+            void run(async () => {
+              await redeemReward({ rewardId: reward.id });
+            });
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <ScreenScaffold tabbed>
       <View style={styles.heading}>
@@ -163,6 +190,7 @@ export default function RewardsScreen() {
               busy={busy}
               onEdit={() => handleEdit(reward)}
               onDelete={() => handleDelete(reward)}
+              onRedeem={() => handleRedeem(reward)}
             />
           ))}
         </View>
@@ -182,6 +210,30 @@ export default function RewardsScreen() {
           label="Load more rewards"
           disabled={busy}
           onPress={() => loadMore(20)}
+        />
+      ) : null}
+      <View style={styles.redeemedHeading}>
+        <Text style={styles.sectionTitle}>Redeemed</Text>
+        <Text style={styles.sectionSubtitle}>
+          These rewards are saved here and can’t be changed.
+        </Text>
+      </View>
+      {redeemedStatus === "LoadingFirstPage" ? (
+        <Text style={styles.emptyRedeemed}>Loading redeemed rewards…</Text>
+      ) : redeemedRewards.length > 0 ? (
+        <View style={styles.list}>
+          {redeemedRewards.map((reward) => (
+            <RedeemedRewardRow key={reward.id} reward={reward} />
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.emptyRedeemed}>Nothing redeemed yet.</Text>
+      )}
+      {redeemedStatus === "CanLoadMore" ? (
+        <GhostButton
+          label="Load more redeemed rewards"
+          disabled={busy}
+          onPress={() => loadMoreRedeemed(20)}
         />
       ) : null}
       {error && !draft ? <InlineError message={error} /> : null}
@@ -260,6 +312,7 @@ const createStyles = (colors: Palette) =>
     sectionCopy: { flex: 1, gap: space[1] },
     sectionTitle: { color: colors.ink, fontSize: 20, fontWeight: "700" },
     sectionSubtitle: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+    redeemedHeading: { gap: space[1], paddingTop: space[2] },
     addButton: {
       minHeight: 44,
       flexDirection: "row",
@@ -289,6 +342,7 @@ const createStyles = (colors: Palette) =>
     },
     emptyTitle: { color: colors.ink, fontSize: 17, fontWeight: "600" },
     emptyCopy: { color: colors.muted, fontSize: 14, textAlign: "center" },
+    emptyRedeemed: { color: colors.muted, fontSize: 14, padding: space[4] },
     note: {
       color: colors.muted,
       fontSize: 13,
