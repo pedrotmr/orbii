@@ -225,11 +225,16 @@ describe("scrubHabitFromSession", () => {
       selectedIds: ["a", "b"],
       committedIds: ["a", "b"],
       completedIds: ["a"],
+      committedPointValues: [
+        { habitId: "a", points: 10 },
+        { habitId: "b", points: 20 },
+      ],
     };
     const next = scrubHabitFromSession(session, "a");
     expect(next.phase).toBe("active");
     expect(next.committedIds).toEqual(["b"]);
     expect(next.completedIds).toEqual([]);
+    expect(next.committedPointValues).toEqual([{ habitId: "b", points: 20 }]);
   });
 
   test("empty active commit resets to idle", () => {
@@ -240,6 +245,7 @@ describe("scrubHabitFromSession", () => {
       selectedIds: ["a"],
       committedIds: ["a"],
       completedIds: [],
+      committedPointValues: [{ habitId: "a", points: 20 }],
     };
     const next = scrubHabitFromSession(session, "a");
     expect(next.phase).toBe("idle");
@@ -254,6 +260,10 @@ describe("scrubHabitFromSession", () => {
       selectedIds: ["a", "b"],
       committedIds: ["a", "b"],
       completedIds: ["b"],
+      committedPointValues: [
+        { habitId: "a", points: 10 },
+        { habitId: "b", points: 20 },
+      ],
     };
     const next = scrubHabitFromSession(session, "a");
     expect(next.phase).toBe("complete");

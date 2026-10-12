@@ -5,8 +5,14 @@ import { requireClerkUserId } from "./lib/auth";
 import {
   nextHabitOrder,
   sortHabitsByOrder,
+  starterHabitPointValue,
   STARTER_HABITS,
 } from "./lib/habits";
+import {
+  DEFAULT_HABIT_POINT_VALUE,
+  getHabitPointValue,
+  validateHabitPointValue,
+} from "./lib/points";
 import { applyCompletionStats, scrubHabitFromSession } from "./lib/ritual";
 
 const MAX_HABIT_NAME_LENGTH = 50;
@@ -48,6 +54,7 @@ export const list = query({
       name: row.name,
       glyph: row.glyph,
       category: row.category,
+      pointValue: getHabitPointValue(row.pointValue, row.habitKey),
     }));
   },
 });
@@ -58,10 +65,14 @@ export const add = mutation({
     name: v.string(),
     glyph: v.string(),
     category: habitCategoryValidator,
+    pointValue: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
     const { name, glyph } = validateHabitDetails(args.name, args.glyph);
+    const pointValue = validateHabitPointValue(
+      args.pointValue ?? DEFAULT_HABIT_POINT_VALUE,
+    );
     const existing = await ctx.db
       .query("habits")
       .withIndex("by_clerkUserId_habitKey", (q) =>
@@ -85,6 +96,7 @@ export const add = mutation({
       glyph,
       category: args.category,
       order: nextHabitOrder(habits),
+      pointValue,
     });
   },
 });
@@ -95,6 +107,7 @@ export const update = mutation({
     name: v.string(),
     glyph: v.string(),
     category: habitCategoryValidator,
+    pointValue: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const clerkUserId = await requireClerkUserId(ctx);
@@ -110,11 +123,16 @@ export const update = mutation({
     }
 
     const { name, glyph } = validateHabitDetails(args.name, args.glyph);
+    const pointValue =
+      args.pointValue === undefined
+        ? undefined
+        : validateHabitPointValue(args.pointValue);
 
     await ctx.db.patch(existing._id, {
       name,
       glyph,
       category: args.category,
+      ...(pointValue === undefined ? {} : { pointValue }),
     });
 
     return existing._id;
@@ -236,6 +254,12 @@ export const remove = mutation({
         selectedIds: sessionDoc.selectedIds,
         committedIds: sessionDoc.committedIds,
         completedIds: sessionDoc.completedIds,
+        committedPointValues:
+          sessionDoc.committedPointValues ??
+          sessionDoc.committedIds.map((habitId: string) => ({
+            habitId,
+            points: getHabitPointValue(undefined, habitId),
+          })),
       },
       args.habitKey,
     );
@@ -246,6 +270,7 @@ export const remove = mutation({
       selectedIds: scrubbed.selectedIds,
       committedIds: scrubbed.committedIds,
       completedIds: scrubbed.completedIds,
+      committedPointValues: scrubbed.committedPointValues,
     });
 
     if (!wasComplete && scrubbed.phase === "complete") {
@@ -306,6 +331,7 @@ export const seedStarters = mutation({
         glyph: starter.glyph,
         category: starter.category,
         order: nextHabitOrder(habits),
+        pointValue: starterHabitPointValue(starter.id),
       });
     }
   },

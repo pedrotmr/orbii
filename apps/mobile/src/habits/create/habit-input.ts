@@ -4,4 +4,5 @@ export interface HabitInput {
   name: string;
   glyph: string;
   category: HabitCategory;
+  pointValue: number;
 }
