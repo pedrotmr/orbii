@@ -22,6 +22,10 @@ import { resolveTodayHabits } from "./today-habit";
 
 export default function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
+  const [releasedOrbit, setReleasedOrbit] = useState<{
+    localDate: string;
+    count: number;
+  } | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const busyRef = useRef(false);
   const user = useQuery(api.users.get, {});
@@ -112,15 +116,23 @@ export default function TodayScreen() {
           capacity={day.capacity}
           streak={day.streak}
           busy={actionBusy}
-          onReveal={() => void run(() => startReveal({ localDate }))}
+          onReveal={() =>
+            void run(async () => {
+              await startReveal({ localDate });
+              setReleasedOrbit(null);
+            })
+          }
         />
       ) : null}
 
       {phase === "reveal" ? (
         <TodayRevealPhase
-          capacity={day.capacity}
+          usualCount={day.capacity}
           selectedIds={day.session.selectedIds}
           offeredHabits={offeredHabits}
+          releasedCount={
+            releasedOrbit?.localDate === localDate ? releasedOrbit.count : null
+          }
           busy={actionBusy}
           onToggle={(habitId) =>
             void run(() => toggleSelect({ localDate, habitId }))
@@ -155,7 +167,11 @@ export default function TodayScreen() {
               }
             })
           }
-          onShuffle={() => void run(() => rereveal({ localDate }))}
+          onShuffle={() =>
+            void run(async () => {
+              await rereveal({ localDate });
+            })
+          }
         />
       ) : null}
 
@@ -179,6 +195,10 @@ export default function TodayScreen() {
           onReshuffle={() =>
             void run(async () => {
               await rereveal({ localDate });
+              setReleasedOrbit({
+                localDate,
+                count: day.session.committedIds.length,
+              });
             })
           }
         />

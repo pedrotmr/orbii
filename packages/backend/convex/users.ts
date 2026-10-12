@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
-import { DEFAULT_CAPACITY, MAX_CAPACITY, MIN_CAPACITY } from "./lib/habits";
+import { clampDefaultCapacity, DEFAULT_CAPACITY } from "./lib/habits";
 import { applyMissedDayGap } from "./lib/ritual";
 import { normalizeTimezone } from "./lib/timezone";
 
@@ -63,10 +63,7 @@ export const setCapacity = mutation({
       throw new Error("User not found");
     }
 
-    const capacity = Math.max(
-      MIN_CAPACITY,
-      Math.min(MAX_CAPACITY, Math.floor(args.capacity)),
-    );
+    const capacity = clampDefaultCapacity(args.capacity);
     await ctx.db.patch(user._id, { capacity });
   },
 });

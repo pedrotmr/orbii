@@ -30,7 +30,7 @@ export default function SettingsCapacitySection({
               color={colors.primary}
             />
           </View>
-          <Text style={styles.label}>Daily capacity</Text>
+          <Text style={styles.label}>Your usual count</Text>
         </View>
         <View style={styles.picker}>
           <CapacityPicker
@@ -41,7 +41,8 @@ export default function SettingsCapacitySection({
         </View>
       </View>
       <Text style={styles.hint}>
-        Choose a maximum that feels manageable for your daily focus.
+        This guides your daily choice. You can still select any number of habits
+        from today’s offer.
       </Text>
     </View>
   );

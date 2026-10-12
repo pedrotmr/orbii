@@ -1,16 +1,17 @@
 import { type Palette, space } from "@orbii/tokens";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import type { TodayHabit } from "../today-habit";
-import GhostButton from "../../components/ghost-button";
+import { selectionFeedback } from "../../components/controls/feedback";
 import PrimaryButton from "../../components/primary-button";
 import { useThemedStyles } from "../../theme/use-theme";
 import TodayOfferRow from "./today-offer-row";
 
 interface TodayRevealPhaseProps {
-  capacity: number;
+  usualCount: number;
   selectedIds: string[];
   offeredHabits: TodayHabit[];
+  releasedCount?: number | null;
   busy: boolean;
   onToggle: (habitId: string) => void;
   onCommit: () => void;
@@ -18,9 +19,10 @@ interface TodayRevealPhaseProps {
 }
 
 export default function TodayRevealPhase({
-  capacity,
+  usualCount,
   selectedIds,
   offeredHabits,
+  releasedCount = null,
   busy,
   onToggle,
   onCommit,
@@ -33,45 +35,70 @@ export default function TodayRevealPhase({
       entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
       style={styles.block}
     >
-      <Text accessibilityRole="header" style={styles.title}>
-        What fits today?
-      </Text>
-      <Text style={styles.sub}>
-        Choose up to {capacity}. Even one is a good place to start.
-      </Text>
-      <View style={styles.selection} accessibilityLiveRegion="polite">
-        <Text style={styles.selectionText}>
-          {count === 0 ? "Your options" : `${count} selected`}
-        </Text>
-        <Text style={styles.limit}>Up to {capacity}</Text>
+      <View style={styles.header}>
+        <View style={styles.headerCopy}>
+          <Text style={styles.eyebrow}>Today’s offer</Text>
+          <Text accessibilityRole="header" style={styles.title}>
+            Make room for today.
+          </Text>
+          <Text style={styles.sub}>
+            Pick the habits you want. One is enough; all {offeredHabits.length}{" "}
+            are okay too.
+          </Text>
+        </View>
+        <View style={styles.usualCard}>
+          <Text style={styles.usualLabel}>Your usual</Text>
+          <Text style={styles.usualCount}>{usualCount}</Text>
+          <Text style={styles.usualHint}>just a guide</Text>
+        </View>
       </View>
-      <View style={styles.list}>
+
+      {releasedCount !== null ? (
+        <Text style={styles.releaseNote}>
+          Your earlier {releasedCount}-habit Orbit was released. Choose again
+          from this fresh offer.
+        </Text>
+      ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Refresh the offer"
+        accessibilityState={{ disabled: busy }}
+        disabled={busy}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        onPress={() => {
+          selectionFeedback();
+          onShuffle();
+        }}
+        style={({ pressed }) => [
+          styles.refresh,
+          busy && styles.refreshDisabled,
+          pressed && !busy && styles.refreshPressed,
+        ]}
+      >
+        <Text style={styles.refreshLabel}>Refresh the offer →</Text>
+      </Pressable>
+
+      <View style={styles.grid}>
         {offeredHabits.map((habit) => (
           <TodayOfferRow
             key={habit.id}
             habit={habit}
             selected={selectedIds.includes(habit.id)}
-            disabled={
-              busy || (count >= capacity && !selectedIds.includes(habit.id))
-            }
+            disabled={busy}
             onToggle={() => onToggle(habit.id)}
           />
         ))}
       </View>
-      <View style={styles.actions}>
+
+      <View style={styles.footer}>
+        <Text style={styles.selection} accessibilityLiveRegion="polite">
+          {count} picked · your count sets today’s capacity
+        </Text>
         <PrimaryButton
-          label={
-            count > 0
-              ? `Start with ${count} ${count === 1 ? "habit" : "habits"}`
-              : "Choose your focus"
-          }
+          label="Commit today’s Orbit"
           disabled={busy || count === 0}
           onPress={onCommit}
-        />
-        <GhostButton
-          label="Try other options"
-          disabled={busy}
-          onPress={onShuffle}
         />
       </View>
     </Animated.View>
@@ -79,24 +106,79 @@ export default function TodayRevealPhase({
 }
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
-    block: { gap: space[3], flexGrow: 1 },
+    block: { gap: space[2], flexGrow: 1 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[2],
+    },
+    headerCopy: { flex: 1, gap: space[2] },
+    eyebrow: {
+      color: colors.muted,
+      fontSize: 12,
+      fontWeight: "700",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
     title: {
-      fontSize: 32,
-      lineHeight: 38,
+      fontSize: 29,
+      lineHeight: 34,
       fontWeight: "700",
       color: colors.ink,
-      letterSpacing: -0.8,
+      letterSpacing: -0.9,
     },
-    sub: { fontSize: 16, lineHeight: 24, color: colors.muted },
-    selection: {
+    sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
+    usualCard: {
+      minWidth: 72,
+      alignItems: "center",
+      paddingHorizontal: space[2],
+      paddingVertical: space[3],
+      borderWidth: 1,
+      borderColor: colors.line,
+      borderRadius: 16,
+      backgroundColor: colors.surface,
+    },
+    usualLabel: { color: colors.muted, fontSize: 11 },
+    usualCount: {
+      color: colors.ink,
+      fontSize: 25,
+      lineHeight: 30,
+      fontWeight: "700",
+    },
+    usualHint: { color: colors.muted, fontSize: 10 },
+    releaseNote: {
+      paddingHorizontal: space[3],
+      paddingVertical: space[2],
+      borderRadius: 12,
+      backgroundColor: colors.primarySoft,
+      color: colors.ink,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    refresh: {
+      alignSelf: "flex-start",
+      minHeight: 32,
+      justifyContent: "center",
+      paddingVertical: 4,
+    },
+    refreshDisabled: { opacity: 0.4 },
+    refreshPressed: { opacity: 0.75 },
+    refreshLabel: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    grid: {
       flexDirection: "row",
+      flexWrap: "wrap",
       justifyContent: "space-between",
-      gap: 8,
-      marginTop: space[4],
-      marginBottom: space[1],
+      gap: space[2],
     },
-    selectionText: { fontSize: 14, fontWeight: "600", color: colors.ink },
-    limit: { fontSize: 14, color: colors.muted },
-    list: { gap: space[2] },
-    actions: { gap: space[1], paddingTop: space[4], marginTop: "auto" },
+    footer: { gap: space[2], marginTop: "auto", paddingTop: space[2] },
+    selection: {
+      color: colors.muted,
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: "center",
+    },
   });
