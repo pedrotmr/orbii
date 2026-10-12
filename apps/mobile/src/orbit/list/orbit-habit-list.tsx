@@ -53,13 +53,11 @@ export default function OrbitHabitList({
       style={styles.container}
     >
       <View style={styles.header}>{header}</View>
-      <View style={styles.grid}>
+      <View style={styles.list}>
         <Sortable.Grid
           key={gridResetKey}
           activeItemScale={1.02}
           activeItemShadowOpacity={0.12}
-          columns={1}
-          columnGap={0}
           data={habits}
           dragActivationDelay={180}
           dragActivationFailOffset={24}
@@ -98,6 +96,6 @@ const createStyles = (colors: Palette) =>
       paddingBottom: space[6],
     },
     header: { marginBottom: space[6] },
-    grid: { width: "100%" },
+    list: { width: "100%" },
     footer: { marginTop: space[6] },
   });
