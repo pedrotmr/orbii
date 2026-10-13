@@ -166,6 +166,11 @@ const synchronizeArtwork = (destination: string) => {
   ]) {
     const sourceDirectory = join(brandRoot, directory);
     for (const file of collectFiles(sourceDirectory)) {
+      // Each consumer owns its animation guide; only artwork is synchronized.
+      if (prefix === "animations" && file === "README.md") {
+        continue;
+      }
+
       current.set(join(prefix, file), join(sourceDirectory, file));
     }
   }

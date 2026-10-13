@@ -171,6 +171,25 @@ test("the seeded ownership manifest prunes artwork on the first run", (t) => {
   assert.equal(readFileSync(mobileOwned, "utf8"), "mobile artwork");
 });
 
+test("animation guide stays mobile-owned during artwork generation", (t) => {
+  const fixture = createFixture();
+  t.after(fixture.cleanup);
+  const mobileGuide = join(fixture.mobile, "brand/animations/README.md");
+  mkdirSync(dirname(mobileGuide), { recursive: true });
+  writeFileSync(mobileGuide, "Mobile guide pointer");
+
+  const first = fixture.generate();
+  const second = fixture.generate();
+
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(readFileSync(mobileGuide, "utf8"), "Mobile guide pointer");
+  const manifest = JSON.parse(
+    readFileSync(join(fixture.brand, "mobile-artwork.json"), "utf8"),
+  ) as string[];
+  assert.equal(manifest.includes("animations/README.md"), false);
+});
+
 for (const removeDirectory of [false, true]) {
   test(`synchronization prunes deleted owned artwork and preserves mobile files (absent animations: ${removeDirectory})`, (t) => {
     const fixture = createFixture();
