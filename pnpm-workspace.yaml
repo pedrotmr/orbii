@@ -6,3 +6,5 @@ nodeLinker: hoisted
 
 overrides:
   react-dom: 19.3.0
+patchedDependencies:
+  '@clerk/expo@4.6.8': patches/@clerk__expo@4.6.8.patch
