@@ -30,6 +30,16 @@ Status bars and the Lock Screen clock are normalized for reproducible evidence.
 foreground/background/monochrome layers, both splash exports, and brand swatches.
 The actual wordmark appears in the sign-in, setup, and Today captures.
 
-Android runtime capture remains pending: Android SDK tools and an emulator are
-unavailable in this environment. Android assets and resolved Expo configuration
-were checked statically. A new native build is required for icon/splash changes.
+## Android runtime review
+
+Captured from the Orbii Dev development build installed on a Pixel_10 emulator
+running Android 17.0. The sign-in screen is a production screen captured before
+authentication; the installed app info screen shows the Android app icon with
+its TEST ribbon. No account sign-in or backend data was used.
+
+| Sign-in, light                     | Sign-in, dark                    | Installed app icon                         |
+| ---------------------------------- | -------------------------------- | ------------------------------------------ |
+| [Light](android/sign-in-light.png) | [Dark](android/sign-in-dark.png) | [App info](android/installed-app-info.png) |
+
+Icon, splash, and sign-in branding are integrated in the installed native
+build. The screenshots include the emulator's system UI and are unedited.
