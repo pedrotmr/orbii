@@ -37,7 +37,12 @@
         }
       ],
       "expo-status-bar",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
+      ],
       "expo-widgets"
     ],
     "experiments": {
