@@ -11,8 +11,8 @@ Instructions for AI coding agents in this repository.
 | Artifact                              | Where                                                                      |
 | ------------------------------------- | -------------------------------------------------------------------------- |
 | Canonical V2 spec + current decisions | [Spec: Orbii V2 (approved)](https://github.com/pedrotmr/orbii/issues/50)   |
-| V1 spec (frozen history)              | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15)   |
-| Wayfinder map / frontier              | [Wayfinder: path to Orbii V2](https://github.com/pedrotmr/orbii/issues/51) |
+| V1 spec (frozen history)              | [Spec: Orbii V1 (historical)](https://github.com/pedrotmr/orbii/issues/15) |
+| Completed V2 planning history         | [Wayfinder: path to Orbii V2](https://github.com/pedrotmr/orbii/issues/51) |
 | Work tickets                          | Issues labelled `ready-for-agent` (claim with assignee)                    |
 | Visual reference only                 | `design-ideas/` (not production code)                                      |
 
@@ -44,7 +44,7 @@ Turborepo + pnpm. Mobile-only Expo app; no web app in V2.
 ```bash
 pnpm install
 pnpm dev              # turbo: convex + expo
-pnpm test             # backend Vitest
+pnpm test             # workspace tests (backend and mobile)
 pnpm typecheck
 pnpm lint             # eslint .
 pnpm format           # prettier --write
@@ -111,8 +111,8 @@ PRs: short description, linked GitHub issue, test results, screenshots for UI. C
 
 ## Session continuation
 
-- **Before coding:** open the [Wayfinder: path to Orbii V2](https://github.com/pedrotmr/orbii/issues/51); claim an unblocked `ready-for-agent` issue; read [Spec: Orbii V2 (approved)](https://github.com/pedrotmr/orbii/issues/50) for product rules. Spec V1 remains frozen history.
-- **While coding:** non-obvious product choices → dated comment on Spec V2 or a wayfinder grilling ticket — no parallel markdown decision log in git.
+- **For issue-based work:** check open `ready-for-agent` issues and dependencies, then claim an unblocked issue. Read [Spec: Orbii V2 (approved)](https://github.com/pedrotmr/orbii/issues/50) for product rules. Spec V1 remains frozen history; Wayfinder #51 is completed planning history.
+- **While coding:** non-obvious product choices → dated comment on Spec V2 or the relevant open issue — no parallel markdown decision log in git.
 - **If scope diverges from Spec V2:** update the spec before merging.
 - **Before ending a session:** leave the GitHub issue truthful (progress comment, close if done, unassign if blocked).
 
