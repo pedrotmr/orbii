@@ -1,8 +1,8 @@
 ## Convex backend (@orbii/backend)
 
-Pure ritual helpers live in `convex/lib/` and are unit-tested without a Convex deployment.
+Pure ritual helpers and shared points logic live in `convex/lib/`; backend tests cover the domain without a Convex deployment.
 
-Convex functions (`users`, `habits`, `day`) persist the same ritual against the provisioned project.
+Convex functions cover user settings (`users`), habits (`habits`), daily rituals (`day`), point history (`points`), and reward goals and redemptions (`rewards`) against the provisioned project.
 
 ### Project
 

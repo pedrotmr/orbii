@@ -6,17 +6,19 @@ Many habits live in your **Orbit**. Each day Orbii offers a small set; you pick 
 
 ## Source of truth
 
-| What                          | Where                                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| V1 product & technical design | [Spec: Orbii V1 (approved)](https://github.com/pedrotmr/orbii/issues/15)                                                |
-| Work & wayfinding             | [GitHub Issues](https://github.com/pedrotmr/orbii/issues) · [Wayfinder map](https://github.com/pedrotmr/orbii/issues/1) |
+| What                                | Where                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| Current product & engineering rules | [Spec: Orbii V2 (approved)](https://github.com/pedrotmr/orbii/issues/50)   |
+| Frozen V1 history                   | [Spec: Orbii V1 (historical)](https://github.com/pedrotmr/orbii/issues/15) |
+| Current work                        | [GitHub Issues](https://github.com/pedrotmr/orbii/issues)                  |
+| Completed V2 planning               | [Wayfinder: path to Orbii V2](https://github.com/pedrotmr/orbii/issues/51) |
 
 ## Repo layout
 
 | Path               | Role                                                 |
 | ------------------ | ---------------------------------------------------- |
 | `apps/mobile`      | Expo app                                             |
-| `packages/backend` | Ritual domain + Convex                               |
+| `packages/backend` | Convex rituals, points, and rewards                  |
 | `packages/tokens`  | Shared design tokens                                 |
 | `design-ideas/`    | Visual exploration / Vite prototype (not production) |
 
@@ -37,4 +39,4 @@ pnpm test
 pnpm --filter @orbii/mobile start
 ```
 
-**Trusted-user Expo Go install:** see [`apps/mobile/README.md`](apps/mobile/README.md).
+**Mobile development and TestFlight setup:** see [`apps/mobile/README.md`](apps/mobile/README.md).

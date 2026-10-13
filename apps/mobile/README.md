@@ -1,8 +1,8 @@
 # Orbii mobile — SDK 58 preview development
 
-Development setup for the SDK 58 preview, ahead of the planned 1–2 trusted-user dogfood. The app connects to the shared Convex **dev** deployment.
+Development setup for the SDK 58 preview and the Orbii Dev TestFlight / development-build path. The app connects to the shared Convex **dev** deployment.
 
-This branch currently targets **Expo SDK 58 preview** and React Native 0.88 RC.
+The app currently targets **Expo SDK 58 preview** and React Native 0.88 RC.
 Use a matching SDK 58 preview client; public App Store / Play Store Expo Go
 builds targeting SDK 57 cannot open this project. The installed Clerk release
 declares Expo support below SDK 58, and native sign-in has not been verified with
@@ -60,7 +60,7 @@ Needed only on the machine that runs `convex dev`. See [`packages/backend/README
 2. Allow redirect URLs used by this app:
    - Development app: `orbiidev://oauth-callback`
    - Production app: `orbii://oauth-callback`
-   - **Expo Go** (what wave-1 dogfood uses): Clerk must also accept the `exp://` callback Expo generates. Expo Go typically emits something like `exp://<LAN-host>:8081/--/oauth-callback`. In Clerk → Native applications / redirect allowlist, add that exact URL for your LAN IP (or use Clerk’s Expo redirect helper / wildcard policy your org allows). Re-check by logging `redirectUrl` once from the device if SSO fails to return.
+   - **Expo Go** (optional local development path): Clerk must also accept the `exp://` callback Expo generates. Expo Go typically emits something like `exp://<LAN-host>:8081/--/oauth-callback`. In Clerk → Native applications / redirect allowlist, add that exact URL for your LAN IP (or use Clerk’s Expo redirect helper / wildcard policy your org allows). Re-check by logging `redirectUrl` once from the device if SSO fails to return.
 3. Convex JWT: enable Clerk’s **Convex** integration so the JWT template named `convex` exists
 4. On the Convex deployment, set `CLERK_JWT_ISSUER_DOMAIN` to the Clerk Frontend API issuer (`pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN …` from `packages/backend`)
 
@@ -96,7 +96,7 @@ Add `EXPO_TOKEN` as a GitHub Actions repository secret for TestFlight builds and
 
 Orbii currently has only its Convex dev deployment. The Dev TestFlight build and OTA updates use the preview EAS environment with the test Clerk and current dev Convex values. The staging release workflow does not deploy Convex or provide an isolated staging database. Production delivery is not ready until the production EAS environment has its live Clerk and production Convex values and `submit.production.ios.ascAppId` is set to the production App Store Connect app ID.
 
-### Setup steps
+### EAS project and account setup
 
 1. Confirm the existing EAS project link from `apps/mobile`:
 
@@ -124,7 +124,7 @@ Orbii currently has only its Convex dev deployment. The Dev TestFlight build and
 
    Expo Go continues to use its generated `exp://` callback. The Dev TestFlight build uses `orbiidev://`.
 
-6. Add the two App Store Connect Apple IDs from step 3 to `eas.json` under `submit.preview-testflight.ios.ascAppId` and `submit.production.ios.ascAppId`. Both profiles already use the Apple Developer team ID used by Mira La Cancha.
+6. Confirm the Orbii Dev App Store Connect ID is set under `submit.preview-testflight.ios.ascAppId` in `eas.json`. Set `submit.production.ios.ascAppId` after the production App Store Connect record is ready. Both profiles use the Apple Developer team ID used by Mira La Cancha.
 
 7. Build the Orbii Dev native development client when you need native testing or the Live Activity. From `apps/mobile`:
 
@@ -132,23 +132,7 @@ Orbii currently has only its Convex dev deployment. The Dev TestFlight build and
    pnpm dlx eas-cli@latest build --platform ios --profile development
    ```
 
-8. Dispatch the **Orbii Dev** TestFlight workflow:
-
-   ```bash
-   pnpm mobile:testflight:staging
-   ```
-
-   GitHub Actions checks the pushed `main`, runs `pnpm verify`, then uses the `preview-testflight` profile, preview EAS environment, and Orbii Dev bundle ID to build and submit the completed build.
-
-9. After production Convex and Clerk values and the production App Store Connect app ID are ready, dispatch the **Orbii** TestFlight workflow:
-
-   ```bash
-   pnpm mobile:testflight:production
-   ```
-
-   GitHub Actions checks the pushed `main`, runs `pnpm verify`, then uses the production profile and submits to Orbii's separate App Store Connect record. TestFlight processing and tester setup happen in App Store Connect.
-
-Before the first workflow dispatch for each profile, complete any required Apple sign-in, iOS signing, and App Store Connect submission credential setup interactively in EAS. From `apps/mobile`, run `pnpm dlx eas-cli@24.8.0 credentials --platform ios` and follow the prompts for that profile. The GitHub workflows use `--non-interactive`, so they cannot answer EAS setup prompts. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. The current Orbii V1 plan still treats Expo Go as the initial dogfood path. Confirm native Clerk sign-in on the current SDK 58 preview before inviting TestFlight users; production is not ready until its account setup is complete.
+Use the [TestFlight release commands](#release-to-testflight) above to dispatch either workflow. Before the first workflow dispatch for each profile, complete any required Apple sign-in, iOS signing, and App Store Connect submission credential setup interactively in EAS. From `apps/mobile`, run `pnpm dlx eas-cli@24.8.0 credentials --platform ios` and follow the prompts for that profile. The GitHub workflows use `--non-interactive`, so they cannot answer EAS setup prompts. Keep EAS capability sync enabled: the Expo Widgets config creates separate app groups (`group.app.orbii.mobile.dev` and `group.app.orbii.mobile`) and EAS can register and assign those capabilities during the build. Orbii V2 uses TestFlight or a development build for trusted-user use; Expo Go remains an optional local development path. Confirm native Clerk sign-in on the current SDK 58 preview before inviting TestFlight users; production is not ready until its account setup is complete.
 
 ## Return Loop brand assets
 
@@ -235,23 +219,24 @@ Rebuild the development app after changing native dependencies or app config.
 
 ## Troubleshooting
 
-| Symptom                                      | Likely fix                                                                                       |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| App crashes on boot about missing env        | Ensure `apps/mobile/.env.local` exists and Expo was restarted after editing                      |
-| Clerk sign-in opens then fails redirect      | Allowlist Expo Go `exp://…/--/oauth-callback` (and `orbii://oauth-callback` for a future client) |
-| Signed in but UI stuck / “Not authenticated” | Convex JWT template `convex` missing, or `CLERK_JWT_ISSUER_DOMAIN` unset on the deployment       |
-| Stale bundle / weird UI                      | Shake device → Reload; or stop Expo and `pnpm --filter @orbii/mobile start -- -c`                |
-| Wrong data / empty after schema change       | Dev deployment may have been reset; re-run Setup                                                 |
-| Fonts flash system default                   | Expected briefly until Outfit loads; if permanent, check network / Expo Go can fetch font assets |
+| Symptom                                      | Likely fix                                                                                                                                                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App crashes on boot about missing env        | Ensure `apps/mobile/.env.local` exists and Expo was restarted after editing                                                                                                   |
+| Clerk sign-in opens then fails redirect      | Allowlist the app callback (`orbiidev://oauth-callback` for Orbii Dev or `orbii://oauth-callback` for production); Expo Go uses its generated `exp://…/--/oauth-callback` URL |
+| Signed in but UI stuck / “Not authenticated” | Convex JWT template `convex` missing, or `CLERK_JWT_ISSUER_DOMAIN` unset on the deployment                                                                                    |
+| Stale bundle / weird UI                      | Shake device → Reload; or stop Expo and `pnpm --filter @orbii/mobile start -- -c`                                                                                             |
+| Wrong data / empty after schema change       | Dev deployment may have been reset; re-run Setup                                                                                                                              |
+| Fonts flash system default                   | Expected briefly until Outfit loads; if permanent, check network / Expo Go can fetch font assets                                                                              |
 
-## Out of scope for wave 1
+## Current environment boundaries
 
-- Replacing the shared dev Convex deployment with production data before the V1 spec and production services are ready
+- Replacing the shared dev Convex deployment with production data before production services are ready
 - Production Convex deployment
-- A separate Lock Screen widget, Android Live Updates, push notifications, web app, smart scheduling
+- A separate Lock Screen widget, Android Live Updates, remote push notifications, web app, and smart scheduling
 
 ## Related
 
-- Spec: [Orbii V1](https://github.com/pedrotmr/orbii/issues/15)
+- Current spec: [Orbii V2](https://github.com/pedrotmr/orbii/issues/50)
+- Frozen history: [Orbii V1](https://github.com/pedrotmr/orbii/issues/15)
 - Backend / Convex details: [`packages/backend/README.md`](../../packages/backend/README.md)
-- Wayfinder: [issue #1](https://github.com/pedrotmr/orbii/issues/1)
+- Completed V2 wayfinder: [issue #51](https://github.com/pedrotmr/orbii/issues/51)
