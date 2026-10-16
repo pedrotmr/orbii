@@ -9,6 +9,7 @@ import ScreenScaffold from "../components/layout/screen-scaffold";
 import InlineError from "../components/states/inline-error";
 import { deviceTimezone } from "../local-date";
 import { useDailyReminders } from "../reminders/daily-reminders-provider";
+import { type ThemePreference, useThemePreference } from "../theme/use-theme";
 import SettingsContent from "./body/settings-content";
 
 export default function SettingsScreen() {
@@ -19,6 +20,8 @@ export default function SettingsScreen() {
   const setRewardsVisible = useMutation(api.users.setRewardsVisible);
   const setTimezone = useMutation(api.users.setTimezone);
   const reminders = useDailyReminders();
+  const { preference: themePreference, setPreference: setThemePreference } =
+    useThemePreference();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const deviceTz = deviceTimezone();
@@ -79,6 +82,12 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleThemePreference = (preference: ThemePreference) => {
+    void run(async () => {
+      await setThemePreference(preference);
+    });
+  };
+
   const handleSignOut = () => {
     void run(async () => {
       await signOut();
@@ -103,6 +112,7 @@ export default function SettingsScreen() {
     <SettingsContent
       capacity={user.capacity}
       rewardsVisible={user.rewardsVisible}
+      themePreference={themePreference}
       timezone={user.timezone}
       deviceTimezone={deviceTz}
       busy={busy}
@@ -114,6 +124,7 @@ export default function SettingsScreen() {
       onCapacity={handleCapacity}
       onPointHistory={() => router.push("/points-history")}
       onRewardsVisible={handleRewardsVisible}
+      onThemePreference={handleThemePreference}
       onTimezone={handleTimezone}
       onReminder={handleReminder}
       onOpenReminderSettings={handleOpenReminderSettings}
