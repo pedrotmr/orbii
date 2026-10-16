@@ -78,6 +78,7 @@ const sessionFromDoc = (doc: {
   committedIds: string[];
   completedIds: string[];
   committedPointValues?: { habitId: string; points: number }[];
+  committedHabitSnapshots?: { habitId: string; name: string; glyph: string }[];
 }) => {
   return {
     localDate: doc.localDate,
@@ -92,6 +93,7 @@ const sessionFromDoc = (doc: {
         habitId,
         points: getHabitPointValue(undefined, habitId),
       })),
+    committedHabitSnapshots: doc.committedHabitSnapshots ?? [],
   } satisfies DaySession;
 };
 
@@ -275,8 +277,11 @@ export const toggleComplete = mutation({
           q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitId),
         )
         .unique();
+      const committedHabitSnapshot = before.committedHabitSnapshots?.find(
+        (snapshot) => snapshot.habitId === args.habitId,
+      );
 
-      if (!habit) {
+      if (!habit && !committedHabitSnapshot) {
         throw new Error("Habit not found");
       }
 
@@ -288,7 +293,7 @@ export const toggleComplete = mutation({
       await insertSessionPointAward(ctx, clerkUserId, user._id, doc._id, {
         amount: pointValue,
         sourceType: "habit_award",
-        sourceName: habit.name,
+        sourceName: habit?.name ?? committedHabitSnapshot?.name ?? args.habitId,
         localDate: sessionLocalDate,
         idempotencyKey: habitAwardIdempotencyKey(
           sessionLocalDate,

@@ -56,8 +56,14 @@ export default function TodayScreen() {
       committedIds,
       habits,
       day?.session.committedPointValues,
+      day?.session.committedHabitSnapshots,
     );
-  }, [committedIds, day?.session.committedPointValues, habits]);
+  }, [
+    committedIds,
+    day?.session.committedHabitSnapshots,
+    day?.session.committedPointValues,
+    habits,
+  ]);
 
   const selectedHabits = useMemo(() => {
     return resolveTodayHabits(day?.session.selectedIds, habits);
@@ -112,7 +118,7 @@ export default function TodayScreen() {
   return (
     <ScreenScaffold tabbed>
       <TodayHeader localDate={localDate} />
-      {orbitEmpty ? <TodayEmptyOrbit /> : null}
+      {orbitEmpty && phase === "idle" ? <TodayEmptyOrbit /> : null}
 
       {!orbitEmpty && phase === "idle" ? (
         <TodayIdlePhase

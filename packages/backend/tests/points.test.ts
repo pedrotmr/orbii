@@ -1007,3 +1007,63 @@ test("deleting the last unchecked committed habit awards one completion bonus", 
     daysCompleted: 1,
   });
 });
+
+test("removing a completed habit preserves its undo and same-day recheck", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T12:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  await insertUser(t, "owner");
+  await owner.mutation(api.habits.add, {
+    habitKey: "walk",
+    name: "Walk",
+    glyph: "symbol:walk",
+    category: "body",
+    pointValue: 10,
+  });
+
+  const localDate = "2026-01-01";
+  await owner.mutation(api.day.startRevealMutation, { localDate });
+  await owner.mutation(api.day.toggleSelect, { localDate, habitId: "walk" });
+  await owner.mutation(api.day.commit, { localDate });
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await owner.mutation(api.habits.remove, { habitKey: "walk", localDate });
+
+  await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
+    session: {
+      phase: "complete",
+      committedIds: ["walk"],
+      completedIds: ["walk"],
+      committedHabitSnapshots: [
+        { habitId: "walk", name: "Walk", glyph: "symbol:walk" },
+      ],
+    },
+    earnedPoints: 30,
+  });
+
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
+    session: { phase: "active", completedIds: [] },
+    earnedPoints: 0,
+  });
+
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
+    session: { phase: "complete", completedIds: ["walk"] },
+    earnedPoints: 0,
+  });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    pointsBalance: 0,
+    daysCompleted: 1,
+  });
+
+  const transactions = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("pointTransactions")
+      .withIndex("by_clerkUserId_localDate", (q) =>
+        q.eq("clerkUserId", "owner").eq("localDate", localDate),
+      )
+      .collect();
+  });
+  expect(transactions).toHaveLength(4);
+});

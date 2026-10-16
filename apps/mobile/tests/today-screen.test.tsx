@@ -56,6 +56,7 @@ const habit = {
   pointValue: 20,
 };
 const user = { timezone: "UTC" };
+let availableHabits = [habit];
 const day = {
   capacity: 2,
   streak: 3,
@@ -68,6 +69,11 @@ const day = {
     committedIds: [habit.id],
     completedIds: [habit.id],
     committedPointValues: [{ habitId: habit.id, points: 20 }],
+    committedHabitSnapshots: [] as {
+      habitId: string;
+      name: string;
+      glyph: string;
+    }[],
   },
 };
 
@@ -76,6 +82,8 @@ const toggleComplete = jest.fn(
 );
 
 beforeEach(() => {
+  availableHabits = [habit];
+  day.session.committedHabitSnapshots = [];
   toggleComplete.mockClear();
   jest.mocked(isOrbitLiveActivitySupported).mockClear();
   jest.mocked(isOrbitLiveActivitySupported).mockResolvedValue(true);
@@ -91,7 +99,7 @@ beforeEach(() => {
       return day as never;
     }
 
-    return [habit] as never;
+    return availableHabits as never;
   });
   jest.mocked(useMutation).mockImplementation((reference) => {
     if (reference === api.day.toggleComplete) {
@@ -125,5 +133,26 @@ test("unchecking a completed habit restarts the active Live Activity state", asy
     completedCount: 0,
     totalCount: 1,
     habits: [{ id: habit.id, isComplete: false }],
+  });
+});
+
+test("a removed completed habit remains available for undo from its snapshot", async () => {
+  availableHabits = [];
+  day.session.committedHabitSnapshots = [
+    { habitId: habit.id, name: habit.name, glyph: habit.glyph },
+  ];
+
+  await render(<TodayScreen />);
+
+  await fireEvent.press(
+    screen.getByRole("checkbox", { name: "Read, 20 points" }),
+  );
+
+  await waitFor(() => {
+    expect(toggleComplete).toHaveBeenCalledWith({
+      localDate: "2026-10-09",
+      habitId: habit.id,
+    });
+    expect(startOrbitLiveActivity).toHaveBeenCalledTimes(1);
   });
 });

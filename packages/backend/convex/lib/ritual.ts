@@ -7,6 +7,12 @@ export interface CommittedHabitPointValue {
   points: number;
 }
 
+export interface CommittedHabitSnapshot {
+  habitId: string;
+  name: string;
+  glyph: string;
+}
+
 export type DaySession = {
   localDate: string;
   phase: DayPhase;
@@ -15,6 +21,7 @@ export type DaySession = {
   committedIds: string[];
   completedIds: string[];
   committedPointValues: CommittedHabitPointValue[];
+  committedHabitSnapshots?: CommittedHabitSnapshot[];
 };
 
 export type UserStats = {
@@ -60,6 +67,7 @@ export const emptyDay = (localDate: string) => {
     committedIds: [] as string[],
     completedIds: [] as string[],
     committedPointValues: [] as CommittedHabitPointValue[],
+    committedHabitSnapshots: [] as CommittedHabitSnapshot[],
   } satisfies DaySession;
 };
 
@@ -90,6 +98,7 @@ export const startReveal = (
       committedIds: [] as string[],
       completedIds: [] as string[],
       committedPointValues: [] as CommittedHabitPointValue[],
+      committedHabitSnapshots: [] as CommittedHabitSnapshot[],
     } satisfies DaySession,
   };
 };
@@ -129,6 +138,7 @@ export const commit = (session: DaySession) => {
     phase: "active" as const,
     committedIds,
     completedIds: [] as string[],
+    committedHabitSnapshots: [] as CommittedHabitSnapshot[],
   } satisfies DaySession;
 };
 
@@ -195,6 +205,9 @@ export const scrubHabitFromSession = (session: DaySession, habitId: string) => {
     committedIds: without(session.committedIds),
     completedIds: without(session.completedIds),
     committedPointValues: (session.committedPointValues ?? []).filter(
+      (snapshot) => snapshot.habitId !== habitId,
+    ),
+    committedHabitSnapshots: (session.committedHabitSnapshots ?? []).filter(
       (snapshot) => snapshot.habitId !== habitId,
     ),
   } satisfies DaySession;
