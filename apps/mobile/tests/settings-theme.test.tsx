@@ -52,6 +52,7 @@ const setColorScheme = jest.spyOn(Appearance, "setColorScheme");
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  setColorScheme.mockClear();
   jest.mocked(useQuery).mockReturnValue({
     capacity: 2,
     rewardsVisible: false,
@@ -70,7 +71,7 @@ test("Settings applies and saves the selected theme", async () => {
     </ThemePreferenceProvider>,
   );
 
-  expect(screen.getByRole("radio", { name: "System" })).toHaveProperty(
+  expect(await screen.findByRole("radio", { name: "System" })).toHaveProperty(
     "props.accessibilityState.checked",
     true,
   );
@@ -86,6 +87,30 @@ test("Settings applies and saves the selected theme", async () => {
     true,
   );
   expect(setColorScheme).toHaveBeenCalledWith("dark");
+});
+
+test("Settings keeps the current theme when saving the selection fails", async () => {
+  jest
+    .mocked(AsyncStorage.setItem)
+    .mockRejectedValueOnce(new Error("Storage failed"));
+
+  await render(
+    <ThemePreferenceProvider>
+      <SettingsScreen />
+    </ThemePreferenceProvider>,
+  );
+
+  await fireEvent.press(await screen.findByRole("radio", { name: "Dark" }));
+  expect(await screen.findByText("Storage failed")).toBeOnTheScreen();
+  expect(screen.getByRole("radio", { name: "System" })).toHaveProperty(
+    "props.accessibilityState.checked",
+    true,
+  );
+  expect(screen.getByRole("radio", { name: "Dark" })).toHaveProperty(
+    "props.accessibilityState.checked",
+    false,
+  );
+  expect(setColorScheme).not.toHaveBeenCalledWith("dark");
 });
 
 test("Settings loads a saved theme preference", async () => {

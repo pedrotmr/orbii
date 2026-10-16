@@ -26,6 +26,7 @@ export default function ThemePreferenceProvider({
   children,
 }: ThemePreferenceProviderProps) {
   const [preference, setPreference] = useState<ThemePreference>("system");
+  const [isReady, setIsReady] = useState(false);
   const selectionVersion = useRef(0);
 
   useEffect(() => {
@@ -48,6 +49,10 @@ export default function ThemePreferenceProvider({
         Appearance.setColorScheme(toColorScheme(loadedPreference));
       } catch {
         return;
+      } finally {
+        if (active) {
+          setIsReady(true);
+        }
       }
     };
 
@@ -61,12 +66,16 @@ export default function ThemePreferenceProvider({
   const updatePreference = useCallback(
     async (nextPreference: ThemePreference) => {
       selectionVersion.current += 1;
+      await AsyncStorage.setItem(STORAGE_KEY, nextPreference);
       setPreference(nextPreference);
       Appearance.setColorScheme(toColorScheme(nextPreference));
-      await AsyncStorage.setItem(STORAGE_KEY, nextPreference);
     },
     [],
   );
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <ThemePreferenceContext.Provider
