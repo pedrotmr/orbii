@@ -62,6 +62,25 @@ export const completionBonusIdempotencyKey = (localDate: string) => {
   return `completion:${localDate}`;
 };
 
+export const completionBonusReversalIdempotencyKey = (localDate: string) => {
+  return `completion-reversal:${completionBonusIdempotencyKey(localDate)}`;
+};
+
+export const getCompletionBonus = async (
+  ctx: MutationCtx,
+  clerkUserId: string,
+  localDate: string,
+) => {
+  return ctx.db
+    .query("pointTransactions")
+    .withIndex("by_clerkUserId_idempotencyKey", (q) =>
+      q
+        .eq("clerkUserId", clerkUserId)
+        .eq("idempotencyKey", completionBonusIdempotencyKey(localDate)),
+    )
+    .unique();
+};
+
 export type PointTransactionSource =
   "habit_award" | "completion_bonus" | "reward_redemption";
 

@@ -133,7 +133,10 @@ export const commit = (session: DaySession) => {
 };
 
 export const toggleComplete = (session: DaySession, habitId: string) => {
-  if (session.phase !== "active") {
+  const canUncheckCompletedHabit =
+    session.phase === "complete" && session.completedIds.includes(habitId);
+
+  if (session.phase !== "active" && !canUncheckCompletedHabit) {
     throw new Error("Can only complete during active");
   }
 
