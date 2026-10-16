@@ -52,6 +52,15 @@ export default defineSchema({
         }),
       ),
     ),
+    committedHabitSnapshots: v.optional(
+      v.array(
+        v.object({
+          habitId: v.string(),
+          name: v.string(),
+          glyph: v.string(),
+        }),
+      ),
+    ),
   }).index("by_clerkUserId_localDate", ["clerkUserId", "localDate"]),
 
   pointTransactions: defineTable({

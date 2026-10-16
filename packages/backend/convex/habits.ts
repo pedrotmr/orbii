@@ -255,6 +255,25 @@ export const remove = mutation({
       );
     }
 
+    const committedHabitSnapshots = sessionDoc?.committedHabitSnapshots ?? [];
+    const shouldSnapshotDeletedCommittedHabit =
+      existing &&
+      sessionDoc?.phase === "complete" &&
+      sessionDoc.committedIds.includes(args.habitKey) &&
+      !committedHabitSnapshots.some(
+        (snapshot) => snapshot.habitId === args.habitKey,
+      );
+    const nextCommittedHabitSnapshots = shouldSnapshotDeletedCommittedHabit
+      ? [
+          ...committedHabitSnapshots,
+          {
+            habitId: args.habitKey,
+            name: existing.name,
+            glyph: existing.glyph,
+          },
+        ]
+      : committedHabitSnapshots;
+
     if (existing) {
       await ctx.db.delete(existing._id);
     }
@@ -278,6 +297,7 @@ export const remove = mutation({
             habitId,
             points: getHabitPointValue(undefined, habitId),
           })),
+        committedHabitSnapshots: nextCommittedHabitSnapshots,
       },
       args.habitKey,
     );
@@ -289,6 +309,7 @@ export const remove = mutation({
       committedIds: scrubbed.committedIds,
       completedIds: scrubbed.completedIds,
       committedPointValues: scrubbed.committedPointValues,
+      committedHabitSnapshots: scrubbed.committedHabitSnapshots,
     });
 
     if (!wasComplete && scrubbed.phase === "complete") {

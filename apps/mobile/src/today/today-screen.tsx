@@ -56,8 +56,14 @@ export default function TodayScreen() {
       committedIds,
       habits,
       day?.session.committedPointValues,
+      day?.session.committedHabitSnapshots,
     );
-  }, [committedIds, day?.session.committedPointValues, habits]);
+  }, [
+    committedIds,
+    day?.session.committedHabitSnapshots,
+    day?.session.committedPointValues,
+    habits,
+  ]);
 
   const selectedHabits = useMemo(() => {
     return resolveTodayHabits(day?.session.selectedIds, habits);
@@ -112,7 +118,7 @@ export default function TodayScreen() {
   return (
     <ScreenScaffold tabbed>
       <TodayHeader localDate={localDate} />
-      {orbitEmpty ? <TodayEmptyOrbit /> : null}
+      {orbitEmpty && phase === "idle" ? <TodayEmptyOrbit /> : null}
 
       {!orbitEmpty && phase === "idle" ? (
         <TodayIdlePhase
@@ -184,6 +190,7 @@ export default function TodayScreen() {
           committedHabits={committedHabits}
           completedIds={day.session.completedIds}
           busy={actionBusy}
+          canReshuffle={habits.length > 0}
           onToggle={(habitId) =>
             void run(async () => {
               await toggleComplete({ localDate, habitId });
@@ -214,6 +221,39 @@ export default function TodayScreen() {
           daysCompleted={day.daysCompleted}
           earnedPoints={day.earnedPoints}
           committedHabits={committedHabits}
+          busy={actionBusy}
+          onToggle={(habitId) =>
+            void run(async () => {
+              await toggleComplete({ localDate, habitId });
+
+              try {
+                if (!(await isOrbitLiveActivitySupported())) {
+                  return;
+                }
+
+                const started = await startOrbitLiveActivity(
+                  createOrbitLiveActivityContent({
+                    localDate,
+                    phase: "active",
+                    committedHabits,
+                    completedIds: day.session.completedIds.filter(
+                      (completedId) => completedId !== habitId,
+                    ),
+                  }),
+                );
+
+                if (!started) {
+                  setError(
+                    "Your Orbit is reopened, but we couldn’t show it on the Lock Screen. Try again from Orbit.",
+                  );
+                }
+              } catch {
+                setError(
+                  "Your Orbit is reopened, but we couldn’t show it on the Lock Screen. Try again from Orbit.",
+                );
+              }
+            })
+          }
         />
       ) : null}
 
