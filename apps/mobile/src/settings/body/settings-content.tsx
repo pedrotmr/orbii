@@ -4,6 +4,7 @@ import type {
   DailyReminderKind,
   DailyReminderPreferences,
 } from "../../reminders/daily-reminder-schedule";
+import type { ThemePreference } from "../../theme/use-theme";
 import ScreenScaffold from "../../components/layout/screen-scaffold";
 import InlineError from "../../components/states/inline-error";
 import { useThemedStyles } from "../../theme/use-theme";
@@ -12,11 +13,13 @@ import SettingsCapacitySection from "../capacity/settings-capacity-section";
 import SettingsPointsHistorySection from "../points-history/settings-points-history-section";
 import SettingsDailyRemindersSection from "../reminders/settings-daily-reminders-section";
 import SettingsRewardsSection from "../rewards/settings-rewards-section";
+import SettingsThemeSection from "../theme/settings-theme-section";
 import SettingsTimezoneSection from "../timezone/settings-timezone-section";
 
 interface SettingsContentProps {
   capacity: number;
   rewardsVisible: boolean;
+  themePreference: ThemePreference;
   timezone: string;
   deviceTimezone: string;
   busy: boolean;
@@ -28,6 +31,7 @@ interface SettingsContentProps {
   onCapacity: (value: number) => void;
   onPointHistory: () => void;
   onRewardsVisible: (visible: boolean) => void;
+  onThemePreference: (preference: ThemePreference) => void;
   onTimezone: (value: string) => Promise<boolean>;
   onReminder: (kind: DailyReminderKind, enabled: boolean) => void;
   onOpenReminderSettings: () => void;
@@ -37,6 +41,7 @@ interface SettingsContentProps {
 export default function SettingsContent({
   capacity,
   rewardsVisible,
+  themePreference,
   timezone,
   deviceTimezone,
   busy,
@@ -48,6 +53,7 @@ export default function SettingsContent({
   onCapacity,
   onPointHistory,
   onRewardsVisible,
+  onThemePreference,
   onTimezone,
   onReminder,
   onOpenReminderSettings,
@@ -62,6 +68,11 @@ export default function SettingsContent({
         </Text>
         <Text style={styles.sub}>A few preferences to make Orbii yours.</Text>
       </View>
+      <SettingsThemeSection
+        preference={themePreference}
+        busy={busy}
+        onChange={onThemePreference}
+      />
       <Text style={styles.section}>Daily focus</Text>
       <SettingsCapacitySection
         capacity={capacity}

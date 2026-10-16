@@ -9,6 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import LaunchScreen from "../src/components/launch-screen/launch-screen";
 import { convex } from "../src/convexClient";
 import { discardSliceClientUserId } from "../src/discard-slice-identity";
+import ThemePreferenceProvider from "../src/theme/theme-preference-provider";
 import { useTheme } from "../src/theme/use-theme";
 
 void SplashScreen.preventAutoHideAsync();
@@ -34,61 +35,63 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <SafeAreaProvider>
-            <ThemeProvider
-              value={{
-                ...navigationTheme,
-                colors: {
-                  ...navigationTheme.colors,
-                  background: colors.bg,
-                  card: colors.bg,
-                  text: colors.ink,
-                  primary: colors.primary,
-                  border: colors.line,
-                },
-              }}
-            >
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  ...(process.env.EXPO_OS === "android"
-                    ? { statusBarStyle }
-                    : {}),
-                  contentStyle: { backgroundColor: colors.bg },
+      <ThemePreferenceProvider>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+          <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+            <SafeAreaProvider>
+              <ThemeProvider
+                value={{
+                  ...navigationTheme,
+                  colors: {
+                    ...navigationTheme.colors,
+                    background: colors.bg,
+                    card: colors.bg,
+                    text: colors.ink,
+                    primary: colors.primary,
+                    border: colors.line,
+                  },
                 }}
               >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="welcome" />
-                <Stack.Screen name="setup" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="points-history"
-                  options={{
-                    headerShown: true,
-                    title: "Points history",
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    ...(process.env.EXPO_OS === "android"
+                      ? { statusBarStyle }
+                      : {}),
+                    contentStyle: { backgroundColor: colors.bg },
                   }}
-                />
-                <Stack.Screen
-                  name="habit-create"
-                  options={{
-                    ...(process.env.EXPO_OS === "ios"
-                      ? { presentation: "modal" }
-                      : {
-                          presentation: "formSheet",
-                          sheetAllowedDetents: [0.9, 1],
-                          sheetGrabberVisible: true,
-                        }),
-                    contentStyle: { backgroundColor: colors.surface },
-                  }}
-                />
-              </Stack>
-            </ThemeProvider>
-          </SafeAreaProvider>
-        </ConvexProviderWithClerk>
-      </ClerkProvider>
-      <LaunchScreen />
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="welcome" />
+                  <Stack.Screen name="setup" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen
+                    name="points-history"
+                    options={{
+                      headerShown: true,
+                      title: "Points history",
+                    }}
+                  />
+                  <Stack.Screen
+                    name="habit-create"
+                    options={{
+                      ...(process.env.EXPO_OS === "ios"
+                        ? { presentation: "modal" }
+                        : {
+                            presentation: "formSheet",
+                            sheetAllowedDetents: [0.9, 1],
+                            sheetGrabberVisible: true,
+                          }),
+                      contentStyle: { backgroundColor: colors.surface },
+                    }}
+                  />
+                </Stack>
+              </ThemeProvider>
+            </SafeAreaProvider>
+          </ConvexProviderWithClerk>
+        </ClerkProvider>
+        <LaunchScreen />
+      </ThemePreferenceProvider>
     </GestureHandlerRootView>
   );
 }

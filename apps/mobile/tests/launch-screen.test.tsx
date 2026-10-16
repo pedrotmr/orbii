@@ -18,6 +18,10 @@ jest.mock("../src/convexClient", () => ({ convex: {} }));
 jest.mock("../src/discard-slice-identity", () => ({
   discardSliceClientUserId: jest.fn(),
 }));
+jest.mock("../src/theme/theme-preference-provider", () => ({
+  __esModule: true,
+  default: require("./support/test-provider").default,
+}));
 jest.mock("expo-router", () => ({
   Stack: Object.assign(require("react-native").View, { Screen: () => null }),
   ThemeProvider: require("./support/test-provider").default,
