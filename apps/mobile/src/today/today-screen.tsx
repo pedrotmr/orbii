@@ -214,6 +214,10 @@ export default function TodayScreen() {
           daysCompleted={day.daysCompleted}
           earnedPoints={day.earnedPoints}
           committedHabits={committedHabits}
+          busy={actionBusy}
+          onToggle={(habitId) =>
+            void run(() => toggleComplete({ localDate, habitId }))
+          }
         />
       ) : null}
 

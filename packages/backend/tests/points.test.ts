@@ -503,6 +503,9 @@ test("unchecking a completed Orbit reverses its bonus and floors the balance at 
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 0,
+    streak: 0,
+    daysCompleted: 0,
+    lastCompletedLocalDate: null,
   });
 
   const pointTransactions = await t.run(async (ctx) => {
@@ -545,6 +548,11 @@ test("re-completing and unchecking the same Orbit does not repeat point transact
   await owner.mutation(api.day.commit, { localDate });
   await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
   await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    streak: 0,
+    daysCompleted: 0,
+    lastCompletedLocalDate: null,
+  });
   await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
 
   await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
@@ -553,6 +561,9 @@ test("re-completing and unchecking the same Orbit does not repeat point transact
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 0,
+    streak: 1,
+    daysCompleted: 1,
+    lastCompletedLocalDate: localDate,
   });
 
   await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
@@ -563,6 +574,9 @@ test("re-completing and unchecking the same Orbit does not repeat point transact
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
     pointsBalance: 0,
+    streak: 0,
+    daysCompleted: 0,
+    lastCompletedLocalDate: null,
   });
 
   const pointTransactions = await t.run(async (ctx) => {
@@ -595,6 +609,51 @@ test("re-completing and unchecking the same Orbit does not repeat point transact
     `habit-reversal:habit:${localDate}:walk`,
     `habit:${localDate}:walk`,
   ]);
+});
+
+test("unchecking today restores the prior completion date and does not save a false streak", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T20:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  await insertUser(t, "owner");
+  await owner.mutation(api.habits.add, {
+    habitKey: "walk",
+    name: "Walk",
+    glyph: "symbol:walk",
+    category: "body",
+    pointValue: 10,
+  });
+
+  for (const localDate of ["2026-01-01", "2026-01-02"]) {
+    vi.setSystemTime(new Date(localDate + "T20:00:00.000Z"));
+    await owner.mutation(api.day.startRevealMutation, { localDate });
+    await owner.mutation(api.day.toggleSelect, { localDate, habitId: "walk" });
+    await owner.mutation(api.day.commit, { localDate });
+    await owner.mutation(api.day.toggleComplete, {
+      localDate,
+      habitId: "walk",
+    });
+  }
+
+  await owner.mutation(api.day.toggleComplete, {
+    localDate: "2026-01-02",
+    habitId: "walk",
+  });
+
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    streak: 1,
+    daysCompleted: 1,
+    lastCompletedLocalDate: "2026-01-01",
+  });
+
+  vi.setSystemTime(new Date("2026-01-03T20:00:00.000Z"));
+  await expect(
+    owner.query(api.day.get, { localDate: "2026-01-03" }),
+  ).resolves.toMatchObject({
+    streak: 0,
+    daysCompleted: 1,
+  });
 });
 
 test("only full completion earns one timezone-local bonus and daily earned total", async () => {

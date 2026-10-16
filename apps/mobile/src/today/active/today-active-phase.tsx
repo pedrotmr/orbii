@@ -5,7 +5,7 @@ import type { TodayHabit } from "../today-habit";
 import GhostButton from "../../components/ghost-button";
 import FocusOrbit from "../../components/ritual/focus-orbit";
 import { useThemedStyles } from "../../theme/use-theme";
-import TodayCommittedRow from "./today-committed-row";
+import TodayCommittedRow from "../committed-habits/today-committed-row";
 
 interface TodayActivePhaseProps {
   committedHabits: TodayHabit[];

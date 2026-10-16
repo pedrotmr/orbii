@@ -248,6 +248,28 @@ export const applyCompletionStats = (stats: UserStats, localDate: string) => {
   };
 };
 
+export const revertCompletionStats = (
+  stats: UserStats,
+  localDate: string,
+  previousCompletedLocalDate: string | null,
+) => {
+  if (stats.lastCompletedLocalDate !== localDate) {
+    return stats;
+  }
+
+  const yesterday = previousLocalDate(localDate);
+  const streak =
+    previousCompletedLocalDate === yesterday
+      ? Math.max(0, stats.streak - 1)
+      : 0;
+
+  return {
+    streak,
+    daysCompleted: Math.max(0, stats.daysCompleted - 1),
+    lastCompletedLocalDate: previousCompletedLocalDate,
+  };
+};
+
 /**
  * When opening a new local date, if the previous calendar day was not completed,
  * streak is broken (set to 0) until the next completion.

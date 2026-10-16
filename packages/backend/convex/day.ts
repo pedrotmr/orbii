@@ -20,6 +20,7 @@ import {
   commit as ritualCommit,
   emptyDay,
   rereveal as ritualRereveal,
+  revertCompletionStats,
   startReveal,
   toggleComplete as ritualToggleComplete,
   toggleSelect as ritualToggleSelect,
@@ -348,6 +349,32 @@ export const toggleComplete = mutation({
               completionBonusReversalIdempotencyKey(sessionLocalDate),
           },
         );
+      }
+
+      if (user.lastCompletedLocalDate === sessionLocalDate) {
+        const previousCompletedSession = await ctx.db
+          .query("daySessions")
+          .withIndex("by_clerkUserId_localDate", (q) =>
+            q.eq("clerkUserId", clerkUserId).lt("localDate", sessionLocalDate),
+          )
+          .order("desc")
+          .filter((q) => q.eq(q.field("phase"), "complete"))
+          .first();
+        const stats = revertCompletionStats(
+          {
+            streak: user.streak,
+            daysCompleted: user.daysCompleted,
+            lastCompletedLocalDate: user.lastCompletedLocalDate,
+          },
+          sessionLocalDate,
+          previousCompletedSession?.localDate ?? null,
+        );
+
+        await ctx.db.patch(user._id, {
+          streak: stats.streak,
+          daysCompleted: stats.daysCompleted,
+          lastCompletedLocalDate: stats.lastCompletedLocalDate,
+        });
       }
     }
 

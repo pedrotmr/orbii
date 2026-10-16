@@ -43,7 +43,7 @@ export const habitAwardReversalIdempotencyKey = (
 };
 
 export const getHabitAward = async (
-  ctx: MutationCtx,
+  ctx: QueryCtx,
   clerkUserId: string,
   localDate: string,
   habitId: string,
@@ -67,7 +67,7 @@ export const completionBonusReversalIdempotencyKey = (localDate: string) => {
 };
 
 export const getCompletionBonus = async (
-  ctx: MutationCtx,
+  ctx: QueryCtx,
   clerkUserId: string,
   localDate: string,
 ) => {

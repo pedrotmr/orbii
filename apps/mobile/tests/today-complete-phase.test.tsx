@@ -1,5 +1,5 @@
-import { expect, test } from "@jest/globals";
-import { render, screen } from "@testing-library/react-native";
+import { expect, jest, test } from "@jest/globals";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import TodayCompletePhase from "../src/today/complete/today-complete-phase";
 
 const habit = {
@@ -16,6 +16,8 @@ test("empty completed state keeps celebration and stats without an invented ring
       daysCompleted={7}
       earnedPoints={20}
       committedHabits={[]}
+      busy={false}
+      onToggle={jest.fn()}
     />,
   );
 
@@ -27,12 +29,15 @@ test("empty completed state keeps celebration and stats without an invented ring
 });
 
 test("nonempty completed state keeps the ring and completed habits", async () => {
+  const onToggle = jest.fn();
   await render(
     <TodayCompletePhase
       streak={3}
       daysCompleted={7}
       earnedPoints={30}
       committedHabits={[habit]}
+      busy={false}
+      onToggle={onToggle}
     />,
   );
 
@@ -40,6 +45,8 @@ test("nonempty completed state keeps the ring and completed habits", async () =>
     screen.getByLabelText("1 of 1 daily habits complete"),
   ).toBeOnTheScreen();
   expect(screen.getByText("Read")).toBeOnTheScreen();
+  fireEvent.press(screen.getByRole("checkbox", { name: "Read, 20 points" }));
+  expect(onToggle).toHaveBeenCalledWith("habit-1");
 });
 
 test("completion celebration shows the points earned today", async () => {
@@ -49,6 +56,8 @@ test("completion celebration shows the points earned today", async () => {
       daysCompleted={7}
       earnedPoints={60}
       committedHabits={[habit]}
+      busy={false}
+      onToggle={jest.fn()}
     />,
   );
 
