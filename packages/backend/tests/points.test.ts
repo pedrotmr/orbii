@@ -289,11 +289,11 @@ test("a commitment snapshot awards once per saved session date across edits and 
     habitId: "walk",
   });
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
-    pointsBalance: 10,
+    pointsBalance: 0,
   });
   await expect(
     owner.query(api.day.get, { localDate: firstSessionDate }),
-  ).resolves.toMatchObject({ earnedPoints: 10 });
+  ).resolves.toMatchObject({ earnedPoints: 0 });
 
   await owner.mutation(api.day.rereveal, { localDate: firstSessionDate });
   const rerevealed = await owner.query(api.day.get, {
@@ -311,7 +311,7 @@ test("a commitment snapshot awards once per saved session date across edits and 
   });
   await expect(
     owner.query(api.day.get, { localDate: firstSessionDate }),
-  ).resolves.toMatchObject({ earnedPoints: 30 });
+  ).resolves.toMatchObject({ earnedPoints: 20 });
   const nextSessionDate = "2026-01-02";
   vi.setSystemTime(new Date("2026-01-02T20:00:00.000Z"));
   await owner.mutation(api.day.startRevealMutation, {
@@ -340,17 +340,21 @@ test("a commitment snapshot awards once per saved session date across edits and 
   const habitTransactions = pointTransactions.filter(
     (transaction) => transaction.sourceType === "habit_award",
   );
-  expect(habitTransactions).toHaveLength(2);
-  expect(habitTransactions.map(({ amount }) => amount).sort()).toEqual([
-    10, 40,
-  ]);
+  expect(habitTransactions).toHaveLength(3);
+  expect(
+    habitTransactions
+      .map(({ amount }) => amount)
+      .sort((left, right) => left - right),
+  ).toEqual([-10, 10, 40]);
   expect(habitTransactions.map(({ sourceName }) => sourceName)).toEqual([
+    "Long walk",
     "Long walk",
     "Long walk",
   ]);
   expect(
     habitTransactions.map(({ idempotencyKey }) => idempotencyKey).sort(),
   ).toEqual([
+    `habit-reversal:habit:${firstSessionDate}:walk`,
     `habit:${firstSessionDate}:walk`,
     `habit:${nextSessionDate}:walk`,
   ]);
@@ -370,11 +374,96 @@ test("a commitment snapshot awards once per saved session date across edits and 
   );
   expect(habitTransactions.map(({ localDate }) => localDate).sort()).toEqual([
     firstSessionDate,
+    firstSessionDate,
     nextSessionDate,
   ]);
   await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
-    pointsBalance: 90,
+    pointsBalance: 80,
   });
+});
+
+test("unchecking reverses an award without a negative balance or repeat award", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-01T20:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  await insertUser(t, "owner");
+  await owner.mutation(api.habits.add, {
+    habitKey: "walk",
+    name: "Walk",
+    glyph: "symbol:walk",
+    category: "body",
+    pointValue: 10,
+  });
+  await owner.mutation(api.habits.add, {
+    habitKey: "read",
+    name: "Read",
+    glyph: "symbol:book",
+    category: "learn",
+    pointValue: 1,
+  });
+  await owner.mutation(api.habits.add, {
+    habitKey: "stretch",
+    name: "Stretch",
+    glyph: "symbol:spark",
+    category: "body",
+    pointValue: 2,
+  });
+
+  const localDate = "2026-01-01";
+  await owner.mutation(api.day.startRevealMutation, { localDate });
+  for (const habitId of ["walk", "read", "stretch"]) {
+    await owner.mutation(api.day.toggleSelect, { localDate, habitId });
+  }
+  await owner.mutation(api.day.commit, { localDate });
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "read" });
+
+  const rewardId = await owner.mutation(api.rewards.create, {
+    name: "Notebook",
+    cost: 9,
+  });
+  await owner.mutation(api.rewards.redeem, { rewardId });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    pointsBalance: 2,
+  });
+
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
+    session: { phase: "active", completedIds: ["read"] },
+    earnedPoints: 1,
+  });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    pointsBalance: 0,
+  });
+
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
+    session: { completedIds: ["read", "walk"] },
+    earnedPoints: 1,
+  });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    pointsBalance: 0,
+  });
+
+  await owner.mutation(api.day.toggleComplete, { localDate, habitId: "walk" });
+  await expect(owner.query(api.day.get, { localDate })).resolves.toMatchObject({
+    session: { completedIds: ["read"] },
+    earnedPoints: 1,
+  });
+  await expect(owner.query(api.users.get, {})).resolves.toMatchObject({
+    pointsBalance: 0,
+  });
+
+  const history = await owner.query(api.points.listTransactions, {
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(
+    history.page
+      .filter((transaction) => transaction.sourceType === "habit_award")
+      .map(({ amount }) => amount)
+      .sort((a, b) => a - b),
+  ).toEqual([-10, 1, 10]);
 });
 
 test("only full completion earns one timezone-local bonus and daily earned total", async () => {

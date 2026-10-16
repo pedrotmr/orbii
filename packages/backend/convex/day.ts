@@ -3,11 +3,14 @@ import type { Habit } from "./lib/habits";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
+  getHabitAward,
   getHabitPointValue,
   getSessionEarnedPoints,
   habitAwardIdempotencyKey,
+  habitAwardReversalIdempotencyKey,
   insertCompletionBonus,
   insertSessionPointAward,
+  insertSessionPointTransaction,
 } from "./lib/points";
 import {
   applyCompletionStats,
@@ -259,6 +262,7 @@ export const toggleComplete = mutation({
     const isFirstCheckoff = !before.completedIds.includes(args.habitId);
     const completedOrbit =
       before.phase !== "complete" && next.phase === "complete";
+
     if (isFirstCheckoff) {
       const habit = await ctx.db
         .query("habits")
@@ -286,6 +290,33 @@ export const toggleComplete = mutation({
           args.habitId,
         ),
       });
+    }
+
+    if (!isFirstCheckoff) {
+      const award = await getHabitAward(
+        ctx,
+        clerkUserId,
+        sessionLocalDate,
+        args.habitId,
+      );
+
+      if (award?.sourceType === "habit_award" && award.amount > 0) {
+        await insertSessionPointTransaction(
+          ctx,
+          clerkUserId,
+          user._id,
+          doc._id,
+          {
+            amount: -award.amount,
+            sourceType: "habit_award",
+            sourceName: award.sourceName,
+            localDate: sessionLocalDate,
+            idempotencyKey: habitAwardReversalIdempotencyKey(
+              award.idempotencyKey,
+            ),
+          },
+        );
+      }
     }
 
     await ctx.db.patch(doc._id, next);
