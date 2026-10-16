@@ -16,6 +16,7 @@ test("active rows show the point value saved when the commitment was made", asyn
       ]}
       completedIds={[]}
       busy={false}
+      canReshuffle
       onToggle={onToggle}
       onReshuffle={jest.fn()}
     />,
@@ -26,4 +27,31 @@ test("active rows show the point value saved when the commitment was made", asyn
   expect(screen.getByText("10 points")).toBeOnTheScreen();
   await fireEvent.press(habit);
   expect(onToggle).toHaveBeenCalledWith("walk");
+});
+
+test("hides reshuffle when the Orbit has no live habits", async () => {
+  await render(
+    <TodayActivePhase
+      committedHabits={[
+        {
+          id: "deleted-walk",
+          name: "Walk before removal",
+          glyph: "symbol:walk",
+          pointValue: 10,
+        },
+      ]}
+      completedIds={[]}
+      busy={false}
+      canReshuffle={false}
+      onToggle={jest.fn()}
+      onReshuffle={jest.fn()}
+    />,
+  );
+
+  expect(
+    screen.queryByRole("button", { name: "Choose a different focus" }),
+  ).toBeNull();
+  expect(
+    screen.getByRole("checkbox", { name: "Walk before removal, 10 points" }),
+  ).toBeOnTheScreen();
 });

@@ -11,6 +11,7 @@ interface TodayActivePhaseProps {
   committedHabits: TodayHabit[];
   completedIds: string[];
   busy: boolean;
+  canReshuffle: boolean;
   onToggle: (habitId: string) => void;
   onReshuffle: () => void;
 }
@@ -19,6 +20,7 @@ export default function TodayActivePhase({
   committedHabits,
   completedIds,
   busy,
+  canReshuffle,
   onToggle,
   onReshuffle,
 }: TodayActivePhaseProps) {
@@ -52,20 +54,22 @@ export default function TodayActivePhase({
           />
         ))}
       </View>
-      <GhostButton
-        label="Choose a different focus"
-        disabled={busy}
-        onPress={() =>
-          Alert.alert(
-            "Change today’s focus?",
-            "Your current selection and checkmarks will be released. You can choose again.",
-            [
-              { text: "Keep my focus", style: "cancel" },
-              { text: "Choose again", onPress: onReshuffle },
-            ],
-          )
-        }
-      />
+      {canReshuffle ? (
+        <GhostButton
+          label="Choose a different focus"
+          disabled={busy}
+          onPress={() =>
+            Alert.alert(
+              "Change today’s focus?",
+              "Your current selection and checkmarks will be released. You can choose again.",
+              [
+                { text: "Keep my focus", style: "cancel" },
+                { text: "Choose again", onPress: onReshuffle },
+              ],
+            )
+          }
+        />
+      ) : null}
     </Animated.View>
   );
 }

@@ -58,8 +58,18 @@ export default function OrbitScreen() {
   >("checking");
 
   const committedHabits = useMemo(() => {
-    return resolveTodayHabits(day?.session.committedIds, habits);
-  }, [day?.session.committedIds, habits]);
+    return resolveTodayHabits(
+      day?.session.committedIds,
+      habits,
+      day?.session.committedPointValues,
+      day?.session.committedHabitSnapshots,
+    );
+  }, [
+    day?.session.committedHabitSnapshots,
+    day?.session.committedIds,
+    day?.session.committedPointValues,
+    habits,
+  ]);
 
   useSyncOrbitLiveActivity({
     ready:

@@ -190,6 +190,7 @@ export default function TodayScreen() {
           committedHabits={committedHabits}
           completedIds={day.session.completedIds}
           busy={actionBusy}
+          canReshuffle={habits.length > 0}
           onToggle={(habitId) =>
             void run(async () => {
               await toggleComplete({ localDate, habitId });
