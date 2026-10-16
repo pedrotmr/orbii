@@ -13,6 +13,7 @@ interface ThemePreferenceProviderProps {
 }
 
 const STORAGE_KEY = "@orbii/theme-preference/v1";
+const PREFERENCE_LOAD_TIMEOUT_MS = 1000;
 
 const parseThemePreference = (value: string | null) => {
   return themePreferences.find((preference) => preference === value) ?? null;
@@ -32,6 +33,11 @@ export default function ThemePreferenceProvider({
   useEffect(() => {
     let active = true;
     const initialVersion = selectionVersion.current;
+    const timeout = setTimeout(() => {
+      if (active) {
+        setIsReady(true);
+      }
+    }, PREFERENCE_LOAD_TIMEOUT_MS);
 
     const loadPreference = async () => {
       try {
@@ -49,17 +55,19 @@ export default function ThemePreferenceProvider({
         Appearance.setColorScheme(toColorScheme(loadedPreference));
       } catch {
         return;
-      } finally {
-        if (active) {
-          setIsReady(true);
-        }
       }
     };
 
-    void loadPreference();
+    void loadPreference().finally(() => {
+      clearTimeout(timeout);
+      if (active) {
+        setIsReady(true);
+      }
+    });
 
     return () => {
       active = false;
+      clearTimeout(timeout);
     };
   }, []);
 

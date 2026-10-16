@@ -1,13 +1,14 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  act,
   fireEvent,
   render,
   screen,
   waitFor,
 } from "@testing-library/react-native";
 import { useMutation, useQuery } from "convex/react";
-import { Appearance } from "react-native";
+import { Appearance, Text } from "react-native";
 import SettingsScreen from "../src/settings/settings-screen";
 import ThemePreferenceProvider from "../src/theme/theme-preference-provider";
 
@@ -128,4 +129,27 @@ test("Settings loads a saved theme preference", async () => {
     );
   });
   expect(setColorScheme).toHaveBeenCalledWith("light");
+});
+
+test("Theme preference loading does not block app startup forever", async () => {
+  jest
+    .mocked(AsyncStorage.getItem)
+    .mockReturnValueOnce(new Promise<string | null>(() => undefined));
+  jest.useFakeTimers();
+
+  try {
+    const rendered = await render(
+      <ThemePreferenceProvider>
+        <Text>App is ready</Text>
+      </ThemePreferenceProvider>,
+    );
+
+    expect(rendered.queryByText("App is ready")).toBeNull();
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(rendered.getByText("App is ready")).toBeOnTheScreen();
+  } finally {
+    jest.useRealTimers();
+  }
 });
