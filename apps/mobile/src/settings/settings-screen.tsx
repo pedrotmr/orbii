@@ -83,10 +83,6 @@ export default function SettingsScreen() {
   };
 
   const handleThemePreference = (preference: ThemePreference) => {
-    if (preference === themePreference) {
-      return;
-    }
-
     void run(async () => {
       await setThemePreference(preference);
     });

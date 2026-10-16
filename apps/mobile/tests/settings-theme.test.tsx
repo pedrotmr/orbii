@@ -53,6 +53,7 @@ const setColorScheme = jest.spyOn(Appearance, "setColorScheme");
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  jest.mocked(AsyncStorage.setItem).mockClear();
   setColorScheme.mockClear();
   jest.mocked(useQuery).mockReturnValue({
     capacity: 2,
@@ -152,4 +153,49 @@ test("Theme preference loading does not block app startup forever", async () => 
   } finally {
     jest.useRealTimers();
   }
+});
+
+test("a System selection wins over a late saved theme after the startup timeout", async () => {
+  let resolveStoredPreference: (value: string | null) => void = () => undefined;
+  const storedPreference = new Promise<string | null>((resolve) => {
+    resolveStoredPreference = resolve;
+  });
+  jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(storedPreference);
+
+  await render(
+    <ThemePreferenceProvider>
+      <SettingsScreen />
+    </ThemePreferenceProvider>,
+  );
+  await waitFor(
+    () => {
+      expect(screen.getByRole("radio", { name: "System" })).toBeOnTheScreen();
+    },
+    { timeout: 3000 },
+  );
+
+  await fireEvent.press(screen.getByRole("radio", { name: "System" }));
+  await waitFor(() => {
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      "@orbii/theme-preference/v1",
+      "system",
+    );
+  });
+  await waitFor(() => {
+    expect(setColorScheme).toHaveBeenCalledWith("auto");
+  });
+  await act(async () => {
+    resolveStoredPreference("dark");
+    await storedPreference;
+  });
+
+  expect(screen.getByRole("radio", { name: "System" })).toHaveProperty(
+    "props.accessibilityState.checked",
+    true,
+  );
+  expect(screen.getByRole("radio", { name: "Dark" })).toHaveProperty(
+    "props.accessibilityState.checked",
+    false,
+  );
+  expect(setColorScheme).not.toHaveBeenCalledWith("dark");
 });
