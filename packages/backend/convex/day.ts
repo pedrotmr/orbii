@@ -3,11 +3,16 @@ import type { Habit } from "./lib/habits";
 import { mutation, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
+  completionBonusReversalIdempotencyKey,
+  getCompletionBonus,
+  getHabitAward,
   getHabitPointValue,
   getSessionEarnedPoints,
   habitAwardIdempotencyKey,
+  habitAwardReversalIdempotencyKey,
   insertCompletionBonus,
   insertSessionPointAward,
+  insertSessionPointTransaction,
 } from "./lib/points";
 import {
   applyCompletionStats,
@@ -15,6 +20,7 @@ import {
   commit as ritualCommit,
   emptyDay,
   rereveal as ritualRereveal,
+  revertCompletionStats,
   startReveal,
   toggleComplete as ritualToggleComplete,
   toggleSelect as ritualToggleSelect,
@@ -72,6 +78,7 @@ const sessionFromDoc = (doc: {
   committedIds: string[];
   completedIds: string[];
   committedPointValues?: { habitId: string; points: number }[];
+  committedHabitSnapshots?: { habitId: string; name: string; glyph: string }[];
 }) => {
   return {
     localDate: doc.localDate,
@@ -86,6 +93,7 @@ const sessionFromDoc = (doc: {
         habitId,
         points: getHabitPointValue(undefined, habitId),
       })),
+    committedHabitSnapshots: doc.committedHabitSnapshots ?? [],
   } satisfies DaySession;
 };
 
@@ -259,6 +267,9 @@ export const toggleComplete = mutation({
     const isFirstCheckoff = !before.completedIds.includes(args.habitId);
     const completedOrbit =
       before.phase !== "complete" && next.phase === "complete";
+    const uncheckedCompletedOrbit =
+      before.phase === "complete" && next.phase === "active";
+
     if (isFirstCheckoff) {
       const habit = await ctx.db
         .query("habits")
@@ -266,8 +277,11 @@ export const toggleComplete = mutation({
           q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitId),
         )
         .unique();
+      const committedHabitSnapshot = before.committedHabitSnapshots?.find(
+        (snapshot) => snapshot.habitId === args.habitId,
+      );
 
-      if (!habit) {
+      if (!habit && !committedHabitSnapshot) {
         throw new Error("Habit not found");
       }
 
@@ -279,13 +293,94 @@ export const toggleComplete = mutation({
       await insertSessionPointAward(ctx, clerkUserId, user._id, doc._id, {
         amount: pointValue,
         sourceType: "habit_award",
-        sourceName: habit.name,
+        sourceName: habit?.name ?? committedHabitSnapshot?.name ?? args.habitId,
         localDate: sessionLocalDate,
         idempotencyKey: habitAwardIdempotencyKey(
           sessionLocalDate,
           args.habitId,
         ),
       });
+    }
+
+    if (!isFirstCheckoff) {
+      const award = await getHabitAward(
+        ctx,
+        clerkUserId,
+        sessionLocalDate,
+        args.habitId,
+      );
+
+      if (award?.sourceType === "habit_award" && award.amount > 0) {
+        await insertSessionPointTransaction(
+          ctx,
+          clerkUserId,
+          user._id,
+          doc._id,
+          {
+            amount: -award.amount,
+            sourceType: "habit_award",
+            sourceName: award.sourceName,
+            localDate: sessionLocalDate,
+            idempotencyKey: habitAwardReversalIdempotencyKey(
+              award.idempotencyKey,
+            ),
+          },
+        );
+      }
+    }
+
+    if (uncheckedCompletedOrbit) {
+      const completionBonus = await getCompletionBonus(
+        ctx,
+        clerkUserId,
+        sessionLocalDate,
+      );
+
+      if (
+        completionBonus?.sourceType === "completion_bonus" &&
+        completionBonus.amount > 0
+      ) {
+        await insertSessionPointTransaction(
+          ctx,
+          clerkUserId,
+          user._id,
+          doc._id,
+          {
+            amount: -completionBonus.amount,
+            sourceType: "completion_bonus",
+            sourceName: completionBonus.sourceName,
+            localDate: sessionLocalDate,
+            idempotencyKey:
+              completionBonusReversalIdempotencyKey(sessionLocalDate),
+          },
+        );
+      }
+
+      if (user.lastCompletedLocalDate === sessionLocalDate) {
+        const previousCompletedSession = await ctx.db
+          .query("daySessions")
+          .withIndex("by_clerkUserId_localDate", (q) =>
+            q.eq("clerkUserId", clerkUserId).lt("localDate", sessionLocalDate),
+          )
+          .order("desc")
+          .filter((q) => q.eq(q.field("phase"), "complete"))
+          .first();
+        const stats = revertCompletionStats(
+          {
+            streak: user.streak,
+            daysCompleted: user.daysCompleted,
+            lastCompletedLocalDate: user.lastCompletedLocalDate,
+          },
+          sessionLocalDate,
+          previousCompletedSession?.localDate ?? null,
+        );
+
+        await ctx.db.patch(user._id, {
+          streak: stats.streak,
+          daysCompleted: stats.daysCompleted,
+          lastCompletedLocalDate: stats.lastCompletedLocalDate,
+        });
+      }
     }
 
     await ctx.db.patch(doc._id, next);

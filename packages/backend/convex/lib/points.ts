@@ -36,8 +36,49 @@ export const habitAwardIdempotencyKey = (
   return `habit:${localDate}:${habitId}`;
 };
 
+export const habitAwardReversalIdempotencyKey = (
+  awardIdempotencyKey: string,
+) => {
+  return `habit-reversal:${awardIdempotencyKey}`;
+};
+
+export const getHabitAward = async (
+  ctx: QueryCtx,
+  clerkUserId: string,
+  localDate: string,
+  habitId: string,
+) => {
+  return ctx.db
+    .query("pointTransactions")
+    .withIndex("by_clerkUserId_idempotencyKey", (q) =>
+      q
+        .eq("clerkUserId", clerkUserId)
+        .eq("idempotencyKey", habitAwardIdempotencyKey(localDate, habitId)),
+    )
+    .unique();
+};
+
 export const completionBonusIdempotencyKey = (localDate: string) => {
   return `completion:${localDate}`;
+};
+
+export const completionBonusReversalIdempotencyKey = (localDate: string) => {
+  return `completion-reversal:${completionBonusIdempotencyKey(localDate)}`;
+};
+
+export const getCompletionBonus = async (
+  ctx: QueryCtx,
+  clerkUserId: string,
+  localDate: string,
+) => {
+  return ctx.db
+    .query("pointTransactions")
+    .withIndex("by_clerkUserId_idempotencyKey", (q) =>
+      q
+        .eq("clerkUserId", clerkUserId)
+        .eq("idempotencyKey", completionBonusIdempotencyKey(localDate)),
+    )
+    .unique();
 };
 
 export type PointTransactionSource =
@@ -62,7 +103,7 @@ export const getSessionEarnedPoints = async (
   daySession: SessionPointTotal,
 ) => {
   if (daySession.earnedPoints !== undefined) {
-    return daySession.earnedPoints;
+    return Math.max(0, daySession.earnedPoints);
   }
 
   const [habitAwards, completionBonuses] = await Promise.all(
@@ -79,9 +120,12 @@ export const getSessionEarnedPoints = async (
     ),
   );
 
-  return [...habitAwards, ...completionBonuses].reduce(
-    (total, transaction) => total + transaction.amount,
+  return Math.max(
     0,
+    [...habitAwards, ...completionBonuses].reduce(
+      (total, transaction) => total + transaction.amount,
+      0,
+    ),
   );
 };
 
@@ -115,27 +159,26 @@ export const insertPointTransaction = async (
   }
 
   await ctx.db.patch(userId, {
-    pointsBalance: (user.pointsBalance ?? 0) + transaction.amount,
+    pointsBalance: Math.max(0, (user.pointsBalance ?? 0) + transaction.amount),
   });
 
   return true;
 };
 
-type SessionPointAwardInput = Omit<PointTransactionInput, "sourceType"> & {
+type SessionPointTransactionInput = Omit<
+  PointTransactionInput,
+  "sourceType"
+> & {
   sourceType: "habit_award" | "completion_bonus";
 };
 
-export const insertSessionPointAward = async (
+export const insertSessionPointTransaction = async (
   ctx: MutationCtx,
   clerkUserId: string,
   userId: Id<"users">,
   daySessionId: Id<"daySessions">,
-  transaction: SessionPointAwardInput,
+  transaction: SessionPointTransactionInput,
 ) => {
-  if (transaction.amount <= 0) {
-    throw new Error("Session point awards must be positive");
-  }
-
   const daySession = await ctx.db.get(daySessionId);
 
   if (!daySession) {
@@ -156,10 +199,30 @@ export const insertSessionPointAward = async (
   }
 
   await ctx.db.patch(daySessionId, {
-    earnedPoints: earnedPoints + transaction.amount,
+    earnedPoints: Math.max(0, earnedPoints + transaction.amount),
   });
 
   return true;
+};
+
+export const insertSessionPointAward = async (
+  ctx: MutationCtx,
+  clerkUserId: string,
+  userId: Id<"users">,
+  daySessionId: Id<"daySessions">,
+  transaction: SessionPointTransactionInput,
+) => {
+  if (transaction.amount <= 0) {
+    throw new Error("Session point awards must be positive");
+  }
+
+  return insertSessionPointTransaction(
+    ctx,
+    clerkUserId,
+    userId,
+    daySessionId,
+    transaction,
+  );
 };
 
 export const insertCompletionBonus = (

@@ -13,6 +13,7 @@ import {
   pickOfferIds,
   previousLocalDate,
   rereveal,
+  revertCompletionStats,
   startReveal,
   toggleComplete,
   toggleSelect,
@@ -191,6 +192,42 @@ describe("streak rule B", () => {
       lastCompletedLocalDate: "2026-08-24",
     };
     expect(applyCompletionStats(stats, "2026-08-24")).toEqual(stats);
+  });
+
+  test("reverting a completion restores yesterday's streak and date", () => {
+    expect(
+      revertCompletionStats(
+        {
+          streak: 4,
+          daysCompleted: 10,
+          lastCompletedLocalDate: "2026-08-24",
+        },
+        "2026-08-24",
+        "2026-08-23",
+      ),
+    ).toEqual({
+      streak: 3,
+      daysCompleted: 9,
+      lastCompletedLocalDate: "2026-08-23",
+    });
+  });
+
+  test("reverting a nonconsecutive completion breaks the streak", () => {
+    expect(
+      revertCompletionStats(
+        {
+          streak: 1,
+          daysCompleted: 6,
+          lastCompletedLocalDate: "2026-08-24",
+        },
+        "2026-08-24",
+        "2026-08-20",
+      ),
+    ).toEqual({
+      streak: 0,
+      daysCompleted: 5,
+      lastCompletedLocalDate: "2026-08-20",
+    });
   });
 
   test("missed day gap zeroes streak until completion", () => {

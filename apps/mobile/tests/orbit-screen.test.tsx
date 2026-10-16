@@ -3,6 +3,7 @@ import { api, type Habit } from "@orbii/backend";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useMutation, useQuery } from "convex/react";
 import { Alert } from "react-native";
+import { useSyncOrbitLiveActivity } from "../src/live-activity/use-sync-orbit-live-activity";
 import OrbitScreen from "../src/orbit/orbit-screen";
 import { resetNavigation } from "./support/navigation";
 
@@ -57,12 +58,20 @@ const day: {
     phase: "idle" | "reveal" | "active" | "complete";
     committedIds: string[];
     completedIds: string[];
+    committedPointValues: { habitId: string; points: number }[];
+    committedHabitSnapshots: {
+      habitId: string;
+      name: string;
+      glyph: string;
+    }[];
   };
 } = {
   session: {
     phase: "idle",
     committedIds: [],
     completedIds: [],
+    committedPointValues: [],
+    committedHabitSnapshots: [],
   },
 };
 
@@ -80,6 +89,8 @@ beforeEach(() => {
   day.session.phase = "idle";
   day.session.committedIds = [];
   day.session.completedIds = [];
+  day.session.committedPointValues = [];
+  day.session.committedHabitSnapshots = [];
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
   removePromise = new Promise<void>((resolve) => {
     finishRemove = () => resolve();
@@ -134,6 +145,35 @@ test("removing the last unchecked habit leaves phase updates to Convex", async (
     habitKey: savedHabit.id,
     localDate: "2026-10-09",
   });
+});
+
+test("Live Activity sync includes a deleted committed habit snapshot", async () => {
+  day.session.phase = "active";
+  day.session.committedIds = ["deleted-read"];
+  day.session.committedPointValues = [{ habitId: "deleted-read", points: 10 }];
+  day.session.committedHabitSnapshots = [
+    {
+      habitId: "deleted-read",
+      name: "Read before removal",
+      glyph: "symbol:read",
+    },
+  ];
+
+  await render(<OrbitScreen />);
+
+  expect(jest.mocked(useSyncOrbitLiveActivity)).toHaveBeenCalledWith(
+    expect.objectContaining({
+      phase: "active",
+      committedHabits: [
+        {
+          id: "deleted-read",
+          name: "Read before removal",
+          glyph: "symbol:read",
+          pointValue: 10,
+        },
+      ],
+    }),
+  );
 });
 
 test("a drag finishing during a remove shows feedback and resets the grid", async () => {

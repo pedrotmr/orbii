@@ -1,16 +1,18 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { type Palette, radius, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import type { TodayHabit } from "../today-habit";
 import FocusOrbit from "../../components/ritual/focus-orbit";
-import { useTheme, useThemedStyles } from "../../theme/use-theme";
+import { useThemedStyles } from "../../theme/use-theme";
+import TodayCommittedRow from "../committed-habits/today-committed-row";
 
 interface TodayCompletePhaseProps {
   streak: number;
   daysCompleted: number;
   earnedPoints: number;
   committedHabits: TodayHabit[];
+  busy: boolean;
+  onToggle: (habitId: string) => void;
 }
 
 export default function TodayCompletePhase({
@@ -18,8 +20,9 @@ export default function TodayCompletePhase({
   daysCompleted,
   earnedPoints,
   committedHabits,
+  busy,
+  onToggle,
 }: TodayCompletePhaseProps) {
-  const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   return (
     <Animated.View
@@ -30,7 +33,7 @@ export default function TodayCompletePhase({
         {"Today’s Orbit\ncomplete."}
       </Text>
       <Text style={styles.sub}>
-        You made time for what matters. Enjoy the rest of your day.
+        You made time for what matters. Tap a habit to undo it if needed.
       </Text>
       {committedHabits.length > 0 ? (
         <>
@@ -41,16 +44,13 @@ export default function TodayCompletePhase({
           />
           <View style={styles.habits}>
             {committedHabits.map((habit) => (
-              <View key={habit.id} style={styles.habit}>
-                <Ionicons
-                  accessible={false}
-                  importantForAccessibility="no-hide-descendants"
-                  name="checkmark-circle"
-                  size={22}
-                  color={colors.primary}
-                />
-                <Text style={styles.name}>{habit.name}</Text>
-              </View>
+              <TodayCommittedRow
+                key={habit.id}
+                habit={habit}
+                done
+                disabled={busy}
+                onToggle={() => onToggle(habit.id)}
+              />
             ))}
           </View>
         </>
@@ -109,8 +109,6 @@ const createStyles = (colors: Palette) =>
       fontVariant: ["tabular-nums"],
     },
     pointsLabel: { color: colors.ink, fontSize: 15, fontWeight: "600" },
-    habit: { flexDirection: "row", gap: space[3], alignItems: "center" },
-    name: { flex: 1, fontSize: 16, lineHeight: 23, color: colors.ink },
     stats: {
       flexDirection: "row",
       marginTop: space[5],
