@@ -216,7 +216,36 @@ export default function TodayScreen() {
           committedHabits={committedHabits}
           busy={actionBusy}
           onToggle={(habitId) =>
-            void run(() => toggleComplete({ localDate, habitId }))
+            void run(async () => {
+              await toggleComplete({ localDate, habitId });
+
+              try {
+                if (!(await isOrbitLiveActivitySupported())) {
+                  return;
+                }
+
+                const started = await startOrbitLiveActivity(
+                  createOrbitLiveActivityContent({
+                    localDate,
+                    phase: "active",
+                    committedHabits,
+                    completedIds: day.session.completedIds.filter(
+                      (completedId) => completedId !== habitId,
+                    ),
+                  }),
+                );
+
+                if (!started) {
+                  setError(
+                    "Your Orbit is reopened, but we couldn’t show it on the Lock Screen. Try again from Orbit.",
+                  );
+                }
+              } catch {
+                setError(
+                  "Your Orbit is reopened, but we couldn’t show it on the Lock Screen. Try again from Orbit.",
+                );
+              }
+            })
           }
         />
       ) : null}
