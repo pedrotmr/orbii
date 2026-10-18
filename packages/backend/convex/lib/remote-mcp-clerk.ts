@@ -10,7 +10,12 @@ const asRecord = (value: unknown) => {
   return value as Record<string, unknown>;
 };
 
-export const resolveClerkOAuthApplicationId = async (
+export interface ResolvedClerkOAuthApplication {
+  id: string;
+  name: string | null;
+}
+
+export const resolveClerkOAuthApplication = async (
   clientId: string,
   secretKey: string,
 ) => {
@@ -51,7 +56,16 @@ export const resolveClerkOAuthApplicationId = async (
       typeof matchedApplication.id === "string" &&
       matchedApplication.id.length > 0
     ) {
-      return matchedApplication.id;
+      const name =
+        typeof matchedApplication.name === "string" &&
+        matchedApplication.name.length > 0
+          ? matchedApplication.name
+          : typeof matchedApplication.client_name === "string" &&
+              matchedApplication.client_name.length > 0
+            ? matchedApplication.client_name
+            : null;
+
+      return { id: matchedApplication.id, name };
     }
 
     const nextOffset = offset + pageData.length;

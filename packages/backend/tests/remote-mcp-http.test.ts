@@ -86,6 +86,7 @@ test("MCP endpoint returns the negotiated version and uses the legacy header fal
           subject: "user_orbii_1",
           client_id: "client_public_1",
           client_name: "Example agent",
+          aud: "https://some.convex.site/mcp",
           scopes: ["orbii:read"],
         }),
         { status: 200 },
@@ -165,7 +166,7 @@ test("authorization-server metadata is exposed at the resource origin for older 
   expect(preflight.status).toBe(204);
 });
 
-test("MCP stores Clerk's application ID separately from the public client ID", async () => {
+test("MCP stores Clerk's application ID and resolved name separately from the public client ID", async () => {
   vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", "https://orbii.clerk.accounts.dev");
   vi.stubEnv("CLERK_SECRET_KEY", "sk_test_backend");
   vi.stubEnv("MCP_CREDENTIAL_ENCRYPTION_KEY", encryptionKey);
@@ -176,7 +177,7 @@ test("MCP stores Clerk's application ID separately from the public client ID", a
         JSON.stringify({
           subject: "user_orbii_1",
           client_id: "client_public_1",
-          client_name: "Example agent",
+          aud: "https://some.convex.site/mcp",
           scopes: ["orbii:read"],
         }),
         { status: 200 },
@@ -185,7 +186,13 @@ test("MCP stores Clerk's application ID separately from the public client ID", a
     .mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          data: [{ id: "oauthapp_internal_1", client_id: "client_public_1" }],
+          data: [
+            {
+              id: "oauthapp_internal_1",
+              client_id: "client_public_1",
+              name: "Example agent",
+            },
+          ],
           total_count: 1,
         }),
         { status: 200 },
@@ -196,7 +203,7 @@ test("MCP stores Clerk's application ID separately from the public client ID", a
         JSON.stringify({
           subject: "user_orbii_1",
           client_id: "client_public_1",
-          client_name: "Example agent",
+          aud: "https://some.convex.site/mcp",
           scopes: ["orbii:read"],
         }),
         { status: 200 },
@@ -231,6 +238,7 @@ test("MCP stores Clerk's application ID separately from the public client ID", a
     }),
   ).resolves.toMatchObject({
     clientId: "client_public_1",
+    clientName: "Example agent",
     oauthApplicationId: "oauthapp_internal_1",
   });
 });

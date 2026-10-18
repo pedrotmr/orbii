@@ -47,6 +47,7 @@ const tokenClaims = {
   subject: "user_orbii_1",
   client_id: "client_agent_1",
   client_name: "Example agent",
+  aud: resource,
   oauth_application_id: "oauthapp_internal_1",
   scopes: [MCP_READ_SCOPE, MCP_WRITE_SCOPE],
 };
@@ -75,6 +76,13 @@ test("verified Clerk access tokens must identify an Orbii user, client, and scop
   ).toThrow("unexpected audience");
   expect(() =>
     parseVerifiedOAuthToken(
+      { ...tokenClaims, aud: undefined },
+      issuer,
+      resource,
+    ),
+  ).toThrow("unexpected audience");
+  expect(() =>
+    parseVerifiedOAuthToken(
       { ...tokenClaims, expired: true },
       issuer,
       resource,
@@ -89,7 +97,12 @@ test("verified Clerk access tokens must identify an Orbii user, client, and scop
   ).toThrow("expired");
   expect(() =>
     parseVerifiedOAuthToken(
-      { user_id: "user_orbii_1", client_id: "client_1", scope: "profile" },
+      {
+        user_id: "user_orbii_1",
+        client_id: "client_1",
+        scope: "profile",
+        aud: resource,
+      },
       issuer,
       resource,
     ),

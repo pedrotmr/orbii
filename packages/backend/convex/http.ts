@@ -9,7 +9,10 @@ import {
   OAuthVerificationUnavailableError,
   verifyClerkOAuthToken,
 } from "./lib/remote-mcp-auth";
-import { resolveClerkOAuthApplicationId } from "./lib/remote-mcp-clerk";
+import {
+  resolveClerkOAuthApplication,
+  type ResolvedClerkOAuthApplication,
+} from "./lib/remote-mcp-clerk";
 import {
   dispatchRemoteMcpMessage,
   MCP_DEFAULT_PROTOCOL_VERSION,
@@ -390,20 +393,40 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     });
   }
 
-  let oauthApplicationId: string | null;
+  let oauthApplication: ResolvedClerkOAuthApplication | null;
 
   try {
-    oauthApplicationId =
-      (await ctx.runQuery(internal.remoteMcp.getOAuthApplicationIdForClient, {
+    const storedApplication = await ctx.runQuery(
+      internal.remoteMcp.getOAuthApplicationForClient,
+      {
         clerkUserId: principal.userId,
         clientId: principal.clientId,
-      })) ??
-      (await resolveClerkOAuthApplicationId(principal.clientId, secretKey));
+      },
+    );
+    const clientNameNeedsResolution =
+      principal.clientName === principal.clientId &&
+      storedApplication?.name === principal.clientId;
+    const resolvedApplication =
+      storedApplication && !clientNameNeedsResolution
+        ? null
+        : await resolveClerkOAuthApplication(principal.clientId, secretKey);
+    const applicationId =
+      storedApplication?.id ?? resolvedApplication?.id ?? null;
+    const resolvedClientName =
+      principal.clientName !== principal.clientId
+        ? principal.clientName
+        : storedApplication && storedApplication.name !== principal.clientId
+          ? storedApplication.name
+          : (resolvedApplication?.name ?? principal.clientName);
+
+    oauthApplication = applicationId
+      ? { id: applicationId, name: resolvedClientName }
+      : null;
   } catch {
     return jsonResponse({ error: "temporarily_unavailable" }, 503);
   }
 
-  if (!oauthApplicationId) {
+  if (!oauthApplication) {
     return jsonResponse({ error: "temporarily_unavailable" }, 503);
   }
 
@@ -411,8 +434,8 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     await ctx.runMutation(internal.remoteMcp.authorizeToken, {
       clerkUserId: principal.userId,
       clientId: principal.clientId,
-      clientName: principal.clientName,
-      oauthApplicationId,
+      clientName: oauthApplication.name ?? principal.clientName,
+      oauthApplicationId: oauthApplication.id,
       scopes: principal.scopes,
       tokenFingerprint: await fingerprintOAuthToken(accessToken),
       encryptedAccessToken: await encryptOAuthToken(accessToken, encryptionKey),

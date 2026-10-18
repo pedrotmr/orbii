@@ -90,22 +90,6 @@ export const authorizeToken = internalMutation({
       throw new Error("This Orbii agent connection is pending revocation");
     }
 
-    const activeConnection = clientConnections.find(
-      (connection) => connection.revokedAt === undefined,
-    );
-
-    if (activeConnection) {
-      await ctx.db.patch(activeConnection._id, {
-        clientName: args.clientName.slice(0, 160),
-        oauthApplicationId: args.oauthApplicationId,
-        scopes,
-        tokenFingerprint: args.tokenFingerprint,
-        encryptedAccessToken: args.encryptedAccessToken,
-        lastSeenAt: args.now,
-      });
-      return activeConnection._id;
-    }
-
     return await ctx.db.insert("agentConnections", {
       clerkUserId: args.clerkUserId,
       clientId: args.clientId,
@@ -162,7 +146,7 @@ export const getConnectionForOwner = internalQuery({
   },
 });
 
-export const getOAuthApplicationIdForClient = internalQuery({
+export const getOAuthApplicationForClient = internalQuery({
   args: { clerkUserId: v.string(), clientId: v.string() },
   handler: async (ctx, args) => {
     const connections = await ctx.db
@@ -175,7 +159,14 @@ export const getOAuthApplicationIdForClient = internalQuery({
       (connection) => connection.revokedAt === undefined,
     );
 
-    return activeConnection?.oauthApplicationId ?? null;
+    if (!activeConnection) {
+      return null;
+    }
+
+    return {
+      id: activeConnection.oauthApplicationId,
+      name: activeConnection.clientName,
+    };
   },
 });
 

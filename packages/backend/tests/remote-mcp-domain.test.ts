@@ -184,7 +184,7 @@ test("remote habit addition waits for a later reveal and removal scrubs today's 
   });
 });
 
-test("connected agents are private, block pending revocations, and erase credentials after Clerk confirms", async () => {
+test("connected agent grants remain independent and preserve retryable revocations", async () => {
   const t = convexTest(schema, modules);
   const owner = withIdentity(t, "owner");
   const otherUser = withIdentity(t, "other-user");
@@ -211,6 +211,28 @@ test("connected agents are private, block pending revocations, and erase credent
     otherUser.query(api.remoteMcp.listConnections, {}),
   ).resolves.toEqual([]);
 
+  const secondConnectionId = await t.mutation(
+    internal.remoteMcp.authorizeToken,
+    {
+      clerkUserId: "owner",
+      clientId: "https://agent.example/metadata.json",
+      clientName: "Example agent",
+      oauthApplicationId: "oauthapp_internal_example",
+      scopes: ["orbii:read"],
+      tokenFingerprint: "fingerprint-2",
+      encryptedAccessToken: "v1.iv.new-ciphertext",
+      now: 1_800_000_050_000,
+    },
+  );
+
+  expect(secondConnectionId).not.toBe(connectionId);
+  await expect(
+    owner.query(api.remoteMcp.listConnections, {}),
+  ).resolves.toMatchObject([
+    { _id: secondConnectionId, scopes: ["orbii:read"] },
+    { _id: connectionId, scopes: ["orbii:read", "orbii:write"] },
+  ]);
+
   await t.mutation(internal.remoteMcp.markConnectionRevoked, {
     clerkUserId: "owner",
     connectionId,
@@ -219,7 +241,10 @@ test("connected agents are private, block pending revocations, and erase credent
 
   await expect(
     owner.query(api.remoteMcp.listConnections, {}),
-  ).resolves.toMatchObject([{ _id: connectionId, revocationPending: true }]);
+  ).resolves.toMatchObject([
+    { _id: secondConnectionId, revocationPending: false },
+    { _id: connectionId, revocationPending: true },
+  ]);
   await expect(
     t.mutation(internal.remoteMcp.authorizeToken, {
       clerkUserId: "owner",
@@ -227,8 +252,8 @@ test("connected agents are private, block pending revocations, and erase credent
       clientName: "Example agent",
       oauthApplicationId: "oauthapp_internal_example",
       scopes: ["orbii:read"],
-      tokenFingerprint: "fingerprint-2",
-      encryptedAccessToken: "v1.iv.new-ciphertext",
+      tokenFingerprint: "fingerprint-3",
+      encryptedAccessToken: "v1.iv.third-ciphertext",
       now: 1_800_000_200_000,
     }),
   ).rejects.toThrow("pending revocation");
@@ -238,18 +263,26 @@ test("connected agents are private, block pending revocations, and erase credent
     connectionId,
   });
 
-  await expect(owner.query(api.remoteMcp.listConnections, {})).resolves.toEqual(
-    [],
-  );
+  await expect(
+    owner.query(api.remoteMcp.listConnections, {}),
+  ).resolves.toMatchObject([{ _id: secondConnectionId }]);
   await t.run(async (ctx) => {
-    const connection = await ctx.db
+    const revokedConnection = await ctx.db
       .query("agentConnections")
       .withIndex("by_clerkUserId_tokenFingerprint", (q) =>
         q.eq("clerkUserId", "owner").eq("tokenFingerprint", "fingerprint-1"),
       )
       .unique();
-    expect(connection?.encryptedAccessToken).toBe("");
-    expect(connection?.revokedAt).toBe(1_800_000_100_000);
-    expect(connection?.revocationPending).toBe(false);
+    const activeConnection = await ctx.db
+      .query("agentConnections")
+      .withIndex("by_clerkUserId_tokenFingerprint", (q) =>
+        q.eq("clerkUserId", "owner").eq("tokenFingerprint", "fingerprint-2"),
+      )
+      .unique();
+    expect(revokedConnection?.encryptedAccessToken).toBe("");
+    expect(revokedConnection?.revokedAt).toBe(1_800_000_100_000);
+    expect(revokedConnection?.revocationPending).toBe(false);
+    expect(activeConnection?.encryptedAccessToken).toBe("v1.iv.new-ciphertext");
+    expect(activeConnection?.revokedAt).toBeUndefined();
   });
 });

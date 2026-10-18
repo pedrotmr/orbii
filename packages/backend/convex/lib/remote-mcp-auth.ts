@@ -114,10 +114,7 @@ export const parseVerifiedOAuthToken = (
 
   const audience = token.aud ?? token.audience;
 
-  if (
-    audience !== undefined &&
-    !audienceIncludesResource(audience, expectedResource)
-  ) {
+  if (!audienceIncludesResource(audience, expectedResource)) {
     throw new Error("OAuth access token has an unexpected audience");
   }
 
