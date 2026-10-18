@@ -1,6 +1,7 @@
 import { api } from "@orbii/backend";
 import { type Palette, radius, space } from "@orbii/tokens";
 import { useQueries } from "convex/react";
+import { ConvexError } from "convex/values";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,7 +31,33 @@ interface PointHistorySplit {
   right: PointHistoryPage;
 }
 
+interface PaginationErrorData {
+  isConvexSystemError?: unknown;
+  paginationError?: unknown;
+}
+
 const queryKeyForPage = (pageKey: number) => `page-${pageKey}`;
+
+const isInvalidCursorError = (error: Error) => {
+  if (error.message.includes("InvalidCursor")) {
+    return true;
+  }
+
+  if (
+    !(error instanceof ConvexError) ||
+    typeof error.data !== "object" ||
+    error.data === null ||
+    Array.isArray(error.data)
+  ) {
+    return false;
+  }
+
+  const errorData = error.data as PaginationErrorData;
+  return (
+    errorData.isConvexSystemError === true &&
+    errorData.paginationError === "InvalidCursor"
+  );
+};
 
 export default function PointsHistoryContent() {
   const { colors } = useTheme();
@@ -41,6 +68,7 @@ export default function PointsHistoryContent() {
   const [splits, setSplits] = useState<Record<number, PointHistorySplit>>({});
   const nextPageKey = useRef(1);
   const nextQueryId = useRef(1);
+  const pendingLoadMorePageKey = useRef<number | null>(null);
   const queriedPages = useMemo(
     () => [
       ...pages,
@@ -87,6 +115,17 @@ export default function PointsHistoryContent() {
       }
     }
   }, [pageResults, pages]);
+
+  useEffect(() => {
+    const pendingPageKey = pendingLoadMorePageKey.current;
+
+    if (
+      pendingPageKey !== null &&
+      pageResults[queryKeyForPage(pendingPageKey)] !== undefined
+    ) {
+      pendingLoadMorePageKey.current = null;
+    }
+  }, [pageResults]);
 
   useEffect(() => {
     const completedSplits = Object.entries(splits)
@@ -196,8 +235,39 @@ export default function PointsHistoryContent() {
     }
   }, [pageResults, pages, splits]);
 
+  const invalidCursorPage = queriedPages.find((page) => {
+    if (page.cursor === null && page.endCursor === undefined) {
+      return false;
+    }
+
+    const result = pageResults[queryKeyForPage(page.key)];
+    return result instanceof Error && isInvalidCursorError(result);
+  });
+
+  useEffect(() => {
+    if (invalidCursorPage === undefined) {
+      return;
+    }
+
+    const key = nextPageKey.current;
+    nextPageKey.current += 1;
+    const queryId = nextQueryId.current;
+    nextQueryId.current += 1;
+    pendingLoadMorePageKey.current = null;
+    setPages([{ key, cursor: null, queryId }]);
+    setSplits({});
+  }, [invalidCursorPage]);
+
   const erroredPage = pages.find((page) => {
-    return pageResults[queryKeyForPage(page.key)] instanceof Error;
+    const result = pageResults[queryKeyForPage(page.key)];
+
+    return (
+      result instanceof Error &&
+      !(
+        (page.cursor !== null || page.endCursor !== undefined) &&
+        isInvalidCursorError(result)
+      )
+    );
   });
   const unsplittablePage = pages.find((page) => {
     const result = pageResults[queryKeyForPage(page.key)];
@@ -257,6 +327,8 @@ export default function PointsHistoryContent() {
 
   const loadMore = () => {
     if (
+      pendingLoadMorePageKey.current !== null ||
+      invalidCursorPage !== undefined ||
       failedPage !== undefined ||
       isSplitting ||
       pages.some(
@@ -274,6 +346,7 @@ export default function PointsHistoryContent() {
     nextPageKey.current += 1;
     const queryId = nextQueryId.current;
     nextQueryId.current += 1;
+    pendingLoadMorePageKey.current = key;
     setPages((currentPages) => [
       ...currentPages,
       { key, cursor: latestResult.continueCursor, queryId },
@@ -293,7 +366,11 @@ export default function PointsHistoryContent() {
       ? pageResults[queryKeyForPage(firstPage.key)]
       : undefined;
 
-    if (firstResult === undefined || isSplitting) {
+    if (
+      firstResult === undefined ||
+      isSplitting ||
+      invalidCursorPage !== undefined
+    ) {
       return (
         <View
           accessible
@@ -327,7 +404,9 @@ export default function PointsHistoryContent() {
 
   let footerStatus: "hidden" | "loading" | "can-load-more" | "error" = "hidden";
 
-  if (failedPage !== undefined) {
+  if (invalidCursorPage !== undefined) {
+    footerStatus = transactions.length === 0 ? "hidden" : "loading";
+  } else if (failedPage !== undefined) {
     footerStatus = transactions.length === 0 ? "hidden" : "error";
   } else if (isSplitting) {
     footerStatus = transactions.length === 0 ? "hidden" : "loading";

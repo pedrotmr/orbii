@@ -1,6 +1,7 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useQueries } from "convex/react";
+import { ConvexError } from "convex/values";
 import PointsHistoryScreen from "../src/points-history/points-history-screen";
 
 jest.mock("@orbii/backend", () => ({
@@ -393,3 +394,97 @@ test.each(["SplitRequired", "SplitRecommended"] as const)(
     );
   },
 );
+
+test("an invalid cursor resets history to a fresh first page", async () => {
+  const consoleError = jest
+    .spyOn(console, "error")
+    .mockImplementation(() => {});
+  const invalidCursorError = new ConvexError({
+    isConvexSystemError: true,
+    paginationError: "InvalidCursor",
+  });
+
+  jest.mocked(useQueries).mockImplementation((queries) => {
+    return Object.fromEntries(
+      Object.entries(queries).map(([key, query]) => {
+        const { paginationOpts } = query.args as unknown as {
+          paginationOpts: PageRequest;
+        };
+        const { cursor } = paginationOpts;
+        pageRequests.push(paginationOpts);
+
+        return [key, cursor === null ? firstPageResult : invalidCursorError];
+      }),
+    ) as never;
+  });
+
+  try {
+    await render(<PointsHistoryScreen />);
+    const initialRequest = pageRequests.find((request) => {
+      return request.cursor === null;
+    });
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Load more transactions" }),
+    );
+
+    expect(screen.getByText("Museum visit")).toBeOnTheScreen();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Load more transactions" }),
+    ).toBeOnTheScreen();
+    expect(
+      pageRequests.some((request) => {
+        return request.cursor === null && request.id !== initialRequest?.id;
+      }),
+    ).toBe(true);
+  } finally {
+    consoleError.mockRestore();
+  }
+});
+
+test("rapid load-more presses request each cursor once", async () => {
+  jest.mocked(useQueries).mockImplementation((queries) => {
+    return Object.fromEntries(
+      Object.entries(queries).map(([key, query]) => {
+        const { paginationOpts } = query.args as unknown as {
+          paginationOpts: PageRequest;
+        };
+        const { cursor } = paginationOpts;
+        pageRequests.push(paginationOpts);
+
+        if (cursor === null) {
+          return [key, firstPageResult];
+        }
+
+        return [
+          key,
+          cursor === "cursor-next" ? middlePageResult : thirdPageResult,
+        ];
+      }),
+    ) as never;
+  });
+
+  await render(<PointsHistoryScreen />);
+  const loadMoreButton = screen.getByRole("button", {
+    name: "Load more transactions",
+  });
+  const loadMoreOnPress = loadMoreButton.props.onClick as () => void;
+
+  await act(() => {
+    loadMoreOnPress();
+    loadMoreOnPress();
+  });
+
+  expect(screen.getByText("Afternoon stretch")).toBeOnTheScreen();
+  const nextPageRequestIds = pageRequests
+    .filter((request) => request.cursor === "cursor-next")
+    .map((request) => request.id);
+  expect(new Set(nextPageRequestIds).size).toBe(1);
+
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Load more transactions" }),
+  );
+
+  expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
+});
