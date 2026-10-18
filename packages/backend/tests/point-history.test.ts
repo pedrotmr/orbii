@@ -7,6 +7,16 @@ import schema from "../convex/schema";
 
 const modules = import.meta.glob("../convex/**/*.ts");
 
+interface PointHistoryTransactionName {
+  sourceName: string;
+}
+
+interface PointHistoryPageResult {
+  page: PointHistoryTransactionName[];
+  isDone: boolean;
+  continueCursor: string;
+}
+
 interface PointTransactionFixture {
   amount: number;
   sourceType: "habit_award" | "completion_bonus" | "reward_redemption";
@@ -212,4 +222,55 @@ test("history exposes the transaction-time source labels and saved local dates",
       }),
     ]),
   );
+});
+
+test("history paginates transactions with equal creation times without cursor collisions", async () => {
+  vi.useFakeTimers();
+  // At this timestamp, convex-test's 0.001 monotonic increment rounds away.
+  vi.setSystemTime(new Date(100_000_000_000_000));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  const expected = Array.from(
+    { length: 41 },
+    (_, index) => `Transaction ${index}`,
+  );
+
+  for (const [index, sourceName] of expected.entries()) {
+    await insertTransaction(t, "owner", {
+      amount: 10,
+      sourceType: "habit_award",
+      sourceName,
+      localDate: "2026-10-01",
+      idempotencyKey: `same-instant:${index}`,
+    });
+  }
+
+  const creationTimes = await t.run(async (ctx) => {
+    const transactions = await ctx.db.query("pointTransactions").collect();
+    return transactions.map((transaction) => transaction._creationTime);
+  });
+  expect(creationTimes).toHaveLength(expected.length);
+  expect(new Set(creationTimes).size).toBe(1);
+
+  const history: string[] = [];
+  let cursor: string | null = null;
+  let isDone = false;
+  let pagesFetched = 0;
+
+  while (!isDone) {
+    pagesFetched += 1;
+    expect(pagesFetched).toBeLessThanOrEqual(Math.ceil(expected.length / 7));
+
+    const page: PointHistoryPageResult = await owner.query(
+      api.points.listTransactions,
+      {
+        paginationOpts: { numItems: 7, cursor },
+      },
+    );
+    history.push(...page.page.map((transaction) => transaction.sourceName));
+    isDone = page.isDone;
+    cursor = isDone ? null : page.continueCursor;
+  }
+
+  expect(history).toEqual([...expected].reverse());
 });

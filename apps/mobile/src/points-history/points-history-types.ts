@@ -1,6 +1,8 @@
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@orbii/backend";
 
-export type PointTransaction = FunctionReturnType<
+export type PointTransactionPage = FunctionReturnType<
   typeof api.points.listTransactions
->["page"][number];
+>;
+
+export type PointTransaction = PointTransactionPage["page"][number];
