@@ -52,14 +52,24 @@ const nextPageResult = {
   continueCursor: "cursor-last",
 };
 
+interface PageRequest {
+  cursor: string | null;
+  id?: number;
+  numItems: number;
+}
+
+const pageRequests: PageRequest[] = [];
+
 beforeEach(() => {
+  pageRequests.length = 0;
   jest.mocked(useQueries).mockImplementation((queries) => {
     return Object.fromEntries(
       Object.entries(queries).map(([key, query]) => {
         const { paginationOpts } = query.args as unknown as {
-          paginationOpts: { cursor: string | null };
+          paginationOpts: PageRequest;
         };
-        const { cursor } = paginationOpts;
+        const { cursor, id, numItems } = paginationOpts;
+        pageRequests.push({ cursor, id, numItems });
         return [key, cursor === null ? firstPageResult : nextPageResult];
       }),
     ) as never;
@@ -76,18 +86,29 @@ test("history shows signed transactions, saved local dates, and every loaded row
   expect(screen.getByText("+20 pts")).toBeOnTheScreen();
   expect(screen.getByText("Morning walk")).toBeOnTheScreen();
   expect(screen.queryByText(/balance/i)).toBeNull();
+  expect(pageRequests).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ cursor: null, numItems: 20 }),
+    ]),
+  );
 
   await fireEvent.press(
     screen.getByRole("button", { name: "Load more transactions" }),
   );
 
   expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
+  expect(pageRequests).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ cursor: "cursor-next", numItems: 20 }),
+    ]),
+  );
+  expect(
+    screen.queryByRole("button", { name: "Load more transactions" }),
+  ).toBeNull();
 });
 
 test("a later page error keeps earlier transactions visible and retries the same cursor", async () => {
   let pageQueryFailed = true;
-  const pageRequests: Array<{ cursor: string | null; id: number | undefined }> =
-    [];
   const consoleError = jest
     .spyOn(console, "error")
     .mockImplementation(() => {});
@@ -96,10 +117,10 @@ test("a later page error keeps earlier transactions visible and retries the same
     return Object.fromEntries(
       Object.entries(queries).map(([key, query]) => {
         const { paginationOpts } = query.args as unknown as {
-          paginationOpts: { cursor: string | null; id?: number };
+          paginationOpts: PageRequest;
         };
-        const { cursor, id } = paginationOpts;
-        pageRequests.push({ cursor, id });
+        const { cursor } = paginationOpts;
+        pageRequests.push(paginationOpts);
 
         if (cursor !== null && pageQueryFailed) {
           return [key, new Error("The next page failed to load")];
@@ -138,6 +159,10 @@ test("a later page error keeps earlier transactions visible and retries the same
       .pop();
     expect(retryRequest?.cursor).toBe(failedRequest?.cursor);
     expect(retryRequest?.id).not.toBe(failedRequest?.id);
+    expect(pageRequests.every((request) => request.numItems === 20)).toBe(true);
+    expect(
+      screen.queryByRole("button", { name: "Load more transactions" }),
+    ).toBeNull();
   } finally {
     consoleError.mockRestore();
   }
