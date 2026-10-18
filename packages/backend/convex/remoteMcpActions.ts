@@ -6,7 +6,7 @@ import {
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
-import { decryptOAuthToken } from "./lib/remote-mcp-auth";
+import { decryptOAuthToken } from "./lib/remote_mcp_auth";
 
 interface GetConnectionForOwnerArgs extends DefaultFunctionArgs {
   clerkUserId: string;

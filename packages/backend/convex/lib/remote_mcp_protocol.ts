@@ -1,4 +1,4 @@
-import { MCP_READ_SCOPE, MCP_WRITE_SCOPE } from "./remote-mcp-auth";
+import { MCP_READ_SCOPE, MCP_WRITE_SCOPE } from "./remote_mcp_auth";
 
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
 export const MCP_DEFAULT_PROTOCOL_VERSION = "2025-03-26";
@@ -32,8 +32,17 @@ export interface RemoteMcpTool {
   };
 }
 
-export const fingerprintMcpRequestId = async (requestId: string | number) => {
-  const value = JSON.stringify([typeof requestId, requestId]);
+export const fingerprintMcpRequestId = async (
+  sessionId: string,
+  requestId: string | number,
+  ...identityParts: string[]
+) => {
+  const value = JSON.stringify([
+    sessionId,
+    typeof requestId,
+    requestId,
+    ...identityParts,
+  ]);
   const digest = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(value),
@@ -86,22 +95,45 @@ export const toolsForScopes = (tools: RemoteMcpTool[], scopes: string[]) => {
   return tools.filter((tool) => scopes.includes(tool.requiredScope));
 };
 
-export const dispatchRemoteMcpMessage = async (
+interface DispatchOptions {
+  scopes: string[];
+  tools: RemoteMcpTool[];
+  protocolVersion?: string;
+  sessionId?: string;
+  execute: (
+    toolName: string,
+    args: Record<string, unknown>,
+    requestId: string | number,
+    sessionId?: string,
+  ) => Promise<unknown>;
+}
+
+interface DispatchResponse {
+  status: number;
+  body?: unknown;
+  requiredScope?: string;
+  protocolVersion?: string;
+  sessionId?: string;
+}
+
+const dispatchRemoteMcpSingle: (
   input: unknown,
-  options: {
-    scopes: string[];
-    tools: RemoteMcpTool[];
-    execute: (
-      toolName: string,
-      args: Record<string, unknown>,
-      requestId: string | number,
-    ) => Promise<unknown>;
-  },
-) => {
+  options: DispatchOptions,
+) => Promise<DispatchResponse> = async (input, options) => {
   const inputRecord = asRecord(input);
 
   if (!inputRecord) {
     return { status: 200, body: rpcError(null, -32600, "Invalid request") };
+  }
+
+  if (
+    inputRecord.jsonrpc === "2.0" &&
+    Object.hasOwn(inputRecord, "id") &&
+    !Object.hasOwn(inputRecord, "method") &&
+    (Object.hasOwn(inputRecord, "result") ||
+      Object.hasOwn(inputRecord, "error"))
+  ) {
+    return { status: 202 };
   }
 
   const request = inputRecord as JsonRpcRequest;
@@ -138,6 +170,7 @@ export const dispatchRemoteMcpMessage = async (
     return {
       status: 200,
       protocolVersion,
+      sessionId: crypto.randomUUID(),
       body: rpcResult(requestId, {
         protocolVersion,
         capabilities: { tools: {} },
@@ -206,7 +239,12 @@ export const dispatchRemoteMcpMessage = async (
             {
               type: "text",
               text: JSON.stringify(
-                await options.execute(tool.name, args, requestId),
+                await options.execute(
+                  tool.name,
+                  args,
+                  requestId,
+                  options.sessionId,
+                ),
               ),
             },
           ],
@@ -231,5 +269,99 @@ export const dispatchRemoteMcpMessage = async (
   return {
     status: 200,
     body: rpcError(requestId, -32601, `Method not found: ${request.method}`),
+  };
+};
+
+export const dispatchRemoteMcpMessage: (
+  input: unknown,
+  options: DispatchOptions,
+) => Promise<DispatchResponse> = async (input, options) => {
+  if (!Array.isArray(input)) {
+    return await dispatchRemoteMcpSingle(input, options);
+  }
+
+  const protocolVersion =
+    options.protocolVersion ?? MCP_DEFAULT_PROTOCOL_VERSION;
+  if (protocolVersion !== MCP_DEFAULT_PROTOCOL_VERSION) {
+    return {
+      status: 400,
+      body: rpcError(
+        null,
+        -32600,
+        "JSON-RPC batches require MCP protocol version 2025-03-26",
+      ),
+    };
+  }
+
+  if (input.length === 0) {
+    return { status: 200, body: rpcError(null, -32600, "Invalid request") };
+  }
+
+  const initializeMessages = input.filter((message) => {
+    return asRecord(message)?.method === "initialize";
+  });
+  if (initializeMessages.length > 0) {
+    const initialize = asRecord(initializeMessages[0]);
+    const params = asRecord(initialize?.params);
+    if (
+      input.length !== 1 ||
+      params?.protocolVersion !== MCP_DEFAULT_PROTOCOL_VERSION
+    ) {
+      return {
+        status: 400,
+        body: rpcError(
+          null,
+          -32600,
+          "Initialize must be sent alone using the batch-capable protocol version",
+        ),
+      };
+    }
+  }
+
+  const responses: unknown[] = [];
+  let sessionId = options.sessionId;
+
+  for (const message of input) {
+    const response = await dispatchRemoteMcpSingle(message, {
+      ...options,
+      sessionId,
+    });
+
+    if (response.sessionId) {
+      sessionId = response.sessionId;
+    }
+
+    if (response.status === 202) {
+      continue;
+    }
+
+    if (response.requiredScope) {
+      const responseBody = asRecord(response.body);
+      const error = asRecord(responseBody?.error);
+      responses.push(
+        responseBody && error
+          ? {
+              ...responseBody,
+              error: {
+                ...error,
+                data: { requiredScope: response.requiredScope },
+              },
+            }
+          : response.body,
+      );
+      continue;
+    }
+
+    responses.push(response.body);
+  }
+
+  if (responses.length === 0) {
+    return { status: 202 };
+  }
+
+  return {
+    status: 200,
+    body: responses,
+    ...(sessionId ? { sessionId } : {}),
   };
 };

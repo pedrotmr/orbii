@@ -184,6 +184,78 @@ test("remote habit addition waits for a later reveal and removal scrubs today's 
   });
 });
 
+test("remote committed habit snapshots preserve categories and omit unknown legacy categories", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-09T12:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  await insertUserAndHabits(t, "owner");
+  await t.mutation(internal.day.startRevealForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+  });
+  await t.mutation(internal.day.setSelectionForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+    habitId: "walk",
+    selected: true,
+  });
+  await t.mutation(internal.day.commitForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+  });
+  await t.mutation(internal.day.setCompleteForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+    habitId: "walk",
+    completed: true,
+  });
+  await t.mutation(internal.habits.removeForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+    habitKey: "walk",
+  });
+
+  const day = await t.query(internal.day.getForRemoteMcp, {
+    clerkUserId: "owner",
+  });
+  expect(day.committedHabits).toMatchObject([
+    { id: "walk", name: "Walk", category: "body", pointValue: 10 },
+  ]);
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("users", {
+      clerkUserId: "legacy-owner",
+      capacity: 2,
+      timezone: "UTC",
+      streak: 0,
+      daysCompleted: 1,
+      lastCompletedLocalDate: "2026-10-09",
+      pointsBalance: 20,
+    });
+    await ctx.db.insert("daySessions", {
+      clerkUserId: "legacy-owner",
+      localDate: "2026-10-09",
+      phase: "complete",
+      offeredIds: [],
+      selectedIds: [],
+      committedIds: ["legacy-habit"],
+      completedIds: ["legacy-habit"],
+      committedHabitSnapshots: [
+        { habitId: "legacy-habit", name: "Legacy habit", glyph: "G" },
+      ],
+    });
+  });
+
+  const legacyDay = await t.query(internal.day.getForRemoteMcp, {
+    clerkUserId: "legacy-owner",
+  });
+  expect(legacyDay.committedHabits[0]).toMatchObject({
+    id: "legacy-habit",
+    name: "Legacy habit",
+  });
+  expect(legacyDay.committedHabits[0]).not.toHaveProperty("category");
+});
+
 test("connected agent grants remain independent and preserve retryable revocations", async () => {
   const t = convexTest(schema, modules);
   const owner = withIdentity(t, "owner");

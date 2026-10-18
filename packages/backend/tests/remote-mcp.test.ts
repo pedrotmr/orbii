@@ -8,12 +8,12 @@ import {
   OAuthVerificationUnavailableError,
   parseVerifiedOAuthToken,
   verifyClerkOAuthToken,
-} from "../convex/lib/remote-mcp-auth";
+} from "../convex/lib/remote_mcp_auth";
 import {
   dispatchRemoteMcpMessage,
   supportsMcpProtocolVersion,
   type RemoteMcpTool,
-} from "../convex/lib/remote-mcp-protocol";
+} from "../convex/lib/remote_mcp_protocol";
 
 const issuer = "https://orbii.clerk.accounts.dev";
 const resource = "https://orbii.convex.site/mcp";
@@ -280,10 +280,67 @@ test("MCP initialize negotiates a supported client protocol version", async () =
   expect(olderVersion.body).toMatchObject({
     result: { protocolVersion: "2025-06-18" },
   });
+  expect(olderVersion).toMatchObject({ sessionId: expect.any(String) });
   expect(unsupportedVersion.protocolVersion).toBe("2025-11-25");
   expect(unsupportedVersion.body).toMatchObject({
     result: { protocolVersion: "2025-11-25" },
   });
+});
+
+test("MCP dispatches legacy JSON-RPC batches and omits notification responses", async () => {
+  const execute = vi.fn(async (name: string) => ({ tool: name }));
+  const response = await dispatchRemoteMcpMessage(
+    [
+      { jsonrpc: "2.0", id: 1, method: "ping" },
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "commit_today", arguments: {} },
+      },
+    ],
+    {
+      scopes: [MCP_READ_SCOPE, MCP_WRITE_SCOPE],
+      tools: testTools,
+      execute,
+      protocolVersion: "2025-03-26",
+      sessionId: "session-1",
+    },
+  );
+
+  expect(response.status).toBe(200);
+  expect(response.body).toEqual([
+    { jsonrpc: "2.0", id: 1, result: {} },
+    {
+      jsonrpc: "2.0",
+      id: 2,
+      result: {
+        content: [
+          { type: "text", text: JSON.stringify({ tool: "commit_today" }) },
+        ],
+        isError: false,
+      },
+    },
+  ]);
+  expect(execute).toHaveBeenCalledTimes(1);
+});
+
+test("MCP rejects batches for versions that do not support JSON-RPC batching", async () => {
+  const execute = vi.fn(async () => ({ ok: true }));
+  const response = await dispatchRemoteMcpMessage(
+    [{ jsonrpc: "2.0", id: 1, method: "ping" }],
+    {
+      scopes: [MCP_READ_SCOPE],
+      tools: testTools,
+      execute,
+      protocolVersion: "2025-06-18",
+    },
+  );
+
+  expect(response.status).toBe(400);
+  expect(response.body).toMatchObject({ error: { code: -32600 } });
+  expect(execute).not.toHaveBeenCalled();
 });
 
 test("MCP protocol accepts supported versions and the legacy missing header", () => {

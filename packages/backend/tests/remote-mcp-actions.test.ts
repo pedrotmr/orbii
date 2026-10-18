@@ -3,7 +3,7 @@
 import { convexTest } from "convex-test";
 import { afterEach, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
-import { encryptOAuthToken } from "../convex/lib/remote-mcp-auth";
+import { encryptOAuthToken } from "../convex/lib/remote_mcp_auth";
 import schema from "../convex/schema";
 
 const modules = import.meta.glob("../convex/**/*.ts");

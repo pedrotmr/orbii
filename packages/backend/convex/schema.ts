@@ -58,6 +58,14 @@ export default defineSchema({
           habitId: v.string(),
           name: v.string(),
           glyph: v.string(),
+          category: v.optional(
+            v.union(
+              v.literal("body"),
+              v.literal("mind"),
+              v.literal("learn"),
+              v.literal("life"),
+            ),
+          ),
         }),
       ),
     ),
@@ -133,6 +141,24 @@ export default defineSchema({
       v.literal("life"),
     ),
     habitKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_clerkUserId_clientId_requestId", [
+      "clerkUserId",
+      "clientId",
+      "requestId",
+    ])
+    .index("by_clerkUserId_clientId_createdAt", [
+      "clerkUserId",
+      "clientId",
+      "createdAt",
+    ]),
+
+  remoteMcpRerevealRequests: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    localDate: v.string(),
     createdAt: v.number(),
   })
     .index("by_clerkUserId_clientId_requestId", [

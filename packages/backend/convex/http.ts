@@ -8,18 +8,18 @@ import {
   MCP_WRITE_SCOPE,
   OAuthVerificationUnavailableError,
   verifyClerkOAuthToken,
-} from "./lib/remote-mcp-auth";
+} from "./lib/remote_mcp_auth";
 import {
   resolveClerkOAuthApplication,
   type ResolvedClerkOAuthApplication,
-} from "./lib/remote-mcp-clerk";
+} from "./lib/remote_mcp_clerk";
 import {
   dispatchRemoteMcpMessage,
   MCP_DEFAULT_PROTOCOL_VERSION,
   fingerprintMcpRequestId,
   supportsMcpProtocolVersion,
   type RemoteMcpTool,
-} from "./lib/remote-mcp-protocol";
+} from "./lib/remote_mcp_protocol";
 
 const objectSchema = (
   properties: Record<string, unknown> = {},
@@ -189,6 +189,7 @@ const executeTool = async (
   name: string,
   args: Record<string, unknown>,
   requestId: string | number,
+  sessionId: string,
 ) => {
   if (name === "get_orbit") {
     assertArguments(args, []);
@@ -217,7 +218,7 @@ const executeTool = async (
     await ctx.runMutation(internal.habits.addForRemoteMcp, {
       clerkUserId,
       clientId,
-      requestId: await fingerprintMcpRequestId(requestId),
+      requestId: await fingerprintMcpRequestId(sessionId, requestId),
       habitKey: crypto.randomUUID(),
       name: requiredString(args, "name"),
       glyph: requiredString(args, "glyph"),
@@ -243,6 +244,13 @@ const executeTool = async (
     assertArguments(args, []);
     await ctx.runMutation(internal.day.rerevealForRemoteMcp, {
       clerkUserId,
+      clientId,
+      requestId: await fingerprintMcpRequestId(
+        sessionId,
+        requestId,
+        name,
+        localDate,
+      ),
       localDate,
     });
     return { ok: true };
@@ -300,7 +308,10 @@ const withCors = (response: Response) => {
     "Access-Control-Allow-Headers",
     "Authorization, Content-Type, Mcp-Protocol-Version, Mcp-Session-Id, Last-Event-ID",
   );
-  headers.set("Access-Control-Expose-Headers", "WWW-Authenticate");
+  headers.set(
+    "Access-Control-Expose-Headers",
+    "WWW-Authenticate, Mcp-Session-Id, Mcp-Protocol-Version",
+  );
   headers.set("Vary", "Origin");
 
   return new Response(response.body, {
@@ -335,6 +346,17 @@ const oauthIssuer = () => {
 
 const resourceUrl = (request: Request) => {
   return new URL("/mcp", request.url).toString();
+};
+
+const isInitializeInput = (input: unknown) => {
+  const message = Array.isArray(input) && input.length === 1 ? input[0] : input;
+
+  return (
+    typeof message === "object" &&
+    message !== null &&
+    !Array.isArray(message) &&
+    (message as Record<string, unknown>).method === "initialize"
+  );
 };
 
 const protectedResourceMetadata = (request: Request) => {
@@ -475,10 +497,23 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     return jsonResponse({ error: "invalid_json" }, 400);
   }
 
+  const sessionId = request.headers.get("Mcp-Session-Id") ?? undefined;
+  if (!sessionId && !isInitializeInput(input)) {
+    return jsonResponse({ error: "session_required" }, 400);
+  }
+
   const dispatched = await dispatchRemoteMcpMessage(input, {
     scopes: principal.scopes,
     tools,
+    protocolVersion:
+      request.headers.get("Mcp-Protocol-Version") ??
+      MCP_DEFAULT_PROTOCOL_VERSION,
+    sessionId,
     execute: async (name, args, requestId) => {
+      if (!sessionId) {
+        throw new Error("MCP session ID is required for tool calls");
+      }
+
       return await executeTool(
         ctx,
         principal.userId,
@@ -486,6 +521,7 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
         name,
         args,
         requestId,
+        sessionId,
       );
     },
   });
@@ -496,10 +532,17 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     MCP_DEFAULT_PROTOCOL_VERSION;
 
   if (dispatched.status === 202) {
+    const headers = new Headers({
+      "Mcp-Protocol-Version": responseProtocolVersion,
+    });
+    if (dispatched.sessionId) {
+      headers.set("Mcp-Session-Id", dispatched.sessionId);
+    }
+
     return withCors(
       new Response(null, {
         status: 202,
-        headers: { "Mcp-Protocol-Version": responseProtocolVersion },
+        headers,
       }),
     );
   }
@@ -508,6 +551,9 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     "Content-Type": "application/json",
     "Mcp-Protocol-Version": responseProtocolVersion,
   });
+  if (dispatched.sessionId) {
+    headers.set("Mcp-Session-Id", dispatched.sessionId);
+  }
 
   if (dispatched.requiredScope) {
     headers.set(

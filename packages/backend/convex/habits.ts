@@ -21,13 +21,13 @@ import {
   insertCompletionBonus,
   validateHabitPointValue,
 } from "./lib/points";
+import { REMOTE_MCP_REQUEST_RETENTION_MS } from "./lib/remote_mcp_idempotency";
 import { applyCompletionStats, scrubHabitFromSession } from "./lib/ritual";
 import { requireSavedTimezoneToday } from "./lib/timezone";
 
 const MAX_HABIT_NAME_LENGTH = 50;
 const MAX_HABIT_GLYPH_LENGTH = 50;
 const HABITS_PER_ORDER_BACKFILL_BATCH = 20;
-const REMOTE_MCP_REQUEST_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 const habitCategoryValidator = v.union(
   v.literal("body"),
@@ -393,6 +393,7 @@ const removeHabitForUser = async (
           habitId: args.habitKey,
           name: existing.name,
           glyph: existing.glyph,
+          category: existing.category,
         },
       ]
     : committedHabitSnapshots;

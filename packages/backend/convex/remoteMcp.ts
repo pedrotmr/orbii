@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
-import { MCP_READ_SCOPE, MCP_WRITE_SCOPE } from "./lib/remote-mcp-auth";
+import { MCP_READ_SCOPE, MCP_WRITE_SCOPE } from "./lib/remote_mcp_auth";
 
 const allowedScopes = [MCP_READ_SCOPE, MCP_WRITE_SCOPE];
 

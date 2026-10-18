@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import type { Habit } from "./lib/habits";
+import type { Habit, HabitCategory } from "./lib/habits";
 import {
   internalMutation,
   internalQuery,
@@ -20,6 +20,7 @@ import {
   insertSessionPointAward,
   insertSessionPointTransaction,
 } from "./lib/points";
+import { REMOTE_MCP_REQUEST_RETENTION_MS } from "./lib/remote_mcp_idempotency";
 import {
   applyCompletionStats,
   applyMissedDayGap,
@@ -84,7 +85,12 @@ const sessionFromDoc = (doc: {
   committedIds: string[];
   completedIds: string[];
   committedPointValues?: { habitId: string; points: number }[];
-  committedHabitSnapshots?: { habitId: string; name: string; glyph: string }[];
+  committedHabitSnapshots?: {
+    habitId: string;
+    name: string;
+    glyph: string;
+    category?: HabitCategory;
+  }[];
 }) => {
   return {
     localDate: doc.localDate,
@@ -176,7 +182,9 @@ export const getForRemoteMcp = internalQuery({
               id: habitId,
               name: snapshot?.name ?? habitId,
               glyph: snapshot?.glyph ?? "symbol:spark",
-              category: "life" as const,
+              ...(snapshot?.category === undefined
+                ? {}
+                : { category: snapshot.category }),
               pointValue:
                 committedPointValue ?? getHabitPointValue(undefined, habitId),
             };
@@ -564,8 +572,49 @@ export const rereveal = mutation({
 });
 
 export const rerevealForRemoteMcp = internalMutation({
-  args: { clerkUserId: v.string(), localDate: v.string() },
+  args: {
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    localDate: v.string(),
+  },
   handler: async (ctx, args) => {
+    const now = Date.now();
+    const expiredRequests = await ctx.db
+      .query("remoteMcpRerevealRequests")
+      .withIndex("by_clerkUserId_clientId_createdAt", (q) =>
+        q
+          .eq("clerkUserId", args.clerkUserId)
+          .eq("clientId", args.clientId)
+          .lt("createdAt", now - REMOTE_MCP_REQUEST_RETENTION_MS),
+      )
+      .collect();
+
+    for (const request of expiredRequests) {
+      await ctx.db.delete(request._id);
+    }
+
+    const existingRequest = await ctx.db
+      .query("remoteMcpRerevealRequests")
+      .withIndex("by_clerkUserId_clientId_requestId", (q) =>
+        q
+          .eq("clerkUserId", args.clerkUserId)
+          .eq("clientId", args.clientId)
+          .eq("requestId", args.requestId),
+      )
+      .unique();
+
+    if (existingRequest) {
+      return;
+    }
+
     await rerevealForUser(ctx, args.clerkUserId, args);
+    await ctx.db.insert("remoteMcpRerevealRequests", {
+      clerkUserId: args.clerkUserId,
+      clientId: args.clientId,
+      requestId: args.requestId,
+      localDate: args.localDate,
+      createdAt: now,
+    });
   },
 });
