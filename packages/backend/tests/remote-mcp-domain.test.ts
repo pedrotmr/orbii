@@ -144,6 +144,13 @@ test("remote habit addition waits for a later reveal and removal scrubs today's 
     glyph: "symbol:stretch",
     category: "body",
   });
+  const currentDay = await t.query(internal.day.getForRemoteMcp, {
+    clerkUserId: "owner",
+  });
+  expect(currentDay.offeredHabits.map((habit) => habit.id)).not.toContain(
+    "new-habit",
+  );
+  expect(currentDay.committedHabits.map((habit) => habit.id)).toEqual(["walk"]);
   await t.mutation(internal.habits.removeForRemoteMcp, {
     clerkUserId: "owner",
     localDate: "2026-10-09",

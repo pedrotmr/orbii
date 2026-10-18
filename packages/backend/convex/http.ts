@@ -494,6 +494,44 @@ const metadataHandler = httpAction(async (_ctx, request) => {
   }
 });
 
+const authorizationServerMetadataHandler = httpAction(async () => {
+  let issuer: string;
+
+  try {
+    issuer = oauthIssuer();
+  } catch {
+    return jsonResponse({ error: "OAuth service is not configured" }, 503);
+  }
+
+  try {
+    const response = await fetch(
+      new URL("/.well-known/oauth-authorization-server", issuer),
+    );
+
+    if (!response.ok) {
+      return jsonResponse({ error: "OAuth metadata is unavailable" }, 503);
+    }
+
+    const metadata: unknown = await response.json();
+
+    if (
+      typeof metadata !== "object" ||
+      metadata === null ||
+      Array.isArray(metadata) ||
+      !("issuer" in metadata) ||
+      metadata.issuer !== issuer
+    ) {
+      return jsonResponse({ error: "OAuth metadata is invalid" }, 503);
+    }
+
+    return jsonResponse(metadata, 200, {
+      "Cache-Control": "public, max-age=300",
+    });
+  } catch {
+    return jsonResponse({ error: "OAuth metadata is unavailable" }, 503);
+  }
+});
+
 const optionsHandler = httpAction(async () => {
   return withCors(new Response(null, { status: 204 }));
 });
@@ -511,6 +549,26 @@ router.route({
   handler: unsupportedMcpMethodHandler,
 });
 router.route({ path: "/mcp", method: "OPTIONS", handler: optionsHandler });
+router.route({
+  path: "/.well-known/oauth-protected-resource",
+  method: "OPTIONS",
+  handler: optionsHandler,
+});
+router.route({
+  path: "/.well-known/oauth-protected-resource/mcp",
+  method: "OPTIONS",
+  handler: optionsHandler,
+});
+router.route({
+  path: "/.well-known/oauth-authorization-server",
+  method: "GET",
+  handler: authorizationServerMetadataHandler,
+});
+router.route({
+  path: "/.well-known/oauth-authorization-server",
+  method: "OPTIONS",
+  handler: optionsHandler,
+});
 router.route({
   path: "/.well-known/oauth-protected-resource",
   method: "GET",

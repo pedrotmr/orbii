@@ -65,6 +65,33 @@ test("MCP endpoint reports Clerk verification outages as retryable service error
   });
 });
 
+test("authorization-server metadata is exposed at the resource origin for older MCP clients", async () => {
+  const issuer = "https://orbii.clerk.accounts.dev";
+  vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", issuer);
+  const metadata = {
+    issuer,
+    authorization_endpoint: `${issuer}/oauth/authorize`,
+    token_endpoint: `${issuer}/oauth/token`,
+  };
+  const fetcher = vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(new Response(JSON.stringify(metadata), { status: 200 }));
+  vi.stubGlobal("fetch", fetcher);
+  const t = convexTest(schema, modules);
+
+  const response = await t.fetch("/.well-known/oauth-authorization-server");
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(metadata);
+  expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+    `${issuer}/.well-known/oauth-authorization-server`,
+  );
+  const preflight = await t.fetch("/.well-known/oauth-authorization-server", {
+    method: "OPTIONS",
+  });
+  expect(preflight.status).toBe(204);
+});
+
 test("MCP stores Clerk's application ID separately from the public client ID", async () => {
   vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", "https://orbii.clerk.accounts.dev");
   vi.stubEnv("CLERK_SECRET_KEY", "sk_test_backend");
