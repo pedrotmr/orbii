@@ -73,6 +73,13 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="settings/connected-agents"
+                    options={{
+                      headerShown: true,
+                      title: "Connected agents",
+                    }}
+                  />
+                  <Stack.Screen
                     name="habit-create"
                     options={{
                       ...(process.env.EXPO_OS === "ios"

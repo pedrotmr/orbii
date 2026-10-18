@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
 import {
   nextHabitOrder,
@@ -61,6 +68,73 @@ export const list = query({
   },
 });
 
+const listHabitsForUser = async (
+  ctx: QueryCtx | MutationCtx,
+  clerkUserId: string,
+) => {
+  const rows = await ctx.db
+    .query("habits")
+    .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+    .collect();
+
+  return sortHabitsByOrder(rows).map((row) => ({
+    id: row.habitKey,
+    name: row.name,
+    glyph: row.glyph,
+    category: row.category,
+    pointValue: getHabitPointValue(row.pointValue, row.habitKey),
+  }));
+};
+
+export const listForRemoteMcp = internalQuery({
+  args: { clerkUserId: v.string() },
+  handler: async (ctx, args) => {
+    return await listHabitsForUser(ctx, args.clerkUserId);
+  },
+});
+
+const addHabitForUser = async (
+  ctx: MutationCtx,
+  clerkUserId: string,
+  args: {
+    habitKey: string;
+    name: string;
+    glyph: string;
+    category: "body" | "mind" | "learn" | "life";
+    pointValue?: number;
+  },
+) => {
+  const { name, glyph } = validateHabitDetails(args.name, args.glyph);
+  const pointValue = validateHabitPointValue(
+    args.pointValue ?? DEFAULT_HABIT_POINT_VALUE,
+  );
+  const existing = await ctx.db
+    .query("habits")
+    .withIndex("by_clerkUserId_habitKey", (q) =>
+      q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitKey),
+    )
+    .unique();
+
+  if (existing) {
+    return existing._id;
+  }
+
+  const habits = await ctx.db
+    .query("habits")
+    .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+    .collect();
+
+  return await ctx.db.insert("habits", {
+    clerkUserId,
+    habitKey: args.habitKey,
+    name,
+    glyph,
+    category: args.category,
+    order: nextHabitOrder(habits),
+    pointValue,
+  });
+};
+
 export const add = mutation({
   args: {
     habitKey: v.string(),
@@ -70,36 +144,20 @@ export const add = mutation({
     pointValue: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const clerkUserId = await requireClerkUserId(ctx);
-    const { name, glyph } = validateHabitDetails(args.name, args.glyph);
-    const pointValue = validateHabitPointValue(
-      args.pointValue ?? DEFAULT_HABIT_POINT_VALUE,
-    );
-    const existing = await ctx.db
-      .query("habits")
-      .withIndex("by_clerkUserId_habitKey", (q) =>
-        q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitKey),
-      )
-      .unique();
+    return await addHabitForUser(ctx, await requireClerkUserId(ctx), args);
+  },
+});
 
-    if (existing) {
-      return existing._id;
-    }
-
-    const habits = await ctx.db
-      .query("habits")
-      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
-      .collect();
-
-    return await ctx.db.insert("habits", {
-      clerkUserId,
-      habitKey: args.habitKey,
-      name,
-      glyph,
-      category: args.category,
-      order: nextHabitOrder(habits),
-      pointValue,
-    });
+export const addForRemoteMcp = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+    habitKey: v.string(),
+    name: v.string(),
+    glyph: v.string(),
+    category: habitCategoryValidator,
+  },
+  handler: async (ctx, args) => {
+    return await addHabitForUser(ctx, args.clerkUserId, args);
   },
 });
 
@@ -214,122 +272,137 @@ export const backfillOrder = internalMutation({
   },
 });
 
+const removeHabitForUser = async (
+  ctx: MutationCtx,
+  clerkUserId: string,
+  args: { habitKey: string; localDate?: string },
+) => {
+  const existing = await ctx.db
+    .query("habits")
+    .withIndex("by_clerkUserId_habitKey", (q) =>
+      q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitKey),
+    )
+    .unique();
+
+  const sessionDoc = args.localDate
+    ? await ctx.db
+        .query("daySessions")
+        .withIndex("by_clerkUserId_localDate", (q) =>
+          q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate!),
+        )
+        .unique()
+    : null;
+  let user = null;
+  let sessionLocalDate: string | null = null;
+
+  if (sessionDoc && args.localDate) {
+    user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found — call users.ensure first");
+    }
+
+    sessionLocalDate = requireSavedTimezoneToday(args.localDate, user.timezone);
+  }
+
+  const committedHabitSnapshots = sessionDoc?.committedHabitSnapshots ?? [];
+  const shouldSnapshotDeletedCommittedHabit =
+    existing &&
+    sessionDoc?.phase === "complete" &&
+    sessionDoc.committedIds.includes(args.habitKey) &&
+    !committedHabitSnapshots.some(
+      (snapshot) => snapshot.habitId === args.habitKey,
+    );
+  const nextCommittedHabitSnapshots = shouldSnapshotDeletedCommittedHabit
+    ? [
+        ...committedHabitSnapshots,
+        {
+          habitId: args.habitKey,
+          name: existing.name,
+          glyph: existing.glyph,
+        },
+      ]
+    : committedHabitSnapshots;
+
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
+
+  if (!sessionDoc || !user || !sessionLocalDate) {
+    return;
+  }
+
+  const wasComplete = sessionDoc.phase === "complete";
+  const scrubbed = scrubHabitFromSession(
+    {
+      localDate: sessionDoc.localDate,
+      phase: sessionDoc.phase,
+      offeredIds: sessionDoc.offeredIds,
+      selectedIds: sessionDoc.selectedIds,
+      committedIds: sessionDoc.committedIds,
+      completedIds: sessionDoc.completedIds,
+      committedPointValues:
+        sessionDoc.committedPointValues ??
+        sessionDoc.committedIds.map((habitId: string) => ({
+          habitId,
+          points: getHabitPointValue(undefined, habitId),
+        })),
+      committedHabitSnapshots: nextCommittedHabitSnapshots,
+    },
+    args.habitKey,
+  );
+
+  await ctx.db.patch(sessionDoc._id, {
+    phase: scrubbed.phase,
+    offeredIds: scrubbed.offeredIds,
+    selectedIds: scrubbed.selectedIds,
+    committedIds: scrubbed.committedIds,
+    completedIds: scrubbed.completedIds,
+    committedPointValues: scrubbed.committedPointValues,
+    committedHabitSnapshots: scrubbed.committedHabitSnapshots,
+  });
+
+  if (!wasComplete && scrubbed.phase === "complete") {
+    await insertCompletionBonus(
+      ctx,
+      clerkUserId,
+      user._id,
+      sessionDoc._id,
+      sessionLocalDate,
+    );
+    const nextStats = applyCompletionStats(
+      {
+        streak: user.streak,
+        daysCompleted: user.daysCompleted,
+        lastCompletedLocalDate: user.lastCompletedLocalDate,
+      },
+      sessionLocalDate,
+    );
+    await ctx.db.patch(user._id, nextStats);
+  }
+};
+
 export const remove = mutation({
   args: {
     habitKey: v.string(),
     localDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const clerkUserId = await requireClerkUserId(ctx);
-    const existing = await ctx.db
-      .query("habits")
-      .withIndex("by_clerkUserId_habitKey", (q) =>
-        q.eq("clerkUserId", clerkUserId).eq("habitKey", args.habitKey),
-      )
-      .unique();
+    await removeHabitForUser(ctx, await requireClerkUserId(ctx), args);
+  },
+});
 
-    const sessionDoc = args.localDate
-      ? await ctx.db
-          .query("daySessions")
-          .withIndex("by_clerkUserId_localDate", (q) =>
-            q.eq("clerkUserId", clerkUserId).eq("localDate", args.localDate!),
-          )
-          .unique()
-      : null;
-    let user = null;
-    let sessionLocalDate: string | null = null;
-
-    if (sessionDoc && args.localDate) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
-        .unique();
-
-      if (!user) {
-        throw new Error("User not found — call users.ensure first");
-      }
-
-      sessionLocalDate = requireSavedTimezoneToday(
-        args.localDate,
-        user.timezone,
-      );
-    }
-
-    const committedHabitSnapshots = sessionDoc?.committedHabitSnapshots ?? [];
-    const shouldSnapshotDeletedCommittedHabit =
-      existing &&
-      sessionDoc?.phase === "complete" &&
-      sessionDoc.committedIds.includes(args.habitKey) &&
-      !committedHabitSnapshots.some(
-        (snapshot) => snapshot.habitId === args.habitKey,
-      );
-    const nextCommittedHabitSnapshots = shouldSnapshotDeletedCommittedHabit
-      ? [
-          ...committedHabitSnapshots,
-          {
-            habitId: args.habitKey,
-            name: existing.name,
-            glyph: existing.glyph,
-          },
-        ]
-      : committedHabitSnapshots;
-
-    if (existing) {
-      await ctx.db.delete(existing._id);
-    }
-
-    if (!sessionDoc || !user || !sessionLocalDate) {
-      return;
-    }
-
-    const wasComplete = sessionDoc.phase === "complete";
-    const scrubbed = scrubHabitFromSession(
-      {
-        localDate: sessionDoc.localDate,
-        phase: sessionDoc.phase,
-        offeredIds: sessionDoc.offeredIds,
-        selectedIds: sessionDoc.selectedIds,
-        committedIds: sessionDoc.committedIds,
-        completedIds: sessionDoc.completedIds,
-        committedPointValues:
-          sessionDoc.committedPointValues ??
-          sessionDoc.committedIds.map((habitId: string) => ({
-            habitId,
-            points: getHabitPointValue(undefined, habitId),
-          })),
-        committedHabitSnapshots: nextCommittedHabitSnapshots,
-      },
-      args.habitKey,
-    );
-
-    await ctx.db.patch(sessionDoc._id, {
-      phase: scrubbed.phase,
-      offeredIds: scrubbed.offeredIds,
-      selectedIds: scrubbed.selectedIds,
-      committedIds: scrubbed.committedIds,
-      completedIds: scrubbed.completedIds,
-      committedPointValues: scrubbed.committedPointValues,
-      committedHabitSnapshots: scrubbed.committedHabitSnapshots,
-    });
-
-    if (!wasComplete && scrubbed.phase === "complete") {
-      await insertCompletionBonus(
-        ctx,
-        clerkUserId,
-        user._id,
-        sessionDoc._id,
-        sessionLocalDate,
-      );
-      const nextStats = applyCompletionStats(
-        {
-          streak: user.streak,
-          daysCompleted: user.daysCompleted,
-          lastCompletedLocalDate: user.lastCompletedLocalDate,
-        },
-        sessionLocalDate,
-      );
-      await ctx.db.patch(user._id, nextStats);
-    }
+export const removeForRemoteMcp = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+    habitKey: v.string(),
+    localDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await removeHabitForUser(ctx, args.clerkUserId, args);
   },
 });
 

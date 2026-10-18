@@ -99,4 +99,24 @@ export default defineSchema({
       "redeemedAt",
     ])
     .index("by_clerkUserId", ["clerkUserId"]),
+
+  agentConnections: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    clientName: v.string(),
+    oauthApplicationId: v.string(),
+    scopes: v.array(v.string()),
+    tokenFingerprint: v.string(),
+    encryptedAccessToken: v.string(),
+    connectedAt: v.number(),
+    lastSeenAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    revocationPending: v.optional(v.boolean()),
+  })
+    .index("by_clerkUserId", ["clerkUserId"])
+    .index("by_clerkUserId_tokenFingerprint", [
+      "clerkUserId",
+      "tokenFingerprint",
+    ])
+    .index("by_clerkUserId_clientId", ["clerkUserId", "clientId"]),
 });
