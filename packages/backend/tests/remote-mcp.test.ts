@@ -247,6 +247,32 @@ test("authorized tools execute and protocol notifications do not return JSON-RPC
   });
 });
 
+test("MCP initialize negotiates a supported client protocol version", async () => {
+  const initialize = async (protocolVersion: string) => {
+    return await dispatchRemoteMcpMessage(
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { protocolVersion },
+      },
+      { scopes: [MCP_READ_SCOPE], tools: testTools, execute: vi.fn() },
+    );
+  };
+
+  const olderVersion = await initialize("2025-06-18");
+  const unsupportedVersion = await initialize("2024-11-05");
+
+  expect(olderVersion.protocolVersion).toBe("2025-06-18");
+  expect(olderVersion.body).toMatchObject({
+    result: { protocolVersion: "2025-06-18" },
+  });
+  expect(unsupportedVersion.protocolVersion).toBe("2025-11-25");
+  expect(unsupportedVersion.body).toMatchObject({
+    result: { protocolVersion: "2025-11-25" },
+  });
+});
+
 test("MCP protocol accepts supported versions and the legacy missing header", () => {
   expect(supportsMcpProtocolVersion(null)).toBe(true);
   expect(supportsMcpProtocolVersion("2025-03-26")).toBe(true);

@@ -12,7 +12,7 @@ import {
 import { resolveClerkOAuthApplicationId } from "./lib/remote-mcp-clerk";
 import {
   dispatchRemoteMcpMessage,
-  MCP_PROTOCOL_VERSION,
+  MCP_DEFAULT_PROTOCOL_VERSION,
   supportsMcpProtocolVersion,
   type RemoteMcpTool,
 } from "./lib/remote-mcp-protocol";
@@ -440,13 +440,23 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     },
   });
 
+  const responseProtocolVersion =
+    ("protocolVersion" in dispatched ? dispatched.protocolVersion : null) ??
+    request.headers.get("Mcp-Protocol-Version") ??
+    MCP_DEFAULT_PROTOCOL_VERSION;
+
   if (dispatched.status === 202) {
-    return withCors(new Response(null, { status: 202 }));
+    return withCors(
+      new Response(null, {
+        status: 202,
+        headers: { "Mcp-Protocol-Version": responseProtocolVersion },
+      }),
+    );
   }
 
   const headers = new Headers({
     "Content-Type": "application/json",
-    "Mcp-Protocol-Version": MCP_PROTOCOL_VERSION,
+    "Mcp-Protocol-Version": responseProtocolVersion,
   });
 
   if (dispatched.requiredScope) {

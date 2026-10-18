@@ -1,14 +1,22 @@
 import { MCP_READ_SCOPE, MCP_WRITE_SCOPE } from "./remote-mcp-auth";
 
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
+export const MCP_DEFAULT_PROTOCOL_VERSION = "2025-03-26";
 const SUPPORTED_PROTOCOL_VERSIONS = [
-  "2025-03-26",
+  MCP_DEFAULT_PROTOCOL_VERSION,
   "2025-06-18",
   MCP_PROTOCOL_VERSION,
 ];
 
 export const supportsMcpProtocolVersion = (version: string | null) => {
   return version === null || SUPPORTED_PROTOCOL_VERSIONS.includes(version);
+};
+
+export const negotiateMcpProtocolVersion = (requestedVersion: unknown) => {
+  return typeof requestedVersion === "string" &&
+    SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+    ? requestedVersion
+    : MCP_PROTOCOL_VERSION;
 };
 
 export interface RemoteMcpTool {
@@ -29,12 +37,6 @@ interface JsonRpcRequest {
   id?: unknown;
   method?: unknown;
   params?: unknown;
-}
-
-export interface RemoteMcpResponse {
-  status: 200 | 202 | 403;
-  body?: Record<string, unknown>;
-  requiredScope?: string;
 }
 
 const isRecord = (value: unknown) => {
@@ -105,10 +107,14 @@ export const dispatchRemoteMcpMessage = async (
   }
 
   if (request.method === "initialize") {
+    const params = asRecord(request.params) ?? {};
+    const protocolVersion = negotiateMcpProtocolVersion(params.protocolVersion);
+
     return {
       status: 200,
+      protocolVersion,
       body: rpcResult(requestId, {
-        protocolVersion: MCP_PROTOCOL_VERSION,
+        protocolVersion,
         capabilities: { tools: {} },
         serverInfo: { name: "orbii", version: "0.1.0" },
       }),

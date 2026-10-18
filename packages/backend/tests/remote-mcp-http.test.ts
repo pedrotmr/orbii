@@ -65,6 +65,79 @@ test("MCP endpoint reports Clerk verification outages as retryable service error
   });
 });
 
+test("MCP endpoint returns the negotiated version and uses the legacy header fallback", async () => {
+  vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", "https://orbii.clerk.accounts.dev");
+  vi.stubEnv("CLERK_SECRET_KEY", "sk_test_backend");
+  vi.stubEnv("MCP_CREDENTIAL_ENCRYPTION_KEY", encryptionKey);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async (input) => {
+      if (String(input).includes("/oauth_applications?")) {
+        return new Response(
+          JSON.stringify({
+            data: [{ id: "oauthapp_internal_1", client_id: "client_public_1" }],
+          }),
+          { status: 200 },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          subject: "user_orbii_1",
+          client_id: "client_public_1",
+          client_name: "Example agent",
+          scopes: ["orbii:read"],
+        }),
+        { status: 200 },
+      );
+    }),
+  );
+  const t = convexTest(schema, modules);
+  const initialize = await t.fetch("/mcp", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: "Bearer opaque-token",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-06-18" },
+    }),
+  });
+  const initializeBody = await initialize.json();
+  const pingWithVersion = await t.fetch("/mcp", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: "Bearer opaque-token",
+      "Mcp-Protocol-Version": "2025-06-18",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "ping" }),
+  });
+  const pingWithoutVersion = await t.fetch("/mcp", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: "Bearer opaque-token",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "ping" }),
+  });
+
+  expect(initialize.status).toBe(200);
+  expect(initialize.headers.get("Mcp-Protocol-Version")).toBe("2025-06-18");
+  expect(initializeBody).toMatchObject({
+    result: { protocolVersion: "2025-06-18" },
+  });
+  expect(pingWithVersion.headers.get("Mcp-Protocol-Version")).toBe(
+    "2025-06-18",
+  );
+  expect(pingWithoutVersion.headers.get("Mcp-Protocol-Version")).toBe(
+    "2025-03-26",
+  );
+});
+
 test("authorization-server metadata is exposed at the resource origin for older MCP clients", async () => {
   const issuer = "https://orbii.clerk.accounts.dev";
   vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", issuer);
