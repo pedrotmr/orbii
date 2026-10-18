@@ -100,6 +100,7 @@ export const revokeConnection = action({
         connection.encryptedAccessToken,
         encryptionKey,
       );
+
       const response = await fetch(
         `https://api.clerk.com/v1/oauth_applications/${encodeURIComponent(connection.oauthApplicationId)}/revoke_token`,
         {

@@ -50,15 +50,16 @@ The stateless Streamable HTTP endpoint is `https://<deployment>.convex.site/mcp`
 
 Before deploying the endpoint:
 
-1. In Clerk's OAuth application settings, publish Client ID Metadata Document support and dynamic client registration so compatible MCP clients can onboard themselves.
+1. In Clerk's OAuth application settings, publish Client ID Metadata Document support. Enable dynamic client registration only for MCP clients that require it and do not support Client ID Metadata Documents.
 2. Add the custom scopes `orbii:read` and `orbii:write`, with descriptions that explain the Orbit and daily ritual permissions. Enable consent for clients and require PKCE.
-3. Set OAuth access tokens to opaque format. Clerk can revoke opaque access and refresh tokens immediately; JWT access tokens cannot be revoked.
-4. Add `CLERK_SECRET_KEY` and `MCP_CREDENTIAL_ENCRYPTION_KEY` to the Convex deployment. Generate the latter as a base64url-encoded 32-byte key and keep the same value in every environment that serves MCP requests.
-5. Keep `CLERK_JWT_ISSUER_DOMAIN` set to the Clerk Frontend API URL, as it is for the mobile Convex integration.
+3. Set `orbii:read` as the default scope for dynamic clients that omit a scope request. Clients that need write access must explicitly request `orbii:write`.
+4. Set OAuth access tokens to opaque format. Clerk can revoke opaque access and refresh tokens immediately; JWT access tokens cannot be revoked.
+5. Add `CLERK_SECRET_KEY` and `MCP_CREDENTIAL_ENCRYPTION_KEY` to the Convex deployment. Generate the latter as a base64url-encoded 32-byte key and keep the same value in every environment that serves MCP requests.
+6. Keep `CLERK_JWT_ISSUER_DOMAIN` set to the Clerk Frontend API URL, as it is for the mobile Convex integration.
 
 On the first authenticated MCP request, Orbii stores the client name, client ID, granted Orbii scopes, and an AES-GCM encrypted opaque access token. Settings → Connected agents blocks the token in Orbii before asking Clerk to revoke the access and refresh token. If Clerk does not confirm, the blocked connection stays visible so the owner can retry; Orbii erases the encrypted credential after Clerk confirms. Tool arguments never accept an Orbii user ID; the verified token subject is supplied to the internal Convex call.
 
-The endpoint exposes `get_orbit` and `get_today` to `orbii:read` grants. `orbii:write` grants expose `start_today`, `rereveal_today`, `select_habit`, `deselect_habit`, `commit_today`, `complete_habit`, `uncomplete_habit`, `add_habit`, and `remove_habit`. Habit edits and reordering are not exposed.
+The endpoint exposes `get_orbit` and `get_today` to `orbii:read` grants. `orbii:write` grants expose `start_today`, `rereveal_today`, `select_habit`, `deselect_habit`, `commit_today`, `complete_habit`, `uncomplete_habit`, `add_habit`, and `remove_habit`. Updating existing habit details and reordering are not exposed.
 
 ### Local commands
 

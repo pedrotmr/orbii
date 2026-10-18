@@ -16,12 +16,14 @@ export interface ConnectedAgentSummary<TId extends string = string> {
 interface ConnectedAgentRowProps<TId extends string> {
   agent: ConnectedAgentSummary<TId>;
   busy: boolean;
+  disabled: boolean;
   onRevoke: (connectionId: TId) => void;
 }
 
 export default function ConnectedAgentRow<TId extends string>({
   agent,
   busy,
+  disabled,
   onRevoke,
 }: ConnectedAgentRowProps<TId>) {
   const { colors } = useTheme();
@@ -75,8 +77,8 @@ export default function ConnectedAgentRow<TId extends string>({
             ? `Retry revocation for ${agent.clientName}`
             : `Revoke access for ${agent.clientName}`
         }
-        accessibilityState={{ disabled: busy }}
-        disabled={busy}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
         onPress={() =>
           Alert.alert(
             agent.revocationPending

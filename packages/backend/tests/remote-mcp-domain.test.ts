@@ -67,7 +67,31 @@ test("remote ritual writes reuse selection, commit, completion, and points rules
     habitId: "walk",
     selected: true,
   });
+  await t.mutation(internal.day.startRevealForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+  });
+  await expect(
+    t.query(internal.day.getForRemoteMcp, { clerkUserId: "owner" }),
+  ).resolves.toMatchObject({
+    phase: "reveal",
+    selectedHabits: [{ id: "walk" }],
+  });
   await t.mutation(internal.day.commitForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-09",
+  });
+  await t.run(async (ctx) => {
+    const habit = await ctx.db
+      .query("habits")
+      .withIndex("by_clerkUserId_habitKey", (q) =>
+        q.eq("clerkUserId", "owner").eq("habitKey", "walk"),
+      )
+      .unique();
+    expect(habit).not.toBeNull();
+    await ctx.db.patch(habit!._id, { pointValue: 40 });
+  });
+  await t.mutation(internal.day.startRevealForRemoteMcp, {
     clerkUserId: "owner",
     localDate: "2026-10-09",
   });
@@ -82,7 +106,7 @@ test("remote ritual writes reuse selection, commit, completion, and points rules
     t.query(internal.day.getForRemoteMcp, { clerkUserId: "owner" }),
   ).resolves.toMatchObject({
     phase: "complete",
-    committedHabits: [{ id: "walk", name: "Walk" }],
+    committedHabits: [{ id: "walk", name: "Walk", pointValue: 10 }],
     completedHabitIds: ["walk"],
     complete: true,
   });
@@ -139,6 +163,18 @@ test("remote habit addition waits for a later reveal and removal scrubs today's 
     committedHabits: [],
     completedHabitIds: [],
   });
+  vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
+  await t.mutation(internal.day.startRevealForRemoteMcp, {
+    clerkUserId: "owner",
+    localDate: "2026-10-10",
+  });
+  await expect(
+    t.query(internal.day.getForRemoteMcp, { clerkUserId: "owner" }),
+  ).resolves.toMatchObject({
+    localDate: "2026-10-10",
+    phase: "reveal",
+    offeredHabits: [{ id: "read" }, { id: "new-habit", name: "Stretch" }],
+  });
 });
 
 test("connected agents are private, block pending revocations, and erase credentials after Clerk confirms", async () => {
@@ -149,7 +185,7 @@ test("connected agents are private, block pending revocations, and erase credent
     clerkUserId: "owner",
     clientId: "https://agent.example/metadata.json",
     clientName: "Example agent",
-    oauthApplicationId: "oauthapp_example",
+    oauthApplicationId: "oauthapp_internal_example",
     scopes: ["orbii:read", "orbii:write", "profile"],
     tokenFingerprint: "fingerprint-1",
     encryptedAccessToken: "v1.iv.ciphertext",
@@ -182,7 +218,7 @@ test("connected agents are private, block pending revocations, and erase credent
       clerkUserId: "owner",
       clientId: "https://agent.example/metadata.json",
       clientName: "Example agent",
-      oauthApplicationId: "oauthapp_example",
+      oauthApplicationId: "oauthapp_internal_example",
       scopes: ["orbii:read"],
       tokenFingerprint: "fingerprint-2",
       encryptedAccessToken: "v1.iv.new-ciphertext",

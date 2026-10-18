@@ -6,11 +6,14 @@ import {
   fingerprintOAuthToken,
   MCP_READ_SCOPE,
   MCP_WRITE_SCOPE,
+  OAuthVerificationUnavailableError,
   verifyClerkOAuthToken,
 } from "./lib/remote-mcp-auth";
+import { resolveClerkOAuthApplicationId } from "./lib/remote-mcp-clerk";
 import {
   dispatchRemoteMcpMessage,
   MCP_PROTOCOL_VERSION,
+  supportsMcpProtocolVersion,
   type RemoteMcpTool,
 } from "./lib/remote-mcp-protocol";
 
@@ -377,10 +380,31 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
       expectedResource: resource,
       secretKey,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof OAuthVerificationUnavailableError) {
+      return jsonResponse({ error: "temporarily_unavailable" }, 503);
+    }
+
     return jsonResponse({ error: "invalid_token" }, 401, {
       "WWW-Authenticate": `${challenge}, error="invalid_token"`,
     });
+  }
+
+  let oauthApplicationId: string | null;
+
+  try {
+    oauthApplicationId =
+      (await ctx.runQuery(internal.remoteMcp.getOAuthApplicationIdForClient, {
+        clerkUserId: principal.userId,
+        clientId: principal.clientId,
+      })) ??
+      (await resolveClerkOAuthApplicationId(principal.clientId, secretKey));
+  } catch {
+    return jsonResponse({ error: "temporarily_unavailable" }, 503);
+  }
+
+  if (!oauthApplicationId) {
+    return jsonResponse({ error: "temporarily_unavailable" }, 503);
   }
 
   try {
@@ -388,7 +412,7 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
       clerkUserId: principal.userId,
       clientId: principal.clientId,
       clientName: principal.clientName,
-      oauthApplicationId: principal.oauthApplicationId,
+      oauthApplicationId,
       scopes: principal.scopes,
       tokenFingerprint: await fingerprintOAuthToken(accessToken),
       encryptedAccessToken: await encryptOAuthToken(accessToken, encryptionKey),
@@ -436,6 +460,12 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
 };
 
 const mcpHandler = httpAction(async (ctx, request) => {
+  if (
+    !supportsMcpProtocolVersion(request.headers.get("Mcp-Protocol-Version"))
+  ) {
+    return jsonResponse({ error: "Unsupported MCP protocol version" }, 400);
+  }
+
   const accept = request.headers.get("Accept") ?? "*/*";
 
   if (!accept.includes("application/json") && !accept.includes("*/*")) {

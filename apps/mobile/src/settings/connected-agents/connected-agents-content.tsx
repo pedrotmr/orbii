@@ -47,6 +47,7 @@ export default function ConnectedAgentsContent<TId extends string>({
               key={agent._id}
               agent={agent}
               busy={busyId === agent._id}
+              disabled={busyId !== null}
               onRevoke={onRevoke}
             />
           ))}

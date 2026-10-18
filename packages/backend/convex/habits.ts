@@ -50,24 +50,6 @@ const validateHabitDetails = (nameInput: string, glyphInput: string) => {
   return { name, glyph };
 };
 
-export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    const clerkUserId = await requireClerkUserId(ctx);
-    const rows = await ctx.db
-      .query("habits")
-      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
-      .collect();
-    return sortHabitsByOrder(rows).map((row) => ({
-      id: row.habitKey,
-      name: row.name,
-      glyph: row.glyph,
-      category: row.category,
-      pointValue: getHabitPointValue(row.pointValue, row.habitKey),
-    }));
-  },
-});
-
 const listHabitsForUser = async (
   ctx: QueryCtx | MutationCtx,
   clerkUserId: string,
@@ -85,6 +67,13 @@ const listHabitsForUser = async (
     pointValue: getHabitPointValue(row.pointValue, row.habitKey),
   }));
 };
+
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    return await listHabitsForUser(ctx, await requireClerkUserId(ctx));
+  },
+});
 
 export const listForRemoteMcp = internalQuery({
   args: { clerkUserId: v.string() },

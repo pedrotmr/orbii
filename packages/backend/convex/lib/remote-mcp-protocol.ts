@@ -1,6 +1,15 @@
 import { MCP_READ_SCOPE, MCP_WRITE_SCOPE } from "./remote-mcp-auth";
 
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
+const SUPPORTED_PROTOCOL_VERSIONS = [
+  "2025-03-26",
+  "2025-06-18",
+  MCP_PROTOCOL_VERSION,
+];
+
+export const supportsMcpProtocolVersion = (version: string | null) => {
+  return version === null || SUPPORTED_PROTOCOL_VERSIONS.includes(version);
+};
 
 export interface RemoteMcpTool {
   name: string;
@@ -91,18 +100,8 @@ export const dispatchRemoteMcpMessage = async (
     };
   }
 
-  if (
-    request.method.startsWith("notifications/") ||
-    request.method === "notifications/initialized"
-  ) {
-    return { status: 202 };
-  }
-
   if (!hasRequestId) {
-    return {
-      status: 200,
-      body: rpcError(null, -32600, "Requests must include an id"),
-    };
+    return { status: 202 };
   }
 
   if (request.method === "initialize") {

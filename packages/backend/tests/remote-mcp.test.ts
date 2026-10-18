@@ -5,11 +5,13 @@ import {
   fingerprintOAuthToken,
   MCP_READ_SCOPE,
   MCP_WRITE_SCOPE,
+  OAuthVerificationUnavailableError,
   parseVerifiedOAuthToken,
   verifyClerkOAuthToken,
 } from "../convex/lib/remote-mcp-auth";
 import {
   dispatchRemoteMcpMessage,
+  supportsMcpProtocolVersion,
   type RemoteMcpTool,
 } from "../convex/lib/remote-mcp-protocol";
 
@@ -42,19 +44,18 @@ const testTools: RemoteMcpTool[] = [
 ];
 
 const tokenClaims = {
-  user_id: "user_orbii_1",
-  client_id: "oauthapp_agent_1",
+  subject: "user_orbii_1",
+  client_id: "client_agent_1",
   client_name: "Example agent",
-  oauth_application_id: "oauthapp_agent_1",
+  oauth_application_id: "oauthapp_internal_1",
   scopes: [MCP_READ_SCOPE, MCP_WRITE_SCOPE],
 };
 
 test("verified Clerk access tokens must identify an Orbii user, client, and scope", () => {
   expect(parseVerifiedOAuthToken(tokenClaims, issuer, resource)).toEqual({
     userId: "user_orbii_1",
-    clientId: "oauthapp_agent_1",
+    clientId: "client_agent_1",
     clientName: "Example agent",
-    oauthApplicationId: "oauthapp_agent_1",
     scopes: [MCP_READ_SCOPE, MCP_WRITE_SCOPE],
   });
 
@@ -79,6 +80,13 @@ test("verified Clerk access tokens must identify an Orbii user, client, and scop
       resource,
     ),
   ).toThrow("invalid");
+  expect(() =>
+    parseVerifiedOAuthToken(
+      { ...tokenClaims, exp: Math.floor(Date.now() / 1000) - 1 },
+      issuer,
+      resource,
+    ),
+  ).toThrow("expired");
   expect(() =>
     parseVerifiedOAuthToken(
       { user_id: "user_orbii_1", client_id: "client_1", scope: "profile" },
@@ -116,6 +124,34 @@ test("Clerk verifies OAuth tokens with the Backend API before identity is used",
   );
 });
 
+test("Clerk verification distinguishes invalid credentials from provider outages", async () => {
+  const verify = (fetcher: typeof fetch) =>
+    verifyClerkOAuthToken("opaque-token", {
+      expectedIssuer: issuer,
+      expectedResource: resource,
+      secretKey: "sk_test_backend",
+      fetcher,
+    });
+
+  await expect(
+    verify(
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 503 })),
+    ),
+  ).rejects.toBeInstanceOf(OAuthVerificationUnavailableError);
+  await expect(
+    verify(vi.fn<typeof fetch>().mockRejectedValue(new Error("network down"))),
+  ).rejects.toBeInstanceOf(OAuthVerificationUnavailableError);
+  await expect(
+    verify(
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(null, { status: 401 })),
+    ),
+  ).rejects.toThrow("invalid");
+});
+
 test("stored opaque credentials are encrypted and have a non-reversible fingerprint", async () => {
   const encryptionKey = btoa(
     String.fromCharCode(...new Uint8Array(32).fill(17)),
@@ -128,8 +164,14 @@ test("stored opaque credentials are encrypted and have a non-reversible fingerpr
 
   expect(encrypted).not.toContain(accessToken);
   expect(await decryptOAuthToken(encrypted, encryptionKey)).toBe(accessToken);
+  const otherEncryptionKey = btoa(
+    String.fromCharCode(...new Uint8Array(32).fill(18)),
+  )
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
   await expect(
-    decryptOAuthToken(encrypted, `${encryptionKey}x`),
+    decryptOAuthToken(encrypted, otherEncryptionKey),
   ).rejects.toThrow();
   expect(await fingerprintOAuthToken(accessToken)).toBe(
     await fingerprintOAuthToken(accessToken),
@@ -193,4 +235,22 @@ test("authorized tools execute and protocol notifications do not return JSON-RPC
       { scopes: [MCP_WRITE_SCOPE], tools: testTools, execute },
     ),
   ).resolves.toEqual({ status: 202 });
+
+  await expect(
+    dispatchRemoteMcpMessage(
+      { jsonrpc: "2.0", id: 3, method: "notifications/initialized" },
+      { scopes: [MCP_WRITE_SCOPE], tools: testTools, execute },
+    ),
+  ).resolves.toMatchObject({
+    status: 200,
+    body: { id: 3, error: { code: -32601 } },
+  });
+});
+
+test("MCP protocol accepts supported versions and the legacy missing header", () => {
+  expect(supportsMcpProtocolVersion(null)).toBe(true);
+  expect(supportsMcpProtocolVersion("2025-03-26")).toBe(true);
+  expect(supportsMcpProtocolVersion("2025-06-18")).toBe(true);
+  expect(supportsMcpProtocolVersion("2025-11-25")).toBe(true);
+  expect(supportsMcpProtocolVersion("1999-01-01")).toBe(false);
 });

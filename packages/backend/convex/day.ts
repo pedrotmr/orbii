@@ -163,16 +163,23 @@ export const getForRemoteMcp = internalQuery({
         const snapshot = session.committedHabitSnapshots.find(
           (habit) => habit.habitId === habitId,
         );
+        const committedPointValue = session.committedPointValues.find(
+          (value) => value.habitId === habitId,
+        )?.points;
 
-        return (
-          currentHabit ?? {
-            id: habitId,
-            name: snapshot?.name ?? habitId,
-            glyph: snapshot?.glyph ?? "symbol:spark",
-            category: "life" as const,
-            pointValue: getHabitPointValue(undefined, habitId),
-          }
-        );
+        return currentHabit
+          ? {
+              ...currentHabit,
+              pointValue: committedPointValue ?? currentHabit.pointValue,
+            }
+          : {
+              id: habitId,
+              name: snapshot?.name ?? habitId,
+              glyph: snapshot?.glyph ?? "symbol:spark",
+              category: "life" as const,
+              pointValue:
+                committedPointValue ?? getHabitPointValue(undefined, habitId),
+            };
       }),
       completedHabitIds: session.completedIds,
       complete: session.phase === "complete",
@@ -239,6 +246,21 @@ export const startRevealMutation = mutation({
 export const startRevealForRemoteMcp = internalMutation({
   args: { clerkUserId: v.string(), localDate: v.string() },
   handler: async (ctx, args) => {
+    const user = await requireUser(ctx, args.clerkUserId);
+    const sessionLocalDate = requireSavedTimezoneToday(
+      args.localDate,
+      user.timezone,
+    );
+    const existing = await getSessionDoc(
+      ctx,
+      args.clerkUserId,
+      sessionLocalDate,
+    );
+
+    if (existing && existing.phase !== "idle") {
+      return existing._id;
+    }
+
     return await startRevealForUser(ctx, args.clerkUserId, args);
   },
 });

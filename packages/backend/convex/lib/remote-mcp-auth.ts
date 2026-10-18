@@ -5,7 +5,6 @@ export interface OAuthTokenIdentity {
   userId: string;
   clientId: string;
   clientName: string;
-  oauthApplicationId: string;
   scopes: string[];
 }
 
@@ -19,13 +18,20 @@ interface OAuthTokenVerificationResponse {
   issuer?: string;
   iss?: string;
   name?: string;
-  oauth_application_id?: string;
   revoked?: boolean;
   scope?: string;
   scopes?: string[];
   sub?: string;
+  subject?: string;
   user_id?: string;
   [key: string]: unknown;
+}
+
+export class OAuthVerificationUnavailableError extends Error {
+  constructor() {
+    super("OAuth verification service is temporarily unavailable");
+    this.name = "OAuthVerificationUnavailableError";
+  }
 }
 
 const asRecord = (value: unknown) => {
@@ -115,19 +121,18 @@ export const parseVerifiedOAuthToken = (
     throw new Error("OAuth access token has an unexpected audience");
   }
 
-  const userId = asNonEmptyString(token.user_id) ?? asNonEmptyString(token.sub);
-  const clientId =
-    asNonEmptyString(token.client_id) ??
-    asNonEmptyString(token.oauth_application_id);
-  const oauthApplicationId =
-    asNonEmptyString(token.oauth_application_id) ?? clientId;
+  const userId =
+    asNonEmptyString(token.user_id) ??
+    asNonEmptyString(token.subject) ??
+    asNonEmptyString(token.sub);
+  const clientId = asNonEmptyString(token.client_id);
   const scopes = toScopes(token.scopes ?? token.scope);
   const clientName =
     asNonEmptyString(token.client_name) ??
     asNonEmptyString(token.name) ??
     clientId;
 
-  if (!userId || !clientId || !oauthApplicationId || !clientName) {
+  if (!userId || !clientId || !clientName) {
     throw new Error("OAuth access token is missing required identity claims");
   }
 
@@ -135,7 +140,7 @@ export const parseVerifiedOAuthToken = (
     throw new Error("OAuth access token has no Orbii MCP scopes");
   }
 
-  return { userId, clientId, clientName, oauthApplicationId, scopes };
+  return { userId, clientId, clientName, scopes };
 };
 
 export const verifyClerkOAuthToken = async (
@@ -152,24 +157,42 @@ export const verifyClerkOAuthToken = async (
   }
 
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(
-    "https://api.clerk.com/oauth_applications/access_tokens/verify",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${options.secretKey}`,
-        "Content-Type": "application/json",
+  let response: Response;
+
+  try {
+    response = await fetcher(
+      "https://api.clerk.com/oauth_applications/access_tokens/verify",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${options.secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ access_token: accessToken }),
       },
-      body: JSON.stringify({ access_token: accessToken }),
-    },
-  );
+    );
+  } catch {
+    throw new OAuthVerificationUnavailableError();
+  }
+
+  if (response.status >= 500 || response.status === 429) {
+    throw new OAuthVerificationUnavailableError();
+  }
 
   if (!response.ok) {
     throw new Error("OAuth access token is invalid");
   }
 
+  let verificationResponse: unknown;
+
+  try {
+    verificationResponse = await response.json();
+  } catch {
+    throw new OAuthVerificationUnavailableError();
+  }
+
   return parseVerifiedOAuthToken(
-    await response.json(),
+    verificationResponse,
     options.expectedIssuer,
     options.expectedResource,
   );

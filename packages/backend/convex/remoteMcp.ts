@@ -162,6 +162,23 @@ export const getConnectionForOwner = internalQuery({
   },
 });
 
+export const getOAuthApplicationIdForClient = internalQuery({
+  args: { clerkUserId: v.string(), clientId: v.string() },
+  handler: async (ctx, args) => {
+    const connections = await ctx.db
+      .query("agentConnections")
+      .withIndex("by_clerkUserId_clientId", (q) =>
+        q.eq("clerkUserId", args.clerkUserId).eq("clientId", args.clientId),
+      )
+      .collect();
+    const activeConnection = connections.find(
+      (connection) => connection.revokedAt === undefined,
+    );
+
+    return activeConnection?.oauthApplicationId ?? null;
+  },
+});
+
 export const markConnectionRevoked = internalMutation({
   args: {
     clerkUserId: v.string(),
