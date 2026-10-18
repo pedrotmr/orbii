@@ -52,8 +52,37 @@ const nextPageResult = {
   continueCursor: "cursor-last",
 };
 
+const middlePageResult = {
+  page: [
+    {
+      id: "middle-habit-id",
+      amount: 5,
+      sourceType: "habit_award",
+      sourceName: "Afternoon stretch",
+      localDate: "2026-10-07",
+    },
+  ],
+  isDone: false,
+  continueCursor: "cursor-third",
+};
+
+const thirdPageResult = {
+  page: [
+    {
+      id: "third-habit-id",
+      amount: 5,
+      sourceType: "habit_award",
+      sourceName: "Evening stretch",
+      localDate: "2026-10-06",
+    },
+  ],
+  isDone: true,
+  continueCursor: "cursor-done",
+};
+
 interface PageRequest {
   cursor: string | null;
+  endCursor?: string | null;
   id?: number;
   numItems: number;
 }
@@ -167,3 +196,200 @@ test("a later page error keeps earlier transactions visible and retries the same
     consoleError.mockRestore();
   }
 });
+
+test("an error from a retained page is shown and retried before later rows", async () => {
+  let middlePageFailed = false;
+  const consoleError = jest
+    .spyOn(console, "error")
+    .mockImplementation(() => {});
+
+  jest.mocked(useQueries).mockImplementation((queries) => {
+    return Object.fromEntries(
+      Object.entries(queries).map(([key, query]) => {
+        const { paginationOpts } = query.args as unknown as {
+          paginationOpts: PageRequest;
+        };
+        const { cursor } = paginationOpts;
+        pageRequests.push(paginationOpts);
+
+        if (cursor === "cursor-next" && middlePageFailed) {
+          return [key, new Error("The retained page failed to refresh")];
+        }
+
+        if (cursor === null) {
+          return [key, firstPageResult];
+        }
+
+        return [
+          key,
+          cursor === "cursor-next" ? middlePageResult : thirdPageResult,
+        ];
+      }),
+    ) as never;
+  });
+
+  try {
+    const view = await render(<PointsHistoryScreen />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Load more transactions" }),
+    );
+    expect(screen.getByText("Afternoon stretch")).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Load more transactions" }),
+    );
+    expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
+
+    middlePageFailed = true;
+    await view.rerender(<PointsHistoryScreen />);
+
+    expect(screen.getByText("Museum visit")).toBeOnTheScreen();
+    expect(screen.queryByText("Afternoon stretch")).toBeNull();
+    expect(screen.queryByText("Evening stretch")).toBeNull();
+    expect(
+      screen.getByText("We couldn’t load your points history."),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeOnTheScreen();
+    expect(
+      screen.queryByRole("button", { name: "Load more transactions" }),
+    ).toBeNull();
+
+    const failedRequest = pageRequests
+      .filter((request) => request.cursor === "cursor-next")
+      .pop();
+    middlePageFailed = false;
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+
+    expect(screen.getByText("Museum visit")).toBeOnTheScreen();
+    expect(screen.getByText("Afternoon stretch")).toBeOnTheScreen();
+    expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
+
+    const retryRequest = pageRequests
+      .filter((request) => request.cursor === "cursor-next")
+      .pop();
+    expect(retryRequest?.id).not.toBe(failedRequest?.id);
+  } finally {
+    consoleError.mockRestore();
+  }
+});
+
+test.each(["SplitRequired", "SplitRecommended"] as const)(
+  "pages marked %s are split before continuing pagination",
+  async (pageStatus) => {
+    const partialPageResult = {
+      page: [
+        {
+          id: "partial-id",
+          amount: 1,
+          sourceType: "habit_award",
+          sourceName: "Partial history row",
+          localDate: "2026-10-10",
+        },
+      ],
+      isDone: false,
+      continueCursor: "cursor-split-end",
+      splitCursor: "cursor-split-middle",
+      pageStatus,
+    };
+    const leftSplitResult = {
+      page: [
+        {
+          id: "left-split-id",
+          amount: 2,
+          sourceType: "habit_award",
+          sourceName: "First split row",
+          localDate: "2026-10-10",
+        },
+      ],
+      isDone: true,
+      continueCursor: "cursor-split-middle",
+    };
+    const rightSplitResult = {
+      page: [
+        {
+          id: "right-split-id",
+          amount: 3,
+          sourceType: "habit_award",
+          sourceName: "Second split row",
+          localDate: "2026-10-09",
+        },
+      ],
+      isDone: false,
+      continueCursor: "cursor-split-end",
+    };
+    const finalPageResult = {
+      page: [
+        {
+          id: "final-page-id",
+          amount: 4,
+          sourceType: "habit_award",
+          sourceName: "Final history row",
+          localDate: "2026-10-08",
+        },
+      ],
+      isDone: true,
+      continueCursor: "cursor-final",
+    };
+
+    jest.mocked(useQueries).mockImplementation((queries) => {
+      return Object.fromEntries(
+        Object.entries(queries).map(([key, query]) => {
+          const { paginationOpts } = query.args as unknown as {
+            paginationOpts: PageRequest;
+          };
+          const { cursor, endCursor } = paginationOpts;
+          pageRequests.push(paginationOpts);
+
+          if (endCursor === "cursor-split-middle") {
+            return [key, leftSplitResult];
+          }
+
+          if (
+            cursor === "cursor-split-middle" &&
+            endCursor === "cursor-split-end"
+          ) {
+            return [key, rightSplitResult];
+          }
+
+          if (cursor === "cursor-split-end" && endCursor === undefined) {
+            return [key, finalPageResult];
+          }
+
+          return [key, partialPageResult];
+        }),
+      ) as never;
+    });
+
+    await render(<PointsHistoryScreen />);
+
+    expect(await screen.findByText("First split row")).toBeOnTheScreen();
+    expect(screen.getByText("Second split row")).toBeOnTheScreen();
+    expect(screen.queryByText("Partial history row")).toBeNull();
+    expect(pageRequests).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          cursor: null,
+          endCursor: "cursor-split-middle",
+          numItems: 20,
+        }),
+        expect.objectContaining({
+          cursor: "cursor-split-middle",
+          endCursor: "cursor-split-end",
+          numItems: 20,
+        }),
+      ]),
+    );
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Load more transactions" }),
+    );
+
+    expect(screen.getByText("Final history row")).toBeOnTheScreen();
+    expect(pageRequests).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ cursor: "cursor-split-end", numItems: 20 }),
+      ]),
+    );
+  },
+);
