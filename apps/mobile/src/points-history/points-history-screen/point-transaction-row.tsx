@@ -1,4 +1,4 @@
-import { type Palette, radius, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import type { PointTransaction } from "../points-history-types";
 import { useThemedStyles } from "../../theme/use-theme";
@@ -52,14 +52,13 @@ export default function PointTransactionRow({
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     row: {
+      minHeight: 72,
       flexDirection: "row",
       alignItems: "center",
       gap: space[4],
-      padding: space[4],
-      borderWidth: 1,
+      paddingVertical: space[3],
+      borderBottomWidth: 1,
       borderColor: colors.line,
-      borderRadius: radius.lg,
-      backgroundColor: colors.surface,
     },
     copy: { flex: 1, gap: space[1] },
     name: { color: colors.ink, fontSize: 16, fontWeight: "600" },

@@ -213,3 +213,47 @@ test("history exposes the transaction-time source labels and saved local dates",
     ]),
   );
 });
+
+test("history paginates transactions created at the same instant without cursor collisions", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-01T12:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  const owner = withIdentity(t, "owner");
+  const expected = Array.from(
+    { length: 41 },
+    (_, index) => `Transaction ${index}`,
+  );
+
+  for (const [index, sourceName] of expected.entries()) {
+    await insertTransaction(t, "owner", {
+      amount: 10,
+      sourceType: "habit_award",
+      sourceName,
+      localDate: "2026-10-01",
+      idempotencyKey: `same-instant:${index}`,
+    });
+  }
+
+  const history: string[] = [];
+  let cursor: string | null = null;
+  let isDone = false;
+  let pagesFetched = 0;
+
+  while (!isDone) {
+    pagesFetched += 1;
+    expect(pagesFetched).toBeLessThanOrEqual(Math.ceil(expected.length / 7));
+
+    const page: {
+      page: { sourceName: string }[];
+      isDone: boolean;
+      continueCursor: string;
+    } = await owner.query(api.points.listTransactions, {
+      paginationOpts: { numItems: 7, cursor },
+    });
+    history.push(...page.page.map((transaction) => transaction.sourceName));
+    isDone = page.isDone;
+    cursor = isDone ? null : page.continueCursor;
+  }
+
+  expect(history).toEqual([...expected].reverse());
+});

@@ -34,6 +34,7 @@ const firstPage = [
 ];
 
 beforeEach(() => {
+  loadMore.mockReset();
   jest.mocked(usePaginatedQuery).mockReturnValue({
     results: firstPage,
     status: "CanLoadMore",
@@ -74,4 +75,44 @@ test("history shows signed transactions, saved local dates, and every loaded row
   } as never);
   await view.rerender(<PointsHistoryScreen />);
   expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
+});
+
+test("a paginated query error shows a retry state instead of crashing the screen", async () => {
+  const consoleError = jest
+    .spyOn(console, "error")
+    .mockImplementation(() => {});
+  let pageQueryFailed = false;
+  jest.mocked(usePaginatedQuery).mockImplementation(() => {
+    if (pageQueryFailed) {
+      throw new Error("The next page failed to load");
+    }
+
+    return {
+      results: firstPage,
+      status: "CanLoadMore",
+      loadMore,
+    } as never;
+  });
+  loadMore.mockImplementation(() => {
+    pageQueryFailed = true;
+  });
+
+  try {
+    const view = await render(<PointsHistoryScreen />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Load more transactions" }),
+    );
+    expect(loadMore).toHaveBeenCalledWith(20);
+    await view.rerender(<PointsHistoryScreen key="page-failure" />);
+
+    expect(
+      screen.getByText("We couldn’t load your points history."),
+    ).toBeOnTheScreen();
+    pageQueryFailed = false;
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(screen.getByText("Museum visit")).toBeOnTheScreen();
+  } finally {
+    consoleError.mockRestore();
+  }
 });
