@@ -1,7 +1,6 @@
 import { type Palette, radius, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import GhostButton from "../../components/ghost-button";
-import ScreenScaffold from "../../components/layout/screen-scaffold";
 import { useThemedStyles } from "../../theme/use-theme";
 
 interface PointsHistoryErrorProps {
@@ -14,15 +13,13 @@ export default function PointsHistoryError({
   const styles = useThemedStyles(createStyles);
 
   return (
-    <ScreenScaffold>
-      <View style={styles.error}>
-        <Text accessibilityRole="header" style={styles.title}>
-          We couldn’t load your points history.
-        </Text>
-        <Text style={styles.copy}>Try again to reload your transactions.</Text>
-        <GhostButton label="Try again" onPress={onRetry} />
-      </View>
-    </ScreenScaffold>
+    <View style={styles.error}>
+      <Text accessibilityRole="header" style={styles.title}>
+        We couldn’t load your points history.
+      </Text>
+      <Text style={styles.copy}>Try again to reload your transactions.</Text>
+      <GhostButton label="Try again" onPress={onRetry} />
+    </View>
   );
 }
 

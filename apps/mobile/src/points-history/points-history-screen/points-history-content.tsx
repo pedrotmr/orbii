@@ -8,73 +8,61 @@ import {
   Text,
   View,
 } from "react-native";
-import BootSpinner from "../../components/boot-spinner";
-import GhostButton from "../../components/ghost-button";
-import ScreenScaffold from "../../components/layout/screen-scaffold";
 import { useTheme, useThemedStyles } from "../../theme/use-theme";
 import PointTransactionRow from "./point-transaction-row";
+import PointsHistoryListFooter from "./points-history-list-footer";
 
 export default function PointsHistoryContent() {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const { results, status, isLoading, loadMore } = usePaginatedQuery(
+  const { results, status, loadMore } = usePaginatedQuery(
     api.points.listTransactions,
     {},
     { initialNumItems: 20 },
   );
 
   if (status === "LoadingFirstPage") {
-    return <BootSpinner label="Loading points history" />;
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} />
+        <Text style={styles.loadingLabel}>Loading transactions…</Text>
+      </View>
+    );
   }
 
   return (
-    <ScreenScaffold scrollable={false}>
-      <FlatList
-        data={results}
-        keyExtractor={(transaction) => transaction.id}
-        renderItem={({ item }) => <PointTransactionRow transaction={item} />}
-        contentContainerStyle={styles.content}
-        ListHeaderComponent={
-          <View style={styles.heading}>
-            <Text accessibilityRole="header" style={styles.title}>
-              Transactions
-            </Text>
-            <Text style={styles.subtitle}>
-              Every change to your points, newest first.
-            </Text>
-          </View>
-        }
-        ListEmptyComponent={
-          isLoading ? (
-            <View style={styles.loading}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={styles.loadingLabel}>Loading transactions…</Text>
-            </View>
-          ) : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No point changes yet.</Text>
-              <Text style={styles.emptyCopy}>
-                Points earned and spent will appear here.
-              </Text>
-            </View>
-          )
-        }
-        ListFooterComponent={
-          status === "CanLoadMore" ? (
-            <GhostButton
-              label="Load more transactions"
-              onPress={() => loadMore(20)}
-            />
-          ) : status === "LoadingMore" ? (
-            <View style={styles.loadingMore}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={styles.loadingLabel}>Loading more…</Text>
-            </View>
-          ) : undefined
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    </ScreenScaffold>
+    <FlatList
+      data={results}
+      keyExtractor={(transaction) => transaction.id}
+      renderItem={({ item }) => <PointTransactionRow transaction={item} />}
+      contentContainerStyle={styles.content}
+      ListHeaderComponent={
+        <View style={styles.heading}>
+          <Text accessibilityRole="header" style={styles.title}>
+            Transactions
+          </Text>
+          <Text style={styles.subtitle}>
+            Every change to your points, newest first.
+          </Text>
+        </View>
+      }
+      ListEmptyComponent={
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No point changes yet.</Text>
+          <Text style={styles.emptyCopy}>
+            Points earned and spent will appear here.
+          </Text>
+        </View>
+      }
+      ListFooterComponent={
+        <PointsHistoryListFooter
+          canLoadMore={status === "CanLoadMore"}
+          isLoadingMore={status === "LoadingMore"}
+          onLoadMore={() => loadMore(20)}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+    />
   );
 }
 
@@ -93,16 +81,11 @@ const createStyles = (colors: Palette) =>
     title: { color: colors.ink, fontSize: 22, fontWeight: "700" },
     subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },
     loading: {
-      alignItems: "center",
-      gap: space[3],
-      paddingVertical: space[8],
-    },
-    loadingMore: {
-      minHeight: 56,
-      flexDirection: "row",
+      flex: 1,
       alignItems: "center",
       justifyContent: "center",
       gap: space[3],
+      paddingVertical: space[8],
     },
     loadingLabel: { color: colors.muted, fontSize: 14 },
     empty: {

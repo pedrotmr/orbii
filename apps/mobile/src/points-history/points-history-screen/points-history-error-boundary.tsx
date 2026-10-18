@@ -1,35 +1,24 @@
-import { Component, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import PointsHistoryError from "./points-history-error";
 
 interface PointsHistoryErrorBoundaryProps {
   children: ReactNode;
 }
 
-interface PointsHistoryErrorBoundaryState {
-  hasError: boolean;
-}
-
-export default class PointsHistoryErrorBoundary extends Component<
-  PointsHistoryErrorBoundaryProps,
-  PointsHistoryErrorBoundaryState
-> {
-  state: PointsHistoryErrorBoundaryState = { hasError: false };
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <PointsHistoryError
-          onRetry={() => {
-            this.setState({ hasError: false });
-          }}
-        />
-      );
-    }
-
-    return this.props.children;
-  }
+export default function PointsHistoryErrorBoundary({
+  children,
+}: PointsHistoryErrorBoundaryProps) {
+  return (
+    <ErrorBoundary
+      fallbackRender={({ resetErrorBoundary }) => (
+        <PointsHistoryError onRetry={resetErrorBoundary} />
+      )}
+      onError={(error, errorInfo) => {
+        console.error("Failed to load points history", error, errorInfo);
+      }}
+    >
+      {children}
+    </ErrorBoundary>
+  );
 }
