@@ -66,7 +66,7 @@ export const authorizeToken = internalMutation({
       .unique();
 
     if (matchingToken?.revokedAt !== undefined) {
-      throw new Error("This Orbii agent connection has been revoked");
+      return null;
     }
 
     if (matchingToken) {
@@ -87,7 +87,7 @@ export const authorizeToken = internalMutation({
       )
       .collect();
     if (clientConnections.some((connection) => connection.revocationPending)) {
-      throw new Error("This Orbii agent connection is pending revocation");
+      return null;
     }
 
     return await ctx.db.insert("agentConnections", {

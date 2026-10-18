@@ -199,6 +199,10 @@ test("connected agent grants remain independent and preserve retryable revocatio
     now: 1_800_000_000_000,
   });
 
+  if (connectionId === null) {
+    throw new Error("Expected the first OAuth grant to be authorized");
+  }
+
   await expect(
     owner.query(api.remoteMcp.listConnections, {}),
   ).resolves.toMatchObject([
@@ -224,6 +228,10 @@ test("connected agent grants remain independent and preserve retryable revocatio
       now: 1_800_000_050_000,
     },
   );
+
+  if (secondConnectionId === null) {
+    throw new Error("Expected the second OAuth grant to be authorized");
+  }
 
   expect(secondConnectionId).not.toBe(connectionId);
   await expect(
@@ -256,7 +264,7 @@ test("connected agent grants remain independent and preserve retryable revocatio
       encryptedAccessToken: "v1.iv.third-ciphertext",
       now: 1_800_000_200_000,
     }),
-  ).rejects.toThrow("pending revocation");
+  ).resolves.toBeNull();
 
   await t.mutation(internal.remoteMcp.finishConnectionRevocation, {
     clerkUserId: "owner",

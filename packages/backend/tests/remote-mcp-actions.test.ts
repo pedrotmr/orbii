@@ -19,7 +19,7 @@ const withIdentity = (t: ReturnType<typeof convexTest>, subject: string) => {
 };
 
 const insertConnection = async (t: ReturnType<typeof convexTest>) => {
-  return await t.mutation(internal.remoteMcp.authorizeToken, {
+  const connectionId = await t.mutation(internal.remoteMcp.authorizeToken, {
     clerkUserId: "owner",
     clientId: "client_public_1",
     clientName: "Example agent",
@@ -29,6 +29,12 @@ const insertConnection = async (t: ReturnType<typeof convexTest>) => {
     encryptedAccessToken: await encryptOAuthToken(accessToken, encryptionKey),
     now: 1_800_000_000_000,
   });
+
+  if (connectionId === null) {
+    throw new Error("Expected the OAuth token to be authorized");
+  }
+
+  return connectionId;
 };
 
 const storedConnection = async (t: ReturnType<typeof convexTest>) => {

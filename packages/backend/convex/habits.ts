@@ -27,6 +27,7 @@ import { requireSavedTimezoneToday } from "./lib/timezone";
 const MAX_HABIT_NAME_LENGTH = 50;
 const MAX_HABIT_GLYPH_LENGTH = 50;
 const HABITS_PER_ORDER_BACKFILL_BATCH = 20;
+const REMOTE_MCP_REQUEST_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 const habitCategoryValidator = v.union(
   v.literal("body"),
@@ -140,13 +141,93 @@ export const add = mutation({
 export const addForRemoteMcp = internalMutation({
   args: {
     clerkUserId: v.string(),
+    clientId: v.optional(v.string()),
+    requestId: v.optional(v.string()),
     habitKey: v.string(),
     name: v.string(),
     glyph: v.string(),
     category: habitCategoryValidator,
+    now: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await addHabitForUser(ctx, args.clerkUserId, args);
+    const clientId = args.clientId;
+    const requestId = args.requestId;
+
+    if ((clientId === undefined) !== (requestId === undefined)) {
+      throw new Error("MCP request identity is incomplete");
+    }
+
+    const { name, glyph } = validateHabitDetails(args.name, args.glyph);
+    const now = args.now ?? Date.now();
+
+    if (clientId !== undefined && requestId !== undefined) {
+      const expiredRequests = await ctx.db
+        .query("remoteMcpHabitRequests")
+        .withIndex("by_clerkUserId_clientId_createdAt", (q) =>
+          q
+            .eq("clerkUserId", args.clerkUserId)
+            .eq("clientId", clientId)
+            .lt("createdAt", now - REMOTE_MCP_REQUEST_RETENTION_MS),
+        )
+        .collect();
+
+      for (const request of expiredRequests) {
+        await ctx.db.delete(request._id);
+      }
+
+      const existingRequest = await ctx.db
+        .query("remoteMcpHabitRequests")
+        .withIndex("by_clerkUserId_clientId_requestId", (q) =>
+          q
+            .eq("clerkUserId", args.clerkUserId)
+            .eq("clientId", clientId)
+            .eq("requestId", requestId),
+        )
+        .unique();
+
+      if (existingRequest) {
+        if (
+          existingRequest.name !== name ||
+          existingRequest.glyph !== glyph ||
+          existingRequest.category !== args.category
+        ) {
+          throw new Error("MCP request ID was reused for another habit");
+        }
+
+        const existingHabit = await ctx.db
+          .query("habits")
+          .withIndex("by_clerkUserId_habitKey", (q) =>
+            q
+              .eq("clerkUserId", args.clerkUserId)
+              .eq("habitKey", existingRequest.habitKey),
+          )
+          .unique();
+
+        return existingHabit?._id ?? null;
+      }
+    }
+
+    const habitId = await addHabitForUser(ctx, args.clerkUserId, {
+      habitKey: args.habitKey,
+      name,
+      glyph,
+      category: args.category,
+    });
+
+    if (clientId !== undefined && requestId !== undefined) {
+      await ctx.db.insert("remoteMcpHabitRequests", {
+        clerkUserId: args.clerkUserId,
+        clientId,
+        requestId,
+        name,
+        glyph,
+        category: args.category,
+        habitKey: args.habitKey,
+        createdAt: now,
+      });
+    }
+
+    return habitId;
   },
 });
 

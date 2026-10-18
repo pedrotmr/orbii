@@ -32,6 +32,18 @@ export interface RemoteMcpTool {
   };
 }
 
+export const fingerprintMcpRequestId = async (requestId: string | number) => {
+  const value = JSON.stringify([typeof requestId, requestId]);
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+};
+
 interface JsonRpcRequest {
   jsonrpc?: unknown;
   id?: unknown;
@@ -82,6 +94,7 @@ export const dispatchRemoteMcpMessage = async (
     execute: (
       toolName: string,
       args: Record<string, unknown>,
+      requestId: string | number,
     ) => Promise<unknown>;
   },
 ) => {
@@ -92,19 +105,31 @@ export const dispatchRemoteMcpMessage = async (
   }
 
   const request = inputRecord as JsonRpcRequest;
-  const requestId = request.id ?? null;
+  const responseId = request.id ?? null;
   const hasRequestId = hasId(request);
 
   if (request.jsonrpc !== "2.0" || typeof request.method !== "string") {
     return {
       status: 200,
-      body: rpcError(requestId, -32600, "Invalid request"),
+      body: rpcError(responseId, -32600, "Invalid request"),
     };
   }
 
   if (!hasRequestId) {
     return { status: 202 };
   }
+
+  if (
+    (typeof request.id !== "string" && typeof request.id !== "number") ||
+    (typeof request.id === "number" && !Number.isFinite(request.id))
+  ) {
+    return {
+      status: 200,
+      body: rpcError(null, -32600, "Invalid request"),
+    };
+  }
+
+  const requestId = request.id;
 
   if (request.method === "initialize") {
     const params = asRecord(request.params) ?? {};
@@ -180,7 +205,9 @@ export const dispatchRemoteMcpMessage = async (
           content: [
             {
               type: "text",
-              text: JSON.stringify(await options.execute(tool.name, args)),
+              text: JSON.stringify(
+                await options.execute(tool.name, args, requestId),
+              ),
             },
           ],
           isError: false,

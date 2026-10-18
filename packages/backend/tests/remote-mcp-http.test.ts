@@ -242,3 +242,145 @@ test("MCP stores Clerk's application ID and resolved name separately from the pu
     oauthApplicationId: "oauthapp_internal_1",
   });
 });
+
+test("write-only grants return acknowledgements and deduplicate add retries", async () => {
+  vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", "https://orbii.clerk.accounts.dev");
+  vi.stubEnv("CLERK_SECRET_KEY", "sk_test_backend");
+  vi.stubEnv("MCP_CREDENTIAL_ENCRYPTION_KEY", encryptionKey);
+  const fetcher = vi.fn<typeof fetch>(async (input) => {
+    if (String(input).includes("/oauth_applications?")) {
+      return new Response(
+        JSON.stringify({
+          data: [{ id: "oauthapp_internal_1", client_id: "client_public_1" }],
+        }),
+        { status: 200 },
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        subject: "user_orbii_1",
+        client_id: "client_public_1",
+        aud: "https://some.convex.site/mcp",
+        scopes: ["orbii:write"],
+      }),
+      { status: 200 },
+    );
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const t = convexTest(schema, modules);
+  await t.run(async (ctx) => {
+    await ctx.db.insert("users", {
+      clerkUserId: "user_orbii_1",
+      capacity: 2,
+      timezone: "UTC",
+      streak: 0,
+      daysCompleted: 0,
+      lastCompletedLocalDate: null,
+      pointsBalance: 0,
+    });
+  });
+
+  const addHabitRequest = JSON.stringify({
+    jsonrpc: "2.0",
+    id: "add-habit-retry-1",
+    method: "tools/call",
+    params: {
+      name: "add_habit",
+      arguments: {
+        name: "Stretch",
+        glyph: "symbol:stretch",
+        category: "body",
+      },
+    },
+  });
+  const call = (body: string) =>
+    t.fetch("/mcp", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer opaque-token",
+        "Mcp-Protocol-Version": "2025-11-25",
+      },
+      body,
+    });
+  const first = await call(addHabitRequest);
+  const retry = await call(addHabitRequest);
+  const firstBody = await first.json();
+  const retryBody = await retry.json();
+
+  expect(first.status).toBe(200);
+  expect(retry.status).toBe(200);
+  expect(firstBody).toMatchObject({
+    result: {
+      content: [{ type: "text", text: JSON.stringify({ ok: true }) }],
+      isError: false,
+    },
+  });
+  expect(retryBody).toEqual(firstBody);
+  expect(fetcher).toHaveBeenCalledTimes(3);
+
+  const deniedRead = await call(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id: "read-write-only",
+      method: "tools/call",
+      params: { name: "get_orbit", arguments: {} },
+    }),
+  );
+  expect(deniedRead.status).toBe(403);
+
+  await expect(
+    t.run(async (ctx) => ({
+      habits: await ctx.db.query("habits").collect(),
+      requests: await ctx.db.query("remoteMcpHabitRequests").collect(),
+    })),
+  ).resolves.toMatchObject({
+    habits: [{ clerkUserId: "user_orbii_1", name: "Stretch" }],
+    requests: [{ clientId: "client_public_1", name: "Stretch" }],
+  });
+});
+
+test("MCP reports credential encryption failures as retryable service errors", async () => {
+  vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", "https://orbii.clerk.accounts.dev");
+  vi.stubEnv("CLERK_SECRET_KEY", "sk_test_backend");
+  vi.stubEnv("MCP_CREDENTIAL_ENCRYPTION_KEY", "not-a-valid-key");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async (input) => {
+      if (String(input).includes("/oauth_applications?")) {
+        return new Response(
+          JSON.stringify({
+            data: [{ id: "oauthapp_internal_1", client_id: "client_public_1" }],
+          }),
+          { status: 200 },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          subject: "user_orbii_1",
+          client_id: "client_public_1",
+          aud: "https://some.convex.site/mcp",
+          scopes: ["orbii:read"],
+        }),
+        { status: 200 },
+      );
+    }),
+  );
+  const t = convexTest(schema, modules);
+  const response = await t.fetch("/mcp", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: "Bearer opaque-token",
+      "Mcp-Protocol-Version": "2025-11-25",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
+  });
+
+  expect(response.status).toBe(503);
+  await expect(response.json()).resolves.toMatchObject({
+    error: "temporarily_unavailable",
+  });
+});

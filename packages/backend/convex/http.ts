@@ -16,6 +16,7 @@ import {
 import {
   dispatchRemoteMcpMessage,
   MCP_DEFAULT_PROTOCOL_VERSION,
+  fingerprintMcpRequestId,
   supportsMcpProtocolVersion,
   type RemoteMcpTool,
 } from "./lib/remote-mcp-protocol";
@@ -184,8 +185,10 @@ const todaySummary = async (ctx: ActionCtx, clerkUserId: string) => {
 const executeTool = async (
   ctx: ActionCtx,
   clerkUserId: string,
+  clientId: string,
   name: string,
   args: Record<string, unknown>,
+  requestId: string | number,
 ) => {
   if (name === "get_orbit") {
     assertArguments(args, []);
@@ -196,58 +199,6 @@ const executeTool = async (
 
   if (name === "get_today") {
     assertArguments(args, []);
-    return await todaySummary(ctx, clerkUserId);
-  }
-
-  const day = await getToday(ctx, clerkUserId);
-  const localDate = day.localDate;
-
-  if (name === "start_today") {
-    assertArguments(args, []);
-    await ctx.runMutation(internal.day.startRevealForRemoteMcp, {
-      clerkUserId,
-      localDate,
-    });
-    return await todaySummary(ctx, clerkUserId);
-  }
-
-  if (name === "rereveal_today") {
-    assertArguments(args, []);
-    await ctx.runMutation(internal.day.rerevealForRemoteMcp, {
-      clerkUserId,
-      localDate,
-    });
-    return await todaySummary(ctx, clerkUserId);
-  }
-
-  if (name === "select_habit" || name === "deselect_habit") {
-    assertArguments(args, ["habitId"], ["habitId"]);
-    await ctx.runMutation(internal.day.setSelectionForRemoteMcp, {
-      clerkUserId,
-      localDate,
-      habitId: requiredString(args, "habitId"),
-      selected: name === "select_habit",
-    });
-    return await todaySummary(ctx, clerkUserId);
-  }
-
-  if (name === "commit_today") {
-    assertArguments(args, []);
-    await ctx.runMutation(internal.day.commitForRemoteMcp, {
-      clerkUserId,
-      localDate,
-    });
-    return await todaySummary(ctx, clerkUserId);
-  }
-
-  if (name === "complete_habit" || name === "uncomplete_habit") {
-    assertArguments(args, ["habitId"], ["habitId"]);
-    await ctx.runMutation(internal.day.setCompleteForRemoteMcp, {
-      clerkUserId,
-      localDate,
-      habitId: requiredString(args, "habitId"),
-      completed: name === "complete_habit",
-    });
     return await todaySummary(ctx, clerkUserId);
   }
 
@@ -265,14 +216,67 @@ const executeTool = async (
 
     await ctx.runMutation(internal.habits.addForRemoteMcp, {
       clerkUserId,
+      clientId,
+      requestId: await fingerprintMcpRequestId(requestId),
       habitKey: crypto.randomUUID(),
       name: requiredString(args, "name"),
       glyph: requiredString(args, "glyph"),
       category: category as "body" | "mind" | "learn" | "life",
+      now: Date.now(),
     });
-    return await ctx.runQuery(internal.habits.listForRemoteMcp, {
+    return { ok: true };
+  }
+
+  const day = await getToday(ctx, clerkUserId);
+  const localDate = day.localDate;
+
+  if (name === "start_today") {
+    assertArguments(args, []);
+    await ctx.runMutation(internal.day.startRevealForRemoteMcp, {
       clerkUserId,
+      localDate,
     });
+    return { ok: true };
+  }
+
+  if (name === "rereveal_today") {
+    assertArguments(args, []);
+    await ctx.runMutation(internal.day.rerevealForRemoteMcp, {
+      clerkUserId,
+      localDate,
+    });
+    return { ok: true };
+  }
+
+  if (name === "select_habit" || name === "deselect_habit") {
+    assertArguments(args, ["habitId"], ["habitId"]);
+    await ctx.runMutation(internal.day.setSelectionForRemoteMcp, {
+      clerkUserId,
+      localDate,
+      habitId: requiredString(args, "habitId"),
+      selected: name === "select_habit",
+    });
+    return { ok: true };
+  }
+
+  if (name === "commit_today") {
+    assertArguments(args, []);
+    await ctx.runMutation(internal.day.commitForRemoteMcp, {
+      clerkUserId,
+      localDate,
+    });
+    return { ok: true };
+  }
+
+  if (name === "complete_habit" || name === "uncomplete_habit") {
+    assertArguments(args, ["habitId"], ["habitId"]);
+    await ctx.runMutation(internal.day.setCompleteForRemoteMcp, {
+      clerkUserId,
+      localDate,
+      habitId: requiredString(args, "habitId"),
+      completed: name === "complete_habit",
+    });
+    return { ok: true };
   }
 
   if (name === "remove_habit") {
@@ -282,7 +286,7 @@ const executeTool = async (
       localDate,
       habitKey: requiredString(args, "habitId"),
     });
-    return await todaySummary(ctx, clerkUserId);
+    return { ok: true };
   }
 
   throw new Error("Unknown Orbii tool");
@@ -403,19 +407,15 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
         clientId: principal.clientId,
       },
     );
-    const clientNameNeedsResolution =
-      principal.clientName === principal.clientId &&
-      storedApplication?.name === principal.clientId;
-    const resolvedApplication =
-      storedApplication && !clientNameNeedsResolution
-        ? null
-        : await resolveClerkOAuthApplication(principal.clientId, secretKey);
+    const resolvedApplication = storedApplication
+      ? null
+      : await resolveClerkOAuthApplication(principal.clientId, secretKey);
     const applicationId =
       storedApplication?.id ?? resolvedApplication?.id ?? null;
     const resolvedClientName =
       principal.clientName !== principal.clientId
         ? principal.clientName
-        : storedApplication && storedApplication.name !== principal.clientId
+        : storedApplication
           ? storedApplication.name
           : (resolvedApplication?.name ?? principal.clientName);
 
@@ -430,18 +430,38 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
     return jsonResponse({ error: "temporarily_unavailable" }, 503);
   }
 
+  let tokenFingerprint: string;
+  let encryptedAccessToken: string;
+
   try {
-    await ctx.runMutation(internal.remoteMcp.authorizeToken, {
-      clerkUserId: principal.userId,
-      clientId: principal.clientId,
-      clientName: oauthApplication.name ?? principal.clientName,
-      oauthApplicationId: oauthApplication.id,
-      scopes: principal.scopes,
-      tokenFingerprint: await fingerprintOAuthToken(accessToken),
-      encryptedAccessToken: await encryptOAuthToken(accessToken, encryptionKey),
-      now: Date.now(),
-    });
+    tokenFingerprint = await fingerprintOAuthToken(accessToken);
+    encryptedAccessToken = await encryptOAuthToken(accessToken, encryptionKey);
   } catch {
+    return jsonResponse({ error: "temporarily_unavailable" }, 503);
+  }
+
+  let connectionAuthorized: boolean;
+
+  try {
+    const connectionId = await ctx.runMutation(
+      internal.remoteMcp.authorizeToken,
+      {
+        clerkUserId: principal.userId,
+        clientId: principal.clientId,
+        clientName: oauthApplication.name ?? principal.clientName,
+        oauthApplicationId: oauthApplication.id,
+        scopes: principal.scopes,
+        tokenFingerprint,
+        encryptedAccessToken,
+        now: Date.now(),
+      },
+    );
+    connectionAuthorized = connectionId !== null;
+  } catch {
+    return jsonResponse({ error: "temporarily_unavailable" }, 503);
+  }
+
+  if (!connectionAuthorized) {
     return jsonResponse({ error: "invalid_token" }, 401, {
       "WWW-Authenticate": `${challenge}, error="invalid_token"`,
     });
@@ -458,8 +478,15 @@ const handleMcpRequest = async (ctx: ActionCtx, request: Request) => {
   const dispatched = await dispatchRemoteMcpMessage(input, {
     scopes: principal.scopes,
     tools,
-    execute: async (name, args) => {
-      return await executeTool(ctx, principal.userId, name, args);
+    execute: async (name, args, requestId) => {
+      return await executeTool(
+        ctx,
+        principal.userId,
+        principal.clientId,
+        name,
+        args,
+        requestId,
+      );
     },
   });
 
