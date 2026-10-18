@@ -36,7 +36,18 @@ interface PaginationErrorData {
   paginationError?: unknown;
 }
 
+const POINT_HISTORY_PAGE_SIZE = 20;
+
 const queryKeyForPage = (pageKey: number) => `page-${pageKey}`;
+
+const isPageSplitCandidate = (result: PointTransactionPage) => {
+  return (
+    result.splitCursor != null &&
+    (result.pageStatus === "SplitRecommended" ||
+      result.pageStatus === "SplitRequired" ||
+      result.page.length > POINT_HISTORY_PAGE_SIZE * 2)
+  );
+};
 
 const isInvalidCursorError = (error: Error) => {
   if (error.message.includes("InvalidCursor")) {
@@ -85,7 +96,7 @@ export default function PointsHistoryContent() {
             query: api.points.listTransactions,
             args: {
               paginationOpts: {
-                numItems: 20,
+                numItems: POINT_HISTORY_PAGE_SIZE,
                 cursor: page.cursor,
                 endCursor: page.endCursor,
                 id: page.queryId,
@@ -131,9 +142,13 @@ export default function PointsHistoryContent() {
     const completedSplits = Object.entries(splits)
       .map(([parentKey, split]) => ({ parentKey: Number(parentKey), split }))
       .filter(({ split }) => {
+        const leftResult = pageResults[queryKeyForPage(split.left.key)];
+        const rightResult = pageResults[queryKeyForPage(split.right.key)];
+
         return (
-          pageResults[queryKeyForPage(split.left.key)] !== undefined &&
-          pageResults[queryKeyForPage(split.right.key)] !== undefined
+          (leftResult !== undefined && rightResult !== undefined) ||
+          leftResult instanceof Error ||
+          rightResult instanceof Error
         );
       });
 
@@ -186,8 +201,7 @@ export default function PointsHistoryContent() {
         result === undefined ||
         result instanceof Error ||
         result.splitCursor == null ||
-        (result.pageStatus !== "SplitRecommended" &&
-          result.pageStatus !== "SplitRequired")
+        !isPageSplitCandidate(result)
       ) {
         continue;
       }
@@ -213,7 +227,7 @@ export default function PointsHistoryContent() {
           right: {
             key: rightKey,
             cursor: result.splitCursor,
-            endCursor: result.continueCursor,
+            endCursor: result.continueCursor ?? undefined,
             queryId: rightQueryId,
           },
         },
@@ -288,9 +302,7 @@ export default function PointsHistoryContent() {
       return (
         result !== undefined &&
         !(result instanceof Error) &&
-        result.splitCursor != null &&
-        (result.pageStatus === "SplitRecommended" ||
-          result.pageStatus === "SplitRequired")
+        isPageSplitCandidate(result)
       );
     });
   const transactions: PointTransaction[] = [];
@@ -314,15 +326,34 @@ export default function PointsHistoryContent() {
   const latestResult = latestPage
     ? pageResults[queryKeyForPage(latestPage.key)]
     : undefined;
+  const pendingPage = pages.find((page) => {
+    return pageResults[queryKeyForPage(page.key)] === undefined;
+  });
 
   const retryPage = (pageKey: number) => {
     const queryId = nextQueryId.current;
     nextQueryId.current += 1;
-    setPages((currentPages) =>
-      currentPages.map((page) =>
-        page.key === pageKey ? { ...page, queryId } : page,
-      ),
-    );
+    setPages((currentPages) => {
+      const pageIndex = currentPages.findIndex((page) => page.key === pageKey);
+
+      if (pageIndex === -1) {
+        return currentPages;
+      }
+
+      const nextPage = currentPages[pageIndex + 1];
+
+      return currentPages.map((page, index) => {
+        if (index !== pageIndex) {
+          return page;
+        }
+
+        return {
+          ...page,
+          endCursor: page.endCursor ?? nextPage?.cursor ?? undefined,
+          queryId,
+        };
+      });
+    });
   };
 
   const loadMore = () => {
@@ -331,9 +362,7 @@ export default function PointsHistoryContent() {
       invalidCursorPage !== undefined ||
       failedPage !== undefined ||
       isSplitting ||
-      pages.some(
-        (page) => pageResults[queryKeyForPage(page.key)] === undefined,
-      ) ||
+      pendingPage !== undefined ||
       latestPage === undefined ||
       latestResult === undefined ||
       latestResult instanceof Error ||
@@ -362,12 +391,8 @@ export default function PointsHistoryContent() {
       return <PointsHistoryError onRetry={() => retryPage(failedPage.key)} />;
     }
 
-    const firstResult = firstPage
-      ? pageResults[queryKeyForPage(firstPage.key)]
-      : undefined;
-
     if (
-      firstResult === undefined ||
+      pendingPage !== undefined ||
       isSplitting ||
       invalidCursorPage !== undefined
     ) {
@@ -410,8 +435,11 @@ export default function PointsHistoryContent() {
     footerStatus = transactions.length === 0 ? "hidden" : "error";
   } else if (isSplitting) {
     footerStatus = transactions.length === 0 ? "hidden" : "loading";
-  } else if (latestPage !== undefined && latestResult === undefined) {
-    footerStatus = latestPage.key === firstPage?.key ? "hidden" : "loading";
+  } else if (pendingPage !== undefined) {
+    footerStatus =
+      transactions.length === 0 || pendingPage.key === firstPage?.key
+        ? "hidden"
+        : "loading";
   } else if (
     latestResult !== undefined &&
     !(latestResult instanceof Error) &&

@@ -200,6 +200,7 @@ test("a later page error keeps earlier transactions visible and retries the same
 
 test("an error from a retained page is shown and retried before later rows", async () => {
   let middlePageFailed = false;
+  let middlePageRetryPending = false;
   const consoleError = jest
     .spyOn(console, "error")
     .mockImplementation(() => {});
@@ -215,6 +216,10 @@ test("an error from a retained page is shown and retried before later rows", asy
 
         if (cursor === "cursor-next" && middlePageFailed) {
           return [key, new Error("The retained page failed to refresh")];
+        }
+
+        if (cursor === "cursor-next" && middlePageRetryPending) {
+          return [key, undefined];
         }
 
         if (cursor === null) {
@@ -260,7 +265,15 @@ test("an error from a retained page is shown and retried before later rows", asy
       .filter((request) => request.cursor === "cursor-next")
       .pop();
     middlePageFailed = false;
+    middlePageRetryPending = true;
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+
+    expect(screen.getByText("Loading more…")).toBeOnTheScreen();
+    expect(screen.queryByText("Afternoon stretch")).toBeNull();
+    expect(screen.queryByText("Evening stretch")).toBeNull();
+
+    middlePageRetryPending = false;
+    await view.rerender(<PointsHistoryScreen />);
 
     expect(screen.getByText("Museum visit")).toBeOnTheScreen();
     expect(screen.getByText("Afternoon stretch")).toBeOnTheScreen();
@@ -270,28 +283,39 @@ test("an error from a retained page is shown and retried before later rows", asy
       .filter((request) => request.cursor === "cursor-next")
       .pop();
     expect(retryRequest?.id).not.toBe(failedRequest?.id);
+    expect(retryRequest?.endCursor).toBe("cursor-third");
   } finally {
     consoleError.mockRestore();
   }
 });
 
-test.each(["SplitRequired", "SplitRecommended"] as const)(
+test.each(["SplitRequired", "SplitRecommended", "oversized"] as const)(
   "pages marked %s are split before continuing pagination",
   async (pageStatus) => {
+    const partialPageTransactions =
+      pageStatus === "oversized"
+        ? Array.from({ length: 41 }, (_, index) => ({
+            id: `oversized-${index}`,
+            amount: 1,
+            sourceType: "habit_award",
+            sourceName: `Oversized row ${index}`,
+            localDate: "2026-10-10",
+          }))
+        : [
+            {
+              id: "partial-id",
+              amount: 1,
+              sourceType: "habit_award",
+              sourceName: "Partial history row",
+              localDate: "2026-10-10",
+            },
+          ];
     const partialPageResult = {
-      page: [
-        {
-          id: "partial-id",
-          amount: 1,
-          sourceType: "habit_award",
-          sourceName: "Partial history row",
-          localDate: "2026-10-10",
-        },
-      ],
+      page: partialPageTransactions,
       isDone: false,
       continueCursor: "cursor-split-end",
       splitCursor: "cursor-split-middle",
-      pageStatus,
+      ...(pageStatus === "oversized" ? {} : { pageStatus }),
     };
     const leftSplitResult = {
       page: [
@@ -394,6 +418,100 @@ test.each(["SplitRequired", "SplitRecommended"] as const)(
     );
   },
 );
+
+test("a failed split child is shown while its sibling is still loading", async () => {
+  let leftSplitFailed = true;
+  let rightSplitReady = false;
+  const consoleError = jest
+    .spyOn(console, "error")
+    .mockImplementation(() => {});
+  const parentSplitResult = {
+    page: [],
+    isDone: false,
+    continueCursor: "cursor-split-end",
+    splitCursor: "cursor-split-middle",
+    pageStatus: "SplitRequired",
+  };
+  const leftSplitResult = {
+    page: [
+      {
+        id: "left-split-id",
+        amount: 2,
+        sourceType: "habit_award",
+        sourceName: "First split row",
+        localDate: "2026-10-10",
+      },
+    ],
+    isDone: true,
+    continueCursor: "cursor-split-middle",
+  };
+  const rightSplitResult = {
+    page: [
+      {
+        id: "right-split-id",
+        amount: 3,
+        sourceType: "habit_award",
+        sourceName: "Second split row",
+        localDate: "2026-10-09",
+      },
+    ],
+    isDone: false,
+    continueCursor: "cursor-split-end",
+  };
+
+  jest.mocked(useQueries).mockImplementation((queries) => {
+    return Object.fromEntries(
+      Object.entries(queries).map(([key, query]) => {
+        const { paginationOpts } = query.args as unknown as {
+          paginationOpts: PageRequest;
+        };
+        const { cursor, endCursor } = paginationOpts;
+        pageRequests.push(paginationOpts);
+
+        if (cursor === null && endCursor === "cursor-split-middle") {
+          return [
+            key,
+            leftSplitFailed
+              ? new Error("The first split page failed")
+              : leftSplitResult,
+          ];
+        }
+
+        if (
+          cursor === "cursor-split-middle" &&
+          endCursor === "cursor-split-end"
+        ) {
+          return [key, rightSplitReady ? rightSplitResult : undefined];
+        }
+
+        return [key, parentSplitResult];
+      }),
+    ) as never;
+  });
+
+  try {
+    const view = await render(<PointsHistoryScreen />);
+
+    expect(
+      await screen.findByText("We couldn’t load your points history."),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeOnTheScreen();
+
+    leftSplitFailed = false;
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+
+    expect(screen.getByText("First split row")).toBeOnTheScreen();
+    expect(screen.getByText("Loading more…")).toBeOnTheScreen();
+
+    rightSplitReady = true;
+    await view.rerender(<PointsHistoryScreen />);
+
+    expect(await screen.findByText("First split row")).toBeOnTheScreen();
+    expect(screen.getByText("Second split row")).toBeOnTheScreen();
+  } finally {
+    consoleError.mockRestore();
+  }
+});
 
 test("an invalid cursor resets history to a fresh first page", async () => {
   const consoleError = jest
