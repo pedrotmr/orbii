@@ -26,7 +26,7 @@ export default function ConnectedAgentsScreen() {
 
       if (!result.providerRevoked) {
         setError(
-          "Orbii has blocked this agent, but Clerk did not confirm token revocation. Retry after checking the backend OAuth secrets.",
+          "Orbii has blocked this agent, but Clerk did not confirm token revocation. Check the Clerk OAuth application and backend secrets, then retry.",
         );
       }
     } catch (revokeError) {

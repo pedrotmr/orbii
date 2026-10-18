@@ -77,6 +77,32 @@ test("Connected agents asks before revoking a connection and calls the owner-sco
   });
 });
 
+test("Connected agents keeps a connection visible when Clerk does not confirm revocation", async () => {
+  const action = jest.fn(async (_args: { connectionId: string }) => ({
+    revoked: true,
+    providerRevoked: false,
+  }));
+  jest.mocked(useAction).mockReturnValue(action as never);
+
+  await render(<ConnectedAgentsScreen />);
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Revoke access for Claude Desktop" }),
+  );
+  const revokeButton = alert.mock.calls[0]?.[2]?.find(
+    (button) => button.text === "Revoke access",
+  );
+  await act(async () => {
+    revokeButton?.onPress?.();
+  });
+
+  expect(
+    await screen.findByText(
+      "Orbii has blocked this agent, but Clerk did not confirm token revocation. Check the Clerk OAuth application and backend secrets, then retry.",
+    ),
+  ).toBeOnTheScreen();
+  expect(screen.getByText("Claude Desktop")).toBeOnTheScreen();
+});
+
 test("Connected agents disables every row while one revocation is pending", async () => {
   let finishRevocation:
     ((value: { revoked: true; providerRevoked: true }) => void) | undefined;
