@@ -17,7 +17,7 @@ export default function PointsHistoryError({
       <Text accessibilityRole="header" style={styles.title}>
         We couldn’t load your points history.
       </Text>
-      <Text style={styles.copy}>Try again to reload your transactions.</Text>
+      <Text style={styles.copy}>Try again to load the transactions.</Text>
       <GhostButton label="Try again" onPress={onRetry} />
     </View>
   );
@@ -26,7 +26,7 @@ export default function PointsHistoryError({
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     error: {
-      flex: 1,
+      minHeight: 176,
       alignItems: "center",
       justifyContent: "center",
       gap: space[3],

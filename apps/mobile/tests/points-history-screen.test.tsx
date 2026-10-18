@@ -1,15 +1,14 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { usePaginatedQuery } from "convex/react";
+import { useQueries } from "convex/react";
 import PointsHistoryScreen from "../src/points-history/points-history-screen";
 
 jest.mock("@orbii/backend", () => ({
   api: { points: { listTransactions: "points:listTransactions" } },
 }));
-jest.mock("convex/react", () => ({ usePaginatedQuery: jest.fn() }));
+jest.mock("convex/react", () => ({ useQueries: jest.fn() }));
 
-const loadMore = jest.fn();
-const firstPage = [
+const firstPageTransactions = [
   {
     id: "redemption-id",
     amount: -35,
@@ -33,17 +32,42 @@ const firstPage = [
   },
 ];
 
+const firstPageResult = {
+  page: firstPageTransactions,
+  isDone: false,
+  continueCursor: "cursor-next",
+};
+
+const nextPageResult = {
+  page: [
+    {
+      id: "older-habit-id",
+      amount: 5,
+      sourceType: "habit_award",
+      sourceName: "Evening stretch",
+      localDate: "2026-10-07",
+    },
+  ],
+  isDone: true,
+  continueCursor: "cursor-last",
+};
+
 beforeEach(() => {
-  loadMore.mockReset();
-  jest.mocked(usePaginatedQuery).mockReturnValue({
-    results: firstPage,
-    status: "CanLoadMore",
-    loadMore,
-  } as never);
+  jest.mocked(useQueries).mockImplementation((queries) => {
+    return Object.fromEntries(
+      Object.entries(queries).map(([key, query]) => {
+        const { paginationOpts } = query.args as unknown as {
+          paginationOpts: { cursor: string | null };
+        };
+        const { cursor } = paginationOpts;
+        return [key, cursor === null ? firstPageResult : nextPageResult];
+      }),
+    ) as never;
+  });
 });
 
 test("history shows signed transactions, saved local dates, and every loaded row", async () => {
-  const view = await render(<PointsHistoryScreen />);
+  await render(<PointsHistoryScreen />);
 
   expect(screen.getByText("Museum visit")).toBeOnTheScreen();
   expect(screen.getByText("-35 pts")).toBeOnTheScreen();
@@ -57,61 +81,63 @@ test("history shows signed transactions, saved local dates, and every loaded row
     screen.getByRole("button", { name: "Load more transactions" }),
   );
 
-  expect(loadMore).toHaveBeenCalledWith(20);
-
-  jest.mocked(usePaginatedQuery).mockReturnValue({
-    results: [
-      ...firstPage,
-      {
-        id: "older-habit-id",
-        amount: 5,
-        sourceType: "habit_award",
-        sourceName: "Evening stretch",
-        localDate: "2026-10-07",
-      },
-    ],
-    status: "Exhausted",
-    loadMore,
-  } as never);
-  await view.rerender(<PointsHistoryScreen />);
   expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
 });
 
-test("a paginated query error shows a retry state instead of crashing the screen", async () => {
+test("a later page error keeps earlier transactions visible and retries the same cursor", async () => {
+  let pageQueryFailed = true;
+  const pageRequests: Array<{ cursor: string | null; id: number | undefined }> =
+    [];
   const consoleError = jest
     .spyOn(console, "error")
     .mockImplementation(() => {});
-  let pageQueryFailed = false;
-  jest.mocked(usePaginatedQuery).mockImplementation(() => {
-    if (pageQueryFailed) {
-      throw new Error("The next page failed to load");
-    }
 
-    return {
-      results: firstPage,
-      status: "CanLoadMore",
-      loadMore,
-    } as never;
-  });
-  loadMore.mockImplementation(() => {
-    pageQueryFailed = true;
+  jest.mocked(useQueries).mockImplementation((queries) => {
+    return Object.fromEntries(
+      Object.entries(queries).map(([key, query]) => {
+        const { paginationOpts } = query.args as unknown as {
+          paginationOpts: { cursor: string | null; id?: number };
+        };
+        const { cursor, id } = paginationOpts;
+        pageRequests.push({ cursor, id });
+
+        if (cursor !== null && pageQueryFailed) {
+          return [key, new Error("The next page failed to load")];
+        }
+
+        return [key, cursor === null ? firstPageResult : nextPageResult];
+      }),
+    ) as never;
   });
 
   try {
-    const view = await render(<PointsHistoryScreen />);
+    await render(<PointsHistoryScreen />);
 
     await fireEvent.press(
       screen.getByRole("button", { name: "Load more transactions" }),
     );
-    expect(loadMore).toHaveBeenCalledWith(20);
-    await view.rerender(<PointsHistoryScreen key="page-failure" />);
 
+    expect(screen.getByText("Museum visit")).toBeOnTheScreen();
     expect(
       screen.getByText("We couldn’t load your points history."),
     ).toBeOnTheScreen();
+
+    const failedRequest = pageRequests.find(
+      (request) => request.cursor === "cursor-next",
+    );
+    expect(failedRequest).toBeDefined();
+
     pageQueryFailed = false;
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+
     expect(screen.getByText("Museum visit")).toBeOnTheScreen();
+    expect(screen.getByText("Evening stretch")).toBeOnTheScreen();
+
+    const retryRequest = pageRequests
+      .filter((request) => request.cursor === "cursor-next")
+      .pop();
+    expect(retryRequest?.cursor).toBe(failedRequest?.cursor);
+    expect(retryRequest?.id).not.toBe(failedRequest?.id);
   } finally {
     consoleError.mockRestore();
   }

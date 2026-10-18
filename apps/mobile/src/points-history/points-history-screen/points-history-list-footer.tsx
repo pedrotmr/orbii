@@ -2,32 +2,37 @@ import { type Palette, space } from "@orbii/tokens";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import GhostButton from "../../components/ghost-button";
 import { useTheme, useThemedStyles } from "../../theme/use-theme";
+import PointsHistoryError from "./points-history-error";
 
 interface PointsHistoryListFooterProps {
-  canLoadMore: boolean;
-  isLoadingMore: boolean;
+  status: "hidden" | "loading" | "can-load-more" | "error";
   onLoadMore: () => void;
+  onRetry: () => void;
 }
 
 export default function PointsHistoryListFooter({
-  canLoadMore,
-  isLoadingMore,
+  status,
   onLoadMore,
+  onRetry,
 }: PointsHistoryListFooterProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  if (canLoadMore) {
+  if (status === "can-load-more") {
     return <GhostButton label="Load more transactions" onPress={onLoadMore} />;
   }
 
-  if (isLoadingMore) {
+  if (status === "loading") {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingLabel}>Loading more…</Text>
       </View>
     );
+  }
+
+  if (status === "error") {
+    return <PointsHistoryError onRetry={onRetry} />;
   }
 
   return null;
