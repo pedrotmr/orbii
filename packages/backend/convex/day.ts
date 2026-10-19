@@ -363,9 +363,52 @@ export const commit = mutation({
 });
 
 export const commitForRemoteMcp = internalMutation({
-  args: { clerkUserId: v.string(), localDate: v.string() },
+  args: {
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    localDate: v.string(),
+  },
   handler: async (ctx, args) => {
-    await commitForUser(ctx, args.clerkUserId, args);
+    const now = Date.now();
+    const expiredRequests = await ctx.db
+      .query("remoteMcpCommitRequests")
+      .withIndex("by_clerkUserId_clientId_createdAt", (q) =>
+        q
+          .eq("clerkUserId", args.clerkUserId)
+          .eq("clientId", args.clientId)
+          .lt("createdAt", now - REMOTE_MCP_REQUEST_RETENTION_MS),
+      )
+      .collect();
+
+    for (const request of expiredRequests) {
+      await ctx.db.delete(request._id);
+    }
+
+    const existingRequest = await ctx.db
+      .query("remoteMcpCommitRequests")
+      .withIndex("by_clerkUserId_clientId_requestId", (q) =>
+        q
+          .eq("clerkUserId", args.clerkUserId)
+          .eq("clientId", args.clientId)
+          .eq("requestId", args.requestId),
+      )
+      .unique();
+
+    if (existingRequest) {
+      return;
+    }
+
+    await commitForUser(ctx, args.clerkUserId, {
+      localDate: args.localDate,
+    });
+    await ctx.db.insert("remoteMcpCommitRequests", {
+      clerkUserId: args.clerkUserId,
+      clientId: args.clientId,
+      requestId: args.requestId,
+      localDate: args.localDate,
+      createdAt: now,
+    });
   },
 });
 

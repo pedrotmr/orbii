@@ -171,4 +171,22 @@ export default defineSchema({
       "clientId",
       "createdAt",
     ]),
+
+  remoteMcpCommitRequests: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    localDate: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_clerkUserId_clientId_requestId", [
+      "clerkUserId",
+      "clientId",
+      "requestId",
+    ])
+    .index("by_clerkUserId_clientId_createdAt", [
+      "clerkUserId",
+      "clientId",
+      "createdAt",
+    ]),
 });

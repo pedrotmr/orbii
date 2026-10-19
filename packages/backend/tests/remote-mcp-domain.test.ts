@@ -79,6 +79,8 @@ test("remote ritual writes reuse selection, commit, completion, and points rules
   });
   await t.mutation(internal.day.commitForRemoteMcp, {
     clerkUserId: "owner",
+    clientId: "test-client",
+    requestId: "commit-2026-10-09",
     localDate: "2026-10-09",
   });
   await t.run(async (ctx) => {
@@ -135,6 +137,8 @@ test("remote habit addition waits for a later reveal and removal scrubs today's 
   });
   await t.mutation(internal.day.commitForRemoteMcp, {
     clerkUserId: "owner",
+    clientId: "test-client",
+    requestId: "commit-2026-10-09",
     localDate: "2026-10-09",
   });
   await t.mutation(internal.habits.addForRemoteMcp, {
@@ -201,6 +205,8 @@ test("remote committed habit snapshots preserve categories and omit unknown lega
   });
   await t.mutation(internal.day.commitForRemoteMcp, {
     clerkUserId: "owner",
+    clientId: "test-client",
+    requestId: "commit-2026-10-09",
     localDate: "2026-10-09",
   });
   await t.mutation(internal.day.setCompleteForRemoteMcp, {

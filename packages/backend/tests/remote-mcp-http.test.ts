@@ -396,16 +396,141 @@ test("write-only grants scope retries to sessions and support legacy batches", a
   );
   expect(deniedRead.status).toBe(403);
 
+  const deniedReadBatch = await call(
+    JSON.stringify([
+      {
+        jsonrpc: "2.0",
+        id: "read-write-only-batch",
+        method: "tools/call",
+        params: { name: "get_orbit", arguments: {} },
+      },
+    ]),
+    "session-1",
+    "2025-03-26",
+  );
+  expect(deniedReadBatch.status).toBe(403);
+  expect(deniedReadBatch.headers.get("WWW-Authenticate")).toContain(
+    'scope="orbii:read"',
+  );
+  await expect(deniedReadBatch.json()).resolves.toMatchObject([
+    {
+      jsonrpc: "2.0",
+      id: "read-write-only-batch",
+      error: { code: -32003, data: { requiredScope: "orbii:read" } },
+    },
+  ]);
+
   const stored = await t.run(async (ctx) => ({
     habits: await ctx.db.query("habits").collect(),
     requests: await ctx.db.query("remoteMcpHabitRequests").collect(),
   }));
-  expect(stored.habits.map((habit) => habit.name)).toEqual(
-    expect.arrayContaining(["Stretch", "Read"]),
+  expect(stored.habits.map((habit) => habit.name).sort()).toEqual([
+    "Read",
+    "Stretch",
+  ]);
+  expect(stored.requests.map((request) => request.name).sort()).toEqual([
+    "Read",
+    "Stretch",
+  ]);
+});
+
+test("MCP deduplicates commit retries within a session", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-18T12:00:00.000Z"));
+  vi.stubEnv("CLERK_JWT_ISSUER_DOMAIN", "https://orbii.clerk.accounts.dev");
+  vi.stubEnv("CLERK_SECRET_KEY", "sk_test_backend");
+  vi.stubEnv("MCP_CREDENTIAL_ENCRYPTION_KEY", encryptionKey);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async (input) => {
+      if (String(input).includes("/oauth_applications?")) {
+        return new Response(
+          JSON.stringify({
+            data: [{ id: "oauthapp_internal_1", client_id: "client_public_1" }],
+          }),
+          { status: 200 },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          subject: "user_orbii_1",
+          client_id: "client_public_1",
+          aud: "https://some.convex.site/mcp",
+          scopes: ["orbii:write"],
+        }),
+        { status: 200 },
+      );
+    }),
   );
-  expect(stored.requests.map((request) => request.name)).toEqual(
-    expect.arrayContaining(["Stretch", "Read"]),
-  );
+  const t = convexTest(schema, modules);
+  await t.run(async (ctx) => {
+    await ctx.db.insert("users", {
+      clerkUserId: "user_orbii_1",
+      capacity: 2,
+      timezone: "UTC",
+      streak: 0,
+      daysCompleted: 0,
+      lastCompletedLocalDate: null,
+      pointsBalance: 0,
+    });
+    await ctx.db.insert("habits", {
+      clerkUserId: "user_orbii_1",
+      habitKey: "habit-1",
+      name: "Walk",
+      glyph: "symbol:walk",
+      category: "body",
+      order: 0,
+    });
+    await ctx.db.insert("daySessions", {
+      clerkUserId: "user_orbii_1",
+      localDate: "2026-10-18",
+      phase: "reveal",
+      offeredIds: ["habit-1"],
+      selectedIds: ["habit-1"],
+      committedIds: [],
+      completedIds: [],
+    });
+  });
+
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: "commit-retry-1",
+    method: "tools/call",
+    params: { name: "commit_today", arguments: {} },
+  });
+  const call = () =>
+    t.fetch("/mcp", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer opaque-token",
+        "Mcp-Protocol-Version": "2025-11-25",
+        "Mcp-Session-Id": "commit-session",
+      },
+      body,
+    });
+
+  const first = await call();
+  const firstBody = await first.json();
+  const retry = await call();
+  const retryBody = await retry.json();
+  const stored = await t.run(async (ctx) => ({
+    day: await ctx.db
+      .query("daySessions")
+      .withIndex("by_clerkUserId_localDate", (q) =>
+        q.eq("clerkUserId", "user_orbii_1").eq("localDate", "2026-10-18"),
+      )
+      .unique(),
+    requests: await ctx.db.query("remoteMcpCommitRequests").collect(),
+  }));
+
+  expect(first.status).toBe(200);
+  expect(retry.status).toBe(200);
+  expect(retryBody).toEqual(firstBody);
+  expect(stored.day?.phase).toBe("active");
+  expect(stored.day?.committedIds).toEqual(["habit-1"]);
+  expect(stored.requests).toHaveLength(1);
 });
 
 test("MCP deduplicates re-reveal retries within a session", async () => {

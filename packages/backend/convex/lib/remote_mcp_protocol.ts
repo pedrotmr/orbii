@@ -319,6 +319,7 @@ export const dispatchRemoteMcpMessage: (
   }
 
   const responses: unknown[] = [];
+  const requiredScopes = new Set<string>();
   let sessionId = options.sessionId;
 
   for (const message of input) {
@@ -336,6 +337,7 @@ export const dispatchRemoteMcpMessage: (
     }
 
     if (response.requiredScope) {
+      requiredScopes.add(response.requiredScope);
       const responseBody = asRecord(response.body);
       const error = asRecord(responseBody?.error);
       responses.push(
@@ -360,8 +362,11 @@ export const dispatchRemoteMcpMessage: (
   }
 
   return {
-    status: 200,
+    status: requiredScopes.size > 0 ? 403 : 200,
     body: responses,
+    ...(requiredScopes.size > 0
+      ? { requiredScope: [...requiredScopes].sort().join(" ") }
+      : {}),
     ...(sessionId ? { sessionId } : {}),
   };
 };

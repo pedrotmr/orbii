@@ -271,6 +271,13 @@ const executeTool = async (
     assertArguments(args, []);
     await ctx.runMutation(internal.day.commitForRemoteMcp, {
       clerkUserId,
+      clientId,
+      requestId: await fingerprintMcpRequestId(
+        sessionId,
+        requestId,
+        name,
+        localDate,
+      ),
       localDate,
     });
     return { ok: true };
