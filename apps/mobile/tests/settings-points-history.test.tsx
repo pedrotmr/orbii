@@ -60,3 +60,13 @@ test("Settings opens points history while the Rewards tab is hidden", async () =
 
   expect(router.push).toHaveBeenCalledWith("/points-history");
 });
+
+test("Settings opens connected agents", async () => {
+  await render(<SettingsScreen />);
+
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Connected agents" }),
+  );
+
+  expect(router.push).toHaveBeenCalledWith("/settings/connected-agents");
+});

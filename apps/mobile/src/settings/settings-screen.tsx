@@ -123,6 +123,7 @@ export default function SettingsScreen() {
       reminderPermissionMessage={reminders.permissionMessage}
       onCapacity={handleCapacity}
       onPointHistory={() => router.push("/points-history")}
+      onConnectedAgents={() => router.push("/settings/connected-agents")}
       onRewardsVisible={handleRewardsVisible}
       onThemePreference={handleThemePreference}
       onTimezone={handleTimezone}

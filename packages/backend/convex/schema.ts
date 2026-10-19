@@ -58,6 +58,14 @@ export default defineSchema({
           habitId: v.string(),
           name: v.string(),
           glyph: v.string(),
+          category: v.optional(
+            v.union(
+              v.literal("body"),
+              v.literal("mind"),
+              v.literal("learn"),
+              v.literal("life"),
+            ),
+          ),
         }),
       ),
     ),
@@ -99,4 +107,86 @@ export default defineSchema({
       "redeemedAt",
     ])
     .index("by_clerkUserId", ["clerkUserId"]),
+
+  agentConnections: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    clientName: v.string(),
+    oauthApplicationId: v.string(),
+    scopes: v.array(v.string()),
+    tokenFingerprint: v.string(),
+    encryptedAccessToken: v.string(),
+    connectedAt: v.number(),
+    lastSeenAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    revocationPending: v.optional(v.boolean()),
+  })
+    .index("by_clerkUserId", ["clerkUserId"])
+    .index("by_clerkUserId_tokenFingerprint", [
+      "clerkUserId",
+      "tokenFingerprint",
+    ])
+    .index("by_clerkUserId_clientId", ["clerkUserId", "clientId"]),
+
+  remoteMcpHabitRequests: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    name: v.string(),
+    glyph: v.string(),
+    category: v.union(
+      v.literal("body"),
+      v.literal("mind"),
+      v.literal("learn"),
+      v.literal("life"),
+    ),
+    habitKey: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_clerkUserId_clientId_requestId", [
+      "clerkUserId",
+      "clientId",
+      "requestId",
+    ])
+    .index("by_clerkUserId_clientId_createdAt", [
+      "clerkUserId",
+      "clientId",
+      "createdAt",
+    ]),
+
+  remoteMcpRerevealRequests: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    localDate: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_clerkUserId_clientId_requestId", [
+      "clerkUserId",
+      "clientId",
+      "requestId",
+    ])
+    .index("by_clerkUserId_clientId_createdAt", [
+      "clerkUserId",
+      "clientId",
+      "createdAt",
+    ]),
+
+  remoteMcpCommitRequests: defineTable({
+    clerkUserId: v.string(),
+    clientId: v.string(),
+    requestId: v.string(),
+    localDate: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_clerkUserId_clientId_requestId", [
+      "clerkUserId",
+      "clientId",
+      "requestId",
+    ])
+    .index("by_clerkUserId_clientId_createdAt", [
+      "clerkUserId",
+      "clientId",
+      "createdAt",
+    ]),
 });

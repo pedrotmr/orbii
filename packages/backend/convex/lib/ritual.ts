@@ -1,4 +1,4 @@
-import { offerSizeFor, type Habit } from "./habits";
+import { offerSizeFor, type Habit, type HabitCategory } from "./habits";
 
 export type DayPhase = "idle" | "reveal" | "active" | "complete";
 
@@ -11,6 +11,7 @@ export interface CommittedHabitSnapshot {
   habitId: string;
   name: string;
   glyph: string;
+  category?: HabitCategory;
 }
 
 export type DaySession = {

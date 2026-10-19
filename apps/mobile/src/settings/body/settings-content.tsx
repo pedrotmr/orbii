@@ -10,6 +10,7 @@ import InlineError from "../../components/states/inline-error";
 import { useThemedStyles } from "../../theme/use-theme";
 import SettingsSignOutSection from "../account/settings-sign-out-section";
 import SettingsCapacitySection from "../capacity/settings-capacity-section";
+import SettingsConnectedAgentsSection from "../connected-agents/settings-connected-agents-section";
 import SettingsPointsHistorySection from "../points-history/settings-points-history-section";
 import SettingsDailyRemindersSection from "../reminders/settings-daily-reminders-section";
 import SettingsRewardsSection from "../rewards/settings-rewards-section";
@@ -30,6 +31,7 @@ interface SettingsContentProps {
   reminderPermissionMessage: string | null;
   onCapacity: (value: number) => void;
   onPointHistory: () => void;
+  onConnectedAgents: () => void;
   onRewardsVisible: (visible: boolean) => void;
   onThemePreference: (preference: ThemePreference) => void;
   onTimezone: (value: string) => Promise<boolean>;
@@ -52,6 +54,7 @@ export default function SettingsContent({
   reminderPermissionMessage,
   onCapacity,
   onPointHistory,
+  onConnectedAgents,
   onRewardsVisible,
   onThemePreference,
   onTimezone,
@@ -93,6 +96,8 @@ export default function SettingsContent({
         onChange={onReminder}
         onOpenSettings={onOpenReminderSettings}
       />
+      <Text style={styles.section}>Connections</Text>
+      <SettingsConnectedAgentsSection onOpen={onConnectedAgents} />
       <Text style={styles.section}>Points</Text>
       <SettingsRewardsSection
         visible={rewardsVisible}
