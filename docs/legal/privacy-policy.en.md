@@ -6,7 +6,7 @@
 **Last updated (draft):** 19 October 2026  
 **App:** Orbii (`app.orbii.mobile`)  
 **Operator (draft):** Pedro Ramos / Orbii — **[LAWYER: confirm legal name, entity type, and jurisdiction]**  
-**Contact (draft):** **[LAWYER: confirm a monitored privacy contact address]** — until confirmed, use the email listed on the Orbii GitHub profile for `pedrotmr`.
+**Contact (draft):** **[LAWYER: confirm a monitored privacy contact address before publish.]** Until then, privacy and deletion requests use the public email listed on the GitHub profile for [`pedrotmr`](https://github.com/pedrotmr).
 
 This draft describes how Orbii handles information based on the current V2 product ([Spec V2](https://github.com/pedrotmr/orbii/issues/50)), the Convex schema, and remote MCP access (PR #108). It is written to support Apple App Store Review Guideline **5.1.1(i)** (privacy policy link in App Store Connect metadata **and** easily accessible inside the app) and related expectations in **5.1.1** / **5.1.2**. Hosting the URL and wiring the in-app link are separate steps; see [hosting.md](./hosting.md).
 
@@ -24,14 +24,14 @@ Orbii is currently intended for the creator and a small set of trusted users (fo
 
 ## 2. Summary
 
-| Topic | Current practice (as implemented) |
-| --- | --- |
-| Account | Required. Sign in with **Google** or **Apple** via **Clerk**. |
-| App data | Stored in **Convex** (habits, daily sessions, points, rewards, agent connections). |
-| Analytics / ads | Orbii does **not** ship a third-party analytics or advertising SDK in the mobile app at the time of this draft. |
-| Notifications | Optional **local** reminders only; no remote push for daily reminders. |
-| Connected agents | Optional. You authorize third-party MCP clients with `orbii:read` and/or `orbii:write`. |
-| Sale of data | We do **not** sell your personal information. **[LAWYER: confirm “sell” / “share” language for target jurisdictions]** |
+| Topic            | Current practice (as implemented)                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Account          | Required. Sign in with **Google** or **Apple** via **Clerk**.                                                          |
+| App data         | Stored in **Convex** (habits, daily sessions, points, rewards, agent connections).                                     |
+| Analytics / ads  | Orbii does **not** ship a third-party analytics or advertising SDK in the mobile app at the time of this draft.        |
+| Notifications    | Optional **local** reminders only; no remote push for daily reminders.                                                 |
+| Connected agents | Optional. You authorize third-party MCP clients with `orbii:read` and/or `orbii:write`.                                |
+| Sale of data     | We do **not** sell your personal information. **[LAWYER: confirm “sell” / “share” language for target jurisdictions]** |
 
 ---
 
@@ -46,7 +46,7 @@ When you sign in, **Clerk** processes authentication data on our behalf, includi
 
 We do **not** offer email/password sign-in in V2. Sign-in is Google or Apple only.
 
-Clerk’s processing of end-user “Customer Data” is described in [Clerk’s Privacy Policy](https://clerk.com/legal/privacy) (Clerk acts as a processor for that Customer Data; Orbii is the customer). See also [Clerk subprocessors](https://clerk.com/legal/subprocessors).
+[Clerk’s Privacy Policy](https://clerk.com/legal/privacy) covers Clerk’s own websites and services. It does **not** govern “Customer Data” that Orbii end users enter into Clerk through Orbii; for that data, **Orbii is the customer / controller** and **Clerk acts as a processor or service provider** under Clerk’s terms and (when applicable) a Data Processing Agreement with Orbii. End-user questions about Orbii account data should come to us (see §12). See also [Clerk subprocessors](https://clerk.com/legal/subprocessors).
 
 **[LAWYER]** Confirm which Clerk fields Orbii’s Clerk instance is configured to retain (email, name, avatar, OAuth tokens) and whether any Clerk Dashboard features (for example session recording analytics on Clerk’s own properties) are irrelevant to end users of the app.
 
@@ -60,7 +60,7 @@ We store the following in **Convex**, keyed to your Clerk user id:
 - **Point transactions:** amount, source type (habit award, completion bonus, reward redemption), source name snapshot, local date
 - **Rewards:** name, cost, active/redeemed status, redemption timestamps when applicable
 - **Connected agents:** client id and name, OAuth application id, granted scopes, token fingerprint, encrypted access token, connection / last-seen / revocation metadata
-- **MCP idempotency records:** short-lived request fingerprints for certain write tools (for example habit add / re-reveal / commit deduplication)
+- **MCP idempotency records:** request fingerprints for certain write tools (habit add / re-reveal / commit deduplication); see §6 for retention
 
 **Convex** privacy and subprocessors: [Convex Privacy Policy](https://www.convex.dev/legal/privacy), [Subprocessors](https://www.convex.dev/legal/subprocessors), [DPA](https://www.convex.dev/legal/dpa).
 
@@ -72,8 +72,8 @@ Stored only on your device (not synced to Convex as of this draft):
 
 - Theme preference (AsyncStorage)
 - Daily reminder on/off preferences (AsyncStorage, scoped per user id)
-- Scheduled **local** notification payloads for morning/evening reminders (refreshed when the app opens; about ~30 days of one-off schedules while reminders stay enabled)
-- Optional **iOS Live Activity** state for Today’s Orbit (ActivityKit; local updates; no APNs / server push for this feature)
+- Scheduled **local** notification payloads for morning/evening reminders. When the app opens or returns to foreground, it refreshes a rolling queue of roughly ~30 days of one-off schedules while reminders stay enabled. Notices already scheduled can still fire until they are delivered or cancelled (for example when both reminders are off and the queue is synced, or notification permission is denied). Leaving the app closed does not by itself cancel notices already on the device.
+- **iOS Live Activity** state for Today’s Orbit on supported devices (ActivityKit; local updates; no APNs / server push). After a successful commit, Orbii starts the Live Activity automatically when the platform supports it. You can dismiss it; restore is available from Orbit while Today is active.
 - Auth session material managed by Clerk / Expo Secure Store on device
 
 Daily reminders use `expo-notifications` with **remote notifications disabled** in the app config. Reminder copy does not name open habits.
@@ -89,9 +89,9 @@ If you connect a compatible agent client:
 
 **Scopes**
 
-| Scope | What it allows |
-| --- | --- |
-| `orbii:read` | Read your Orbit habit list and today’s ritual state (offer, selections, commitment, completion). |
+| Scope         | What it allows                                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `orbii:read`  | Read your Orbit habit list and today’s ritual state (offer, selections, commitment, completion).                                      |
 | `orbii:write` | Start / re-reveal today; select / deselect offered habits; commit; complete / uncomplete committed habits; add / remove Orbit habits. |
 
 Write grants let the authorized client perform those actions **without** an additional Orbii confirmation per action. Excluded from MCP: habit edit/reorder (beyond add/remove), account settings, and other product actions not listed above.
@@ -115,7 +115,7 @@ We use the information above to:
 - Authenticate you and keep your Orbit and Today’s ritual in sync across sessions
 - Compute streaks, points, rewards, and history according to Orbii’s product rules
 - Honor your reminder preferences with on-device local notifications
-- Show optional Live Activities on iOS
+- Show iOS Live Activities after commit on supported devices
 - Operate Connected agents with the scopes you grant, and revoke them when you ask
 - Secure the service (for example token verification, encrypted credential storage, abuse prevention)
 - Respond to support or privacy requests you send us
@@ -128,14 +128,14 @@ We do **not** use your Orbit content for advertising. We do **not** sell persona
 
 We share information only as needed to run Orbii:
 
-| Recipient | Role | Examples |
-| --- | --- | --- |
-| **Clerk** | Authentication / OAuth | Sign-in with Google or Apple; MCP OAuth token issue / verify / revoke |
-| **Google / Apple** | Identity providers | Sign-in; governed by their policies and your account settings |
-| **Convex** | Application database and HTTP MCP endpoint | Storage of app data and agent connection metadata |
-| **Expo / EAS** | App distribution / updates | Build and update delivery when you use those channels |
-| **Connected agent clients** | User-authorized third parties | Orbit / Today read or write within `orbii:read` / `orbii:write` |
-| **Authorities** | Legal compulsion | If required by law **[LAWYER]** |
+| Recipient                   | Role                                       | Examples                                                              |
+| --------------------------- | ------------------------------------------ | --------------------------------------------------------------------- |
+| **Clerk**                   | Authentication / OAuth                     | Sign-in with Google or Apple; MCP OAuth token issue / verify / revoke |
+| **Google / Apple**          | Identity providers                         | Sign-in; governed by their policies and your account settings         |
+| **Convex**                  | Application database and HTTP MCP endpoint | Storage of app data and agent connection metadata                     |
+| **Expo / EAS**              | App distribution / updates                 | Build and update delivery when you use those channels                 |
+| **Connected agent clients** | User-authorized third parties              | Orbit / Today read or write within `orbii:read` / `orbii:write`       |
+| **Authorities**             | Legal compulsion                           | If required by law **[LAWYER]**                                       |
 
 We require service providers that process personal data for Orbii to protect it under their contracts and policies. **[LAWYER: align with Apple 5.1.1(i) “same or equal protection” wording and your DPAs]**
 
@@ -143,14 +143,14 @@ We require service providers that process personal data for Orbii to protect it 
 
 ## 6. Retention
 
-| Data | Retention (current product intent) |
-| --- | --- |
-| Convex account & Orbit data | Kept while your account exists |
-| Point transactions & redeemed rewards | Kept while your account exists (history / redeemed list are product features) |
-| Agent connection records | Kept while connected; after successful revocation, encrypted tokens are erased; connection history metadata **[confirm whether rows are deleted or only marked revoked]** |
-| MCP idempotency records | Short-lived (for example habit-add deduplication about **24 hours**) |
-| On-device reminder schedules | Cleared or stop refreshing if reminders are off or the app is not opened |
-| Clerk account data | Per Clerk retention and your deletion request |
+| Data                                  | Retention (current product intent)                                                                                                                                                                                                            |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Convex account & Orbit data           | Kept while your account exists                                                                                                                                                                                                                |
+| Point transactions & redeemed rewards | Kept while your account exists (history / redeemed list are product features)                                                                                                                                                                 |
+| Agent connection records              | Kept while connected; after successful revocation, encrypted tokens are erased; connection history metadata **[confirm whether rows are deleted or only marked revoked]**                                                                     |
+| MCP idempotency records               | About a **24-hour** deduplication window. Expired rows are deleted when the same OAuth client later issues another request of that type; inactive clients may leave rows until then or until account deletion. **[PRODUCT: scheduled purge]** |
+| On-device reminder schedules          | Refreshed on app open while enabled; already-scheduled one-offs can fire until delivered or cancelled                                                                                                                                         |
+| Clerk account data                    | Per Clerk retention and your deletion request                                                                                                                                                                                                 |
 
 **[LAWYER]** Set firm retention schedules and backup deletion timelines.
 
@@ -167,15 +167,15 @@ We require service providers that process personal data for Orbii to protect it 
 
 ### 7.2 Account and data deletion
 
-**[LAWYER] [PRODUCT GAP]** Apple Guideline **5.1.1(v)** requires that if the app supports account creation, it must also offer **account deletion within the app**. Orbii currently has **no** in-app “delete account” flow and **no** Convex mutation that erases a user’s full dataset. Until that ships, deletion is **manual**: contact the privacy address above and request deletion; we will delete Convex records tied to your `clerkUserId` and request deletion of the Clerk user, subject to verification.
+**[LAWYER] [PRODUCT GAP]** Apple Guideline **5.1.1(v)** requires that if the app supports account creation, it must also offer **account deletion within the app**. Counsel cannot waive that requirement for an App Store submission that supports accounts. Orbii currently has **no** in-app “delete account” flow and **no** Convex mutation that erases a user’s full dataset. Until that ships, deletion is **manual**: contact the privacy contact at the top of this policy (see also §12) and request deletion; we will delete Convex records tied to your `clerkUserId` and request deletion of the Clerk user, subject to verification.
 
 Draft commitment once product support exists:
 
-1. In-app **Delete account** control  
-2. Deletes Convex user data (users, habits, day sessions, point transactions, rewards, agent connections, MCP request tables)  
-3. Revokes connected OAuth tokens via Clerk  
-4. Deletes the Clerk user  
-5. Confirms completion to the requester  
+1. In-app **Delete account** control
+2. Deletes Convex user data (users, habits, day sessions, point transactions, rewards, agent connections, MCP request tables)
+3. Revokes connected OAuth tokens via Clerk
+4. Deletes the Clerk user
+5. Confirms completion to the requester
 
 **[LAWYER]** Define identity verification, SLA (for example 30 days), and exceptions (legal holds).
 
@@ -211,7 +211,7 @@ We may update this policy. For material changes we will update the “Last updat
 
 ## 12. Contact
 
-Privacy questions and deletion requests: **[LAWYER: insert address]**  
+Privacy questions and deletion requests: the contact listed at the top of this policy (public email on the GitHub profile for [`pedrotmr`](https://github.com/pedrotmr) until a dedicated address is confirmed).  
 GitHub project: [https://github.com/pedrotmr/orbii](https://github.com/pedrotmr/orbii)
 
 ---
@@ -222,11 +222,11 @@ Not part of the legal policy text; for App Store Connect “App Privacy” nutri
 
 Likely **collected** data types (draft):
 
-- **Contact Info** — email (via Clerk / identity provider), possibly name  
-- **Identifiers** — user id (Clerk)  
-- **User Content** — habit names, reward names, ritual history  
-- **Usage Data** — product events stored as day sessions / transactions (not a separate analytics SDK)  
-- **Diagnostics** — only if Expo/Apple crash tooling is enabled later  
+- **Contact Info** — email (via Clerk / identity provider), possibly name
+- **Identifiers** — user id (Clerk)
+- **User Content** — habit names, reward names, ritual history
+- **Usage Data** — product events stored as day sessions / transactions (not a separate analytics SDK)
+- **Diagnostics** — only if Expo/Apple crash tooling is enabled later
 
 Likely **not** collected by Orbii today: Precise Location, Tracking (ATT), advertising data, HealthKit.
 
@@ -234,4 +234,4 @@ Linked to user / used for app functionality: yes for account and content. Tracki
 
 ---
 
-*This document is a draft. Do not publish or submit to App Store Connect until counsel review and a public HTTPS URL are ready.*
+_This document is a draft. Do not publish or submit to App Store Connect until counsel review and a public HTTPS URL are ready._
