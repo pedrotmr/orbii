@@ -56,11 +56,11 @@ Armazenamos no **Convex**, associados ao seu id Clerk:
 
 - **Perfil / preferências:** capacidade diária padrão, fuso horário salvo, sequência (streak), dias concluídos, última data local concluída, saldo de pontos, visibilidade de recompensas
 - **Hábitos (Órbita):** nome, glifo, categoria (`body`, `mind`, `learn`, `life`), ordem, valor em pontos
-- **Sessões do dia:** data local, fase do ritual, ids oferecidos / selecionados / comprometidos / concluídos, pontos ganhos, snapshots dos valores de pontos e nomes dos hábitos no momento do compromisso
+- **Sessões do dia:** data local, fase do ritual, ids oferecidos / selecionados / comprometidos / concluídos, pontos ganhos e snapshots dos valores de pontos no momento do compromisso. Se um hábito comprometido for depois removido da Órbita enquanto aquele dia já estiver completo, o Orbii também guarda um snapshot do hábito (nome, glifo, categoria) na sessão do dia pela vida da conta
 - **Transações de pontos:** valor, tipo de origem (premiação de hábito, bônus de conclusão, resgate de recompensa), snapshot do nome da origem, data local
 - **Recompensas:** nome, custo, status ativo/resgatado, carimbos de resgate quando aplicável
 - **Agentes conectados:** id e nome do cliente, id da aplicação OAuth, escopos concedidos, fingerprint do token, token de acesso criptografado, metadados de conexão / última atividade / revogação
-- **Registros de idempotência MCP:** fingerprints de pedidos para certas ferramentas de escrita (deduplicação de adicionar hábito / reoferecer / comprometer); ver §6 sobre retenção
+- **Registros de idempotência MCP** para deduplicação de ferramentas de escrita (ver §6): campos comuns incluem id do cliente, id do pedido e created-at; linhas de `add_habit` também guardam nome, glifo, categoria e habit key; linhas de `rereveal_today` / `commit_today` também guardam a data local
 
 Privacidade e subprocessadores do **Convex**: [Privacy Policy](https://www.convex.dev/legal/privacy), [Subprocessors](https://www.convex.dev/legal/subprocessors), [DPA](https://www.convex.dev/legal/dpa).
 
@@ -72,7 +72,7 @@ Somente no seu aparelho (não sincronizados com o Convex neste rascunho):
 
 - Preferência de tema (AsyncStorage)
 - Preferências de lembretes diários (AsyncStorage, por usuário)
-- Filas de notificações **locais** para lembretes de manhã/noite. Ao abrir o app ou voltar ao primeiro plano, o Orbii renova uma fila rolante de cerca de ~30 dias de agendamentos únicos enquanto os lembretes estiverem ativos. Avisos já agendados ainda podem disparar até serem entregues ou cancelados (por exemplo quando ambos os lembretes estão desligados e a fila é sincronizada, ou a permissão de notificação é negada). Deixar o app fechado não cancela, por si só, avisos já no dispositivo.
+- Filas de notificações **locais** para lembretes de manhã/noite. Ao abrir o app ou voltar ao primeiro plano, o Orbii renova uma fila rolante de cerca de ~30 dias de agendamentos únicos enquanto os lembretes estiverem ativos. Avisos já agendados ainda podem disparar até serem entregues ou cancelados (por exemplo, quando ambos os lembretes estão desligados e a fila é sincronizada, ou a permissão de notificação é negada). Deixar o app fechado não cancela, por si só, avisos já no dispositivo.
 - Estado de **Live Activity** no iOS em dispositivos suportados (ActivityKit; atualizações locais; sem APNs). Após um compromisso bem-sucedido, o Orbii inicia a Live Activity automaticamente quando a plataforma permite. Você pode dispensá-la; a restauração está disponível em Orbit enquanto Hoje estiver ativo.
 - Material de sessão gerido pelo Clerk / Expo Secure Store
 
@@ -85,7 +85,7 @@ Se você conectar um cliente de agente compatível:
 - A autorização usa **OAuth do Clerk**. O Orbii verifica tokens opacos com a API Backend do Clerk.
 - No primeiro uso autenticado do MCP, o Orbii guarda nome e id do cliente, escopos concedidos e um token de acesso opaco **criptografado com AES-GCM** no Convex.
 - A identidade das chamadas MCP vem só do sujeito do token verificado. Argumentos de ferramentas nunca aceitam um user id Orbii fornecido pelo cliente.
-- Você pode revisar e revogar conexões em **Settings → Connected agents** (rótulo em inglês na UI atual do app). A revogação bloqueia o token no Orbii e pede ao Clerk a revogação dos tokens; as credenciais criptografadas são apagadas após confirmação do Clerk.
+- Você pode revisar e revogar conexões em **Settings → Connected agents** (rótulo em inglês na UI atual do app). A revogação bloqueia o token no Orbii e pede ao Clerk a revogação dos tokens; após o Clerk confirmar, o Orbii limpa o token de acesso criptografado, mas **mantém** a linha de metadados da conexão (identidade do cliente, escopos, fingerprint, carimbos, `revokedAt`) até a exclusão da conta.
 
 **Escopos**
 
@@ -94,7 +94,7 @@ Se você conectar um cliente de agente compatível:
 | `orbii:read`  | Ler a lista de hábitos da Órbita e o estado do ritual de hoje (oferta, seleções, compromisso, conclusão).                                                             |
 | `orbii:write` | Iniciar / reoferecer o dia; selecionar / desmarcar hábitos oferecidos; comprometer; concluir / desfazer hábitos comprometidos; adicionar / remover hábitos da Órbita. |
 
-A concessão de escrita permite que o cliente autorizado execute essas ações **sem** nova confirmação no Orbii por ação. Fora do MCP: editar/reordenar hábitos (além de adicionar/remover), configurações de conta e outras ações não listadas.
+A concessão de escrita permite que o cliente autorizado execute essas ações **sem** nova confirmação no Orbii por ação. **Não** há ferramentas MCP dedicadas para editar valores de pontos, criar recompensas ou resgatar recompensas. Escritas do ritual ainda podem **alterar o saldo de pontos e o histórico** como efeito colateral (por exemplo, concluir ou desfazer um hábito concede ou reverte pontos, e completar a Órbita de Hoje pode adicionar o bônus de conclusão; remover um hábito também pode completar o dia). Também fora do MCP: editar/reordenar hábitos (além de adicionar/remover), configurações de conta e outras ações não listadas.
 
 **Importante:** Um agente conectado é um **terceiro escolhido por você**. Após a autorização, esse cliente (e os sistemas que ele usa) pode receber ou agir sobre dados da Órbita e de Hoje dentro dos escopos. O Orbii não controla como esse terceiro armazena ou processa os dados depois de recebê-los.
 
@@ -143,14 +143,14 @@ Exigimos que prestadores que processem dados pessoais para o Orbii os protejam s
 
 ## 6. Retenção
 
-| Dados                                         | Retenção (intenção atual do produto)                                                                                                                                                                                                                        |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Conta e dados da Órbita no Convex             | Enquanto a conta existir                                                                                                                                                                                                                                    |
-| Transações de pontos e recompensas resgatadas | Enquanto a conta existir                                                                                                                                                                                                                                    |
-| Conexões de agentes                           | Enquanto conectadas; após revogação bem-sucedida, tokens criptografados são apagados; metadados de histórico **[confirmar exclusão vs. marcação de revogado]**                                                                                              |
-| Idempotência MCP                              | Janela de deduplicação de cerca de **24 horas**. Linhas expiradas são apagadas quando o mesmo cliente OAuth emite depois outro pedido desse tipo; clientes inativos podem deixar linhas até então ou até a exclusão da conta. **[PRODUTO: purge agendado]** |
-| Agendamentos locais de lembretes              | Renovados ao abrir o app enquanto ativos; one-offs já agendados podem disparar até entrega ou cancelamento                                                                                                                                                  |
-| Dados de conta no Clerk                       | Conforme retenção do Clerk e seu pedido de exclusão                                                                                                                                                                                                         |
+| Dados                                         | Retenção (intenção atual do produto)                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Conta e dados da Órbita no Convex             | Enquanto a conta existir                                                                                                                                                                                                                                                                                                            |
+| Transações de pontos e recompensas resgatadas | Enquanto a conta existir                                                                                                                                                                                                                                                                                                            |
+| Conexões de agentes                           | Metadados da conexão (identidade do cliente, escopos, fingerprint do token, carimbos, `revokedAt`) permanecem após a revogação como registro de auditoria até a exclusão da conta. Após o Clerk confirmar a revogação, o Orbii limpa só o token criptografado e `revocationPending` — não apaga a linha.                            |
+| Idempotência MCP                              | Janela de deduplicação de cerca de **24 horas** (não é prazo garantido de exclusão). As linhas guardam os campos listados no §3.2. Linhas expiradas são apagadas só quando o mesmo cliente OAuth emite depois outro pedido desse tipo; clientes inativos podem deixar linhas até a exclusão da conta. **[PRODUTO: purge agendado]** |
+| Agendamentos locais de lembretes              | Renovados ao abrir o app enquanto ativos; one-offs já agendados podem disparar até entrega ou cancelamento                                                                                                                                                                                                                          |
+| Dados de conta no Clerk                       | Conforme retenção do Clerk e seu pedido de exclusão                                                                                                                                                                                                                                                                                 |
 
 **[ADVOGADO]** Fixar prazos firmes e prazos de exclusão em backups.
 
@@ -169,15 +169,18 @@ Exigimos que prestadores que processem dados pessoais para o Orbii os protejam s
 
 **[ADVOGADO] [LACUNA DE PRODUTO]** A Guideline **5.1.1(v)** da Apple exige que, se o app permite criar conta, também ofereça **exclusão de conta dentro do app**. Advogado não pode dispensar esse requisito para uma submissão à App Store com contas. O Orbii ainda **não** tem fluxo “excluir conta” nem mutação Convex que apague o dataset completo. Até isso existir, a exclusão é **manual**: contate o contato de privacidade no topo desta política (veja também §12); apagaremos registros Convex ligados ao seu `clerkUserId` e pediremos a exclusão do usuário no Clerk, após verificação.
 
+A exclusão manual (e o fluxo rascunho abaixo) cobre dados **no servidor** (Convex e Clerk). Ela **não** limpa automaticamente preferências locais de tema ou lembretes no AsyncStorage, notificações locais já agendadas, estado de Live Activity nem material de sessão no Secure Store. Ao sair da sessão, a fila de lembretes locais é cancelada, mas essas preferências permanecem no aparelho até desinstalar o app ou limpar os dados. **[PRODUTO: documentar ou implementar limpeza no dispositivo no fluxo de exclusão]**
+
 Compromisso de rascunho quando o produto estiver pronto:
 
 1. Controle **Excluir conta** no app
-2. Apagar dados Convex do usuário (`users`, `habits`, `daySessions`, `pointTransactions`, `rewards`, `agentConnections`, tabelas de pedidos MCP)
-3. Revogar tokens OAuth de agentes via Clerk
+2. Revogar os tokens OAuth de acesso/refresh de cada Agente conectado via Clerk (exige o id da aplicação OAuth e o token criptografado armazenados)
+3. Após confirmar a revogação, apagar dados Convex do usuário (`users`, `habits`, `daySessions`, `pointTransactions`, `rewards`, `agentConnections`, tabelas de pedidos MCP)
 4. Excluir o usuário no Clerk
 5. Confirmar a conclusão
+6. Limpar ou orientar a limpeza dos resíduos no dispositivo listados acima
 
-**[ADVOGADO]** Definir verificação de identidade, SLA (por exemplo 30 dias) e exceções (retenções legais).
+**[ADVOGADO]** Definir verificação de identidade, SLA (por exemplo, 30 dias) e exceções (retenções legais).
 
 ### 7.3 Acesso / correção / portabilidade / oposição
 
@@ -230,7 +233,7 @@ Tipos provavelmente **coletados** (rascunho):
 
 Provavelmente **não** coletados pelo Orbii hoje: Localização precisa, Tracking (ATT), dados de publicidade, HealthKit.
 
-Vinculado ao usuário / usado para funcionalidade do app: sim, para conta e conteúdo. Tracking: não (rascunho). Publicidade de terceiros: não (rascunho).
+Vinculado ao usuário / usado para a funcionalidade do app: sim, para a conta e o conteúdo. Tracking: não (rascunho). Publicidade de terceiros: não (rascunho).
 
 ---
 

@@ -56,11 +56,11 @@ We store the following in **Convex**, keyed to your Clerk user id:
 
 - **Profile / preferences:** default daily capacity, saved timezone, streak, completed-day count, last completed local date, points balance, rewards visibility
 - **Habits (Orbit):** name, glyph, category (`body`, `mind`, `learn`, `life`), order, point value
-- **Day sessions:** local calendar date, ritual phase, offered / selected / committed / completed habit ids, earned points, committed point-value and habit name snapshots
+- **Day sessions:** local calendar date, ritual phase, offered / selected / committed / completed habit ids, earned points, and committed point-value snapshots taken at commit. If a committed habit is later removed from the Orbit while that day is already complete, Orbii also keeps a habit snapshot (name, glyph, category) on the day session for the life of the account
 - **Point transactions:** amount, source type (habit award, completion bonus, reward redemption), source name snapshot, local date
 - **Rewards:** name, cost, active/redeemed status, redemption timestamps when applicable
 - **Connected agents:** client id and name, OAuth application id, granted scopes, token fingerprint, encrypted access token, connection / last-seen / revocation metadata
-- **MCP idempotency records:** request fingerprints for certain write tools (habit add / re-reveal / commit deduplication); see §6 for retention
+- **MCP idempotency records** for write-tool deduplication (see §6): shared fields include client id, request id, and created-at; `add_habit` rows also keep name, glyph, category, and habit key; `rereveal_today` / `commit_today` rows also keep the local date
 
 **Convex** privacy and subprocessors: [Convex Privacy Policy](https://www.convex.dev/legal/privacy), [Subprocessors](https://www.convex.dev/legal/subprocessors), [DPA](https://www.convex.dev/legal/dpa).
 
@@ -85,7 +85,7 @@ If you connect a compatible agent client:
 - Authorization uses **Clerk OAuth**. Orbii verifies opaque access tokens with Clerk’s Backend API.
 - On first authenticated MCP use, Orbii stores the client name, client id, granted scopes, and an **AES-GCM encrypted** opaque access token in Convex.
 - Identity for MCP calls is taken only from the verified token subject. Tool arguments never accept a caller-supplied Orbii user id.
-- You can review and revoke connections in **Settings → Connected agents**. Revocation blocks the token in Orbii and asks Clerk to revoke access/refresh tokens; encrypted credentials are erased after Clerk confirms.
+- You can review and revoke connections in **Settings → Connected agents**. Revocation blocks the token in Orbii and asks Clerk to revoke access/refresh tokens; after Clerk confirms, Orbii clears the encrypted access token but **keeps** the connection metadata row (client identity, scopes, fingerprint, timestamps, `revokedAt`) until account deletion.
 
 **Scopes**
 
@@ -94,7 +94,7 @@ If you connect a compatible agent client:
 | `orbii:read`  | Read your Orbit habit list and today’s ritual state (offer, selections, commitment, completion).                                      |
 | `orbii:write` | Start / re-reveal today; select / deselect offered habits; commit; complete / uncomplete committed habits; add / remove Orbit habits. |
 
-Write grants let the authorized client perform those actions **without** an additional Orbii confirmation per action. Excluded from MCP: habit edit/reorder (beyond add/remove), account settings, and other product actions not listed above.
+Write grants let the authorized client perform those actions **without** an additional Orbii confirmation per action. There are **no** dedicated MCP tools to edit point values, create rewards, or redeem rewards. Ritual writes can still **change the spendable points balance and point history** as a side effect (for example completing or uncompleting a habit awards or reverses points, and finishing Today’s Orbit can add the completion bonus; removing a habit can also complete the day). Also excluded from MCP: habit edit/reorder (beyond add/remove), account settings, and other product actions not listed above.
 
 **Important:** A connected agent is a **third party you choose**. Once authorized, that client (and any systems it uses) may receive or act on Orbit and Today data within the granted scopes. Orbii does not control how that third-party client stores or further processes data after it receives it.
 
@@ -143,14 +143,14 @@ We require service providers that process personal data for Orbii to protect it 
 
 ## 6. Retention
 
-| Data                                  | Retention (current product intent)                                                                                                                                                                                                            |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Convex account & Orbit data           | Kept while your account exists                                                                                                                                                                                                                |
-| Point transactions & redeemed rewards | Kept while your account exists (history / redeemed list are product features)                                                                                                                                                                 |
-| Agent connection records              | Kept while connected; after successful revocation, encrypted tokens are erased; connection history metadata **[confirm whether rows are deleted or only marked revoked]**                                                                     |
-| MCP idempotency records               | About a **24-hour** deduplication window. Expired rows are deleted when the same OAuth client later issues another request of that type; inactive clients may leave rows until then or until account deletion. **[PRODUCT: scheduled purge]** |
-| On-device reminder schedules          | Refreshed on app open while enabled; already-scheduled one-offs can fire until delivered or cancelled                                                                                                                                         |
-| Clerk account data                    | Per Clerk retention and your deletion request                                                                                                                                                                                                 |
+| Data                                  | Retention (current product intent)                                                                                                                                                                                                                                                                                            |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Convex account & Orbit data           | Kept while your account exists                                                                                                                                                                                                                                                                                                |
+| Point transactions & redeemed rewards | Kept while your account exists (history / redeemed list are product features)                                                                                                                                                                                                                                                 |
+| Agent connection records              | Connection metadata (client identity, scopes, token fingerprint, timestamps, `revokedAt`) is retained after revocation as an audit stub until account deletion. After Clerk confirms revocation, Orbii clears the encrypted access token and `revocationPending` only — it does not delete the row.                           |
+| MCP idempotency records               | About a **24-hour** deduplication window (not a guaranteed deletion deadline). Rows store the fields listed in §3.2. Expired rows are deleted only when the same OAuth client later issues another request of that type; inactive clients may leave rows until then or until account deletion. **[PRODUCT: scheduled purge]** |
+| On-device reminder schedules          | Refreshed on app open while enabled; already-scheduled one-offs can fire until delivered or cancelled                                                                                                                                                                                                                         |
+| Clerk account data                    | Per Clerk retention and your deletion request                                                                                                                                                                                                                                                                                 |
 
 **[LAWYER]** Set firm retention schedules and backup deletion timelines.
 
@@ -169,13 +169,16 @@ We require service providers that process personal data for Orbii to protect it 
 
 **[LAWYER] [PRODUCT GAP]** Apple Guideline **5.1.1(v)** requires that if the app supports account creation, it must also offer **account deletion within the app**. Counsel cannot waive that requirement for an App Store submission that supports accounts. Orbii currently has **no** in-app “delete account” flow and **no** Convex mutation that erases a user’s full dataset. Until that ships, deletion is **manual**: contact the privacy contact at the top of this policy (see also §12) and request deletion; we will delete Convex records tied to your `clerkUserId` and request deletion of the Clerk user, subject to verification.
 
+Manual deletion (and the draft in-app flow below) currently covers **server-side** Convex and Clerk data. It does **not** automatically clear on-device theme or reminder preferences in AsyncStorage, already-scheduled local notifications, Live Activity state, or Clerk/Expo Secure Store session material. Sign-out cancels the local reminder queue but leaves those preferences on the device until uninstall or clear-app-data. **[PRODUCT: document or implement device cleanup in delete-account]**
+
 Draft commitment once product support exists:
 
 1. In-app **Delete account** control
-2. Deletes Convex user data (users, habits, day sessions, point transactions, rewards, agent connections, MCP request tables)
-3. Revokes connected OAuth tokens via Clerk
-4. Deletes the Clerk user
-5. Confirms completion to the requester
+2. Revoke each Connected agent’s OAuth access/refresh tokens via Clerk (requires the stored OAuth application id and encrypted access token)
+3. After revocation is confirmed, delete Convex user data (users, habits, day sessions, point transactions, rewards, agent connections, MCP request tables)
+4. Delete the Clerk user
+5. Confirm completion to the requester
+6. Clear or instruct clearing of on-device leftovers listed above
 
 **[LAWYER]** Define identity verification, SLA (for example 30 days), and exceptions (legal holds).
 
