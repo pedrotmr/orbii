@@ -73,7 +73,7 @@ Somente no seu aparelho (não sincronizados com o Convex neste rascunho):
 - Preferência de tema (AsyncStorage)
 - Preferências de lembretes diários (AsyncStorage, por usuário)
 - Filas de notificações **locais** para lembretes de manhã/noite. Ao abrir o app ou voltar ao primeiro plano, o Orbii renova uma fila rolante de cerca de ~30 dias de agendamentos únicos enquanto os lembretes estiverem ativos. Avisos já agendados ainda podem disparar até serem entregues ou cancelados (por exemplo, quando ambos os lembretes estão desligados e a fila é sincronizada, ou a permissão de notificação é negada). Deixar o app fechado não cancela, por si só, avisos já no dispositivo.
-- Estado de **Live Activity** no iOS em dispositivos suportados (ActivityKit; atualizações locais; sem APNs). Após um compromisso bem-sucedido, o Orbii inicia a Live Activity automaticamente quando a plataforma permite. Você pode dispensá-la; a restauração está disponível em Orbit enquanto Hoje estiver ativo.
+- Estado de **Live Activity** no iOS em dispositivos suportados (ActivityKit; atualizações locais; sem APNs). Após um compromisso bem-sucedido, o Orbii inicia a Live Activity automaticamente quando a plataforma permite (pode mostrar nomes de hábitos comprometidos na Lock Screen). O Orbii encerra ou atualiza quando o app roda de novo após complete, reoferecer ou idle — não há expiração configurada à meia-noite/em background. Se o app permanecer suspenso após a virada do dia local, a activity pode continuar até você dispensá-la ou o iOS expirar. A restauração está disponível em Orbit enquanto Hoje estiver ativo.
 - Material de sessão gerido pelo Clerk / Expo Secure Store
 
 Lembretes usam `expo-notifications` com **notificações remotas desativadas** na config do app. O texto dos lembretes não nomeia hábitos em aberto.
@@ -83,7 +83,7 @@ Lembretes usam `expo-notifications` com **notificações remotas desativadas** n
 Se você conectar um cliente de agente compatível:
 
 - A autorização usa **OAuth do Clerk**. O Orbii verifica tokens opacos com a API Backend do Clerk.
-- No primeiro uso autenticado do MCP, o Orbii guarda nome e id do cliente, escopos concedidos e um token de acesso opaco **criptografado com AES-GCM** no Convex.
+- No uso autenticado do MCP, o Orbii guarda nome e id do cliente, escopos concedidos, fingerprint do token e um token de acesso opaco **criptografado com AES-GCM** no Convex. Fingerprints iguais atualizam a mesma linha; um token renovado gera um fingerprint novo e portanto uma **nova** linha em `agentConnections`, de modo que tokens criptografados anteriores permanecem até essa linha ser revogada ou a conta ser excluída. **[PRODUTO: preferir uma linha ativa por cliente]**
 - A identidade das chamadas MCP vem só do sujeito do token verificado. Argumentos de ferramentas nunca aceitam um user id Orbii fornecido pelo cliente.
 - Você pode revisar e revogar conexões em **Settings → Connected agents** (rótulo em inglês na UI atual do app). A revogação bloqueia o token no Orbii e pede ao Clerk a revogação dos tokens; após o Clerk confirmar, o Orbii limpa o token de acesso criptografado e zera `revocationPending`, mas **mantém** a linha de metadados da conexão (identidade do cliente, escopos, fingerprint, carimbos, `revokedAt`) até a exclusão da conta.
 
@@ -128,14 +128,15 @@ Usamos as informações acima para:
 
 Compartilhamos apenas o necessário para operar o Orbii:
 
-| Destinatário            | Papel                            | Exemplos                                                               |
-| ----------------------- | -------------------------------- | ---------------------------------------------------------------------- |
-| **Clerk**               | Autenticação / OAuth             | Login Google ou Apple; emissão / verificação / revogação de tokens MCP |
-| **Google / Apple**      | Provedores de identidade         | Login; políticas deles e suas configurações de conta                   |
-| **Convex**              | Banco do app e endpoint HTTP MCP | Dados do app e metadados de agentes                                    |
-| **Expo / EAS**          | Distribuição / updates           | Builds e updates OTA                                                   |
-| **Clientes de agentes** | Terceiros autorizados por você   | Leitura/escrita da Órbita / Hoje nos escopos concedidos                |
-| **Autoridades**         | Obrigação legal                  | Se exigido por lei **[ADVOGADO]**                                      |
+| Destinatário            | Papel                            | Exemplos                                                                       |
+| ----------------------- | -------------------------------- | ------------------------------------------------------------------------------ |
+| **Clerk**               | Autenticação / OAuth             | Login Google ou Apple; emissão / verificação / revogação de tokens MCP         |
+| **Google / Apple**      | Provedores de identidade         | Login; políticas deles e suas configurações de conta                           |
+| **Convex**              | Banco do app e endpoint HTTP MCP | Dados do app e metadados de agentes                                            |
+| **Expo / EAS**          | Distribuição / updates           | Builds e updates OTA                                                           |
+| **Clientes de agentes** | Terceiros autorizados por você   | Leitura/escrita da Órbita / Hoje nos escopos concedidos                        |
+| **Provedor de e-mail**  | Correspondência de privacidade   | E-mail que você envia ao contato de privacidade (endereço, corpo, verificação) |
+| **Autoridades**         | Obrigação legal                  | Se exigido por lei **[ADVOGADO]**                                              |
 
 Exigimos que prestadores que processem dados pessoais para o Orbii os protejam sob contratos e políticas. **[ADVOGADO: alinhar à redação Apple 5.1.1(i) de “same or equal protection” e aos DPAs]**
 
@@ -147,7 +148,8 @@ Exigimos que prestadores que processem dados pessoais para o Orbii os protejam s
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Conta e dados da Órbita no Convex             | Enquanto a conta existir                                                                                                                                                                                                                                                                                                            |
 | Transações de pontos e recompensas resgatadas | Enquanto a conta existir                                                                                                                                                                                                                                                                                                            |
-| Conexões de agentes                           | Metadados da conexão (identidade do cliente, escopos, fingerprint do token, carimbos, `revokedAt`) permanecem após a revogação como registro de auditoria até a exclusão da conta. Após o Clerk confirmar a revogação, o Orbii limpa só o token criptografado e `revocationPending` — não apaga a linha.                            |
+| Conexões de agentes                           | Uma linha por fingerprint de token de acesso (renovar o token pode deixar linhas extras com tokens criptografados antigos). Após a revogação, os metadados permanecem como auditoria até a exclusão da conta; o Orbii limpa só o token criptografado e `revocationPending` — não apaga a linha.                                     |
+| E-mail de pedido de privacidade               | Endereço do remetente, conteúdo da mensagem e eventual material de verificação no provedor de mailbox do contato de privacidade, pelo tempo necessário para atender ao pedido (e o que o advogado exigir a mais) **[ADVOGADO]**                                                                                                     |
 | Idempotência MCP                              | Janela de deduplicação de cerca de **24 horas** (não é prazo garantido de exclusão). As linhas guardam os campos listados no §3.2. Linhas expiradas são apagadas só quando o mesmo cliente OAuth emite depois outro pedido desse tipo; clientes inativos podem deixar linhas até a exclusão da conta. **[PRODUTO: purge agendado]** |
 | Agendamentos locais de lembretes              | Renovados ao abrir o app enquanto ativos; one-offs já agendados podem disparar até entrega ou cancelamento                                                                                                                                                                                                                          |
 | Dados de conta no Clerk                       | Conforme retenção do Clerk e seu pedido de exclusão                                                                                                                                                                                                                                                                                 |
