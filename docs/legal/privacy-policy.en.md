@@ -85,7 +85,7 @@ If you connect a compatible agent client:
 - Authorization uses **Clerk OAuth**. Orbii verifies opaque access tokens with Clerk’s Backend API.
 - On first authenticated MCP use, Orbii stores the client name, client id, granted scopes, and an **AES-GCM encrypted** opaque access token in Convex.
 - Identity for MCP calls is taken only from the verified token subject. Tool arguments never accept a caller-supplied Orbii user id.
-- You can review and revoke connections in **Settings → Connected agents**. Revocation blocks the token in Orbii and asks Clerk to revoke access/refresh tokens; after Clerk confirms, Orbii clears the encrypted access token but **keeps** the connection metadata row (client identity, scopes, fingerprint, timestamps, `revokedAt`) until account deletion.
+- You can review and revoke connections in **Settings → Connected agents**. Revocation blocks the token in Orbii and asks Clerk to revoke access/refresh tokens; after Clerk confirms, Orbii clears the encrypted access token and resets `revocationPending`, but **keeps** the connection metadata row (client identity, scopes, fingerprint, timestamps, `revokedAt`) until account deletion.
 
 **Scopes**
 
@@ -94,7 +94,7 @@ If you connect a compatible agent client:
 | `orbii:read`  | Read your Orbit habit list and today’s ritual state (offer, selections, commitment, completion).                                      |
 | `orbii:write` | Start / re-reveal today; select / deselect offered habits; commit; complete / uncomplete committed habits; add / remove Orbit habits. |
 
-Write grants let the authorized client perform those actions **without** an additional Orbii confirmation per action. There are **no** dedicated MCP tools to edit point values, create rewards, or redeem rewards. Ritual writes can still **change the spendable points balance and point history** as a side effect (for example completing or uncompleting a habit awards or reverses points, and finishing Today’s Orbit can add the completion bonus; removing a habit can also complete the day). Also excluded from MCP: habit edit/reorder (beyond add/remove), account settings, and other product actions not listed above.
+Write grants let the authorized client perform those actions **without** an additional Orbii confirmation per action. There are **no** dedicated MCP tools to edit point values, create rewards, or redeem rewards. Ritual writes can still **change the spendable points balance and point history** as a side effect: completing or uncompleting a habit awards or reverses habit points (and finishing Today’s Orbit can add the completion bonus). `remove_habit` does not reverse point awards; if removal completes an open day, it can add a completion-bonus transaction. Also excluded from MCP: habit edit/reorder (beyond add/remove), account settings, and other product actions not listed above.
 
 **Important:** A connected agent is a **third party you choose**. Once authorized, that client (and any systems it uses) may receive or act on Orbit and Today data within the granted scopes. Orbii does not control how that third-party client stores or further processes data after it receives it.
 
@@ -167,7 +167,7 @@ We require service providers that process personal data for Orbii to protect it 
 
 ### 7.2 Account and data deletion
 
-**[LAWYER] [PRODUCT GAP]** Apple Guideline **5.1.1(v)** requires that if the app supports account creation, it must also offer **account deletion within the app**. Counsel cannot waive that requirement for an App Store submission that supports accounts. Orbii currently has **no** in-app “delete account” flow and **no** Convex mutation that erases a user’s full dataset. Until that ships, deletion is **manual**: contact the privacy contact at the top of this policy (see also §12) and request deletion; we will delete Convex records tied to your `clerkUserId` and request deletion of the Clerk user, subject to verification.
+**[LAWYER] [PRODUCT GAP]** Apple Guideline **5.1.1(v)** requires that if the app supports account creation, it must also offer **account deletion within the app**. Counsel cannot waive that requirement for an App Store submission that supports accounts. Orbii currently has **no** in-app “delete account” flow and **no** Convex mutation that erases a user’s full dataset. Until that ships, deletion is **manual**: contact the privacy contact at the top of this policy (see also §12) and request deletion. After verification, we will revoke each Connected agent’s OAuth tokens via Clerk (using the still-stored OAuth application id and encrypted access token), wait for confirmation, and only then delete Convex records tied to your `clerkUserId` (including `agentConnections`) and request deletion of the Clerk user.
 
 Manual deletion (and the draft in-app flow below) currently covers **server-side** Convex and Clerk data. It does **not** automatically clear on-device theme or reminder preferences in AsyncStorage, already-scheduled local notifications, Live Activity state, or Clerk/Expo Secure Store session material. Sign-out cancels the local reminder queue but leaves those preferences on the device until uninstall or clear-app-data. **[PRODUCT: document or implement device cleanup in delete-account]**
 
