@@ -16,12 +16,12 @@ This matters for future public distribution, not for the current V2 audience. Sp
 
 ## App-store matches
 
-| Listing | Store records | Why it matters |
-| --- | --- | --- |
-| **Orbii**, Orbii LLC | [App Store](https://apps.apple.com/us/app/orbii/id6803647562) · [Google Play](https://play.google.com/store/apps/details?id=com.orbiiapp.orbii) | Exact title. Social Networking; US App Store release 10 September 2026. Closest and highest-risk collision. |
-| **Travel Phrases: Orbii**, Himshikhar Gayan | [App Store](https://apps.apple.com/us/app/travel-phrases-orbii/id6759188290) | Uses **Orbii** as the distinctive store-name token in Education. |
-| **Orbii**, Felipe Marquez | [Google Play](https://play.google.com/store/apps/details?id=com.orbii.app) | Exact title on Play; restaurant / shift-worker productivity positioning. |
-| **ORBII Safety**, ORBII SAFETY | [Google Play](https://play.google.com/store/apps/details?id=in.orbii.app) · [orbii.in](https://www.orbii.in/) | Exact / near-exact **ORBII** on Play for a voice-SOS safety app (India). |
+| Listing                                     | Store records                                                                                                                                   | Why it matters                                                                                              |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Orbii**, Orbii LLC                        | [App Store](https://apps.apple.com/us/app/orbii/id6803647562) · [Google Play](https://play.google.com/store/apps/details?id=com.orbiiapp.orbii) | Exact title. Social Networking; US App Store release 10 September 2026. Closest and highest-risk collision. |
+| **Travel Phrases: Orbii**, Himshikhar Gayan | [App Store](https://apps.apple.com/us/app/travel-phrases-orbii/id6759188290)                                                                    | Uses **Orbii** as the distinctive store-name token in Education.                                            |
+| **Orbii**, Felipe Marquez                   | [Google Play](https://play.google.com/store/apps/details?id=com.orbii.app)                                                                      | Exact title on Play; restaurant / shift-worker productivity positioning.                                    |
+| **ORBII Safety**, ORBII SAFETY              | [Google Play](https://play.google.com/store/apps/details?id=in.orbii.app) · [orbii.in](https://www.orbii.in/)                                   | Exact / near-exact **ORBII** on Play for a voice-SOS safety app (India).                                    |
 
 Near matches such as NETGEAR **Orbi** and many **Orbis** / **Orbi** titles add search noise but are secondary to the exact **Orbii** listings above.
 
@@ -31,10 +31,10 @@ Near matches such as NETGEAR **Orbi** and many **Orbis** / **Orbi** titles add s
 
 On 19 October 2026 the official [INPI pePI](https://busca.inpi.gov.br/pePI/) and [BuscaWeb](https://buscaweb.inpi.gov.br/) brand search surfaces returned a maintenance page, so a direct pePI exact/radical search could not be completed. Brazil coverage below is from [TMview](https://www.tmdn.org/tmview/#/tmview/results?page=1&pageSize=30&criteria=C&basicSearch=Orbii) (participating office Brazil — INPI). Re-run pePI when it is back before any filing decision.
 
-| Mark | Record | Status and class shown |
-| --- | --- | --- |
-| **ORBII** | [TMview BR 928364500](https://www.tmdn.org/tmview/#/tmview/detail/BR500000928364500) (INPI application 928364500) | Application refused / ended; Nice class 9; applicant ORBII TECNOLOGIA LTDA; filed 18 October 2022. Goods include data-processing devices and machine-productivity measuring devices. |
-| **orbiit** | [TMview](https://www.tmdn.org/tmview/#/tmview/results?page=1&pageSize=30&criteria=C&basicSearch=Orbii) (INPI application 906592577) | Ended; Nice class 42; Orbiit Business Intelligence Ltda. Near spelling, historical only. |
+| Mark       | Record                                                                                                                              | Status and class shown                                                                                                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ORBII**  | [TMview BR 928364500](https://www.tmdn.org/tmview/#/tmview/detail/BR500000928364500) (INPI application 928364500)                   | Application refused / ended; Nice class 9; applicant ORBII TECNOLOGIA LTDA; filed 18 October 2022. Goods include data-processing devices and machine-productivity measuring devices. |
+| **orbiit** | [TMview](https://www.tmdn.org/tmview/#/tmview/results?page=1&pageSize=30&criteria=C&basicSearch=Orbii) (INPI application 906592577) | Ended; Nice class 42; Orbiit Business Intelligence Ltda. Near spelling, historical only.                                                                                             |
 
 The refused Brazil **ORBII** class 9 record is not an active registration, but it shows prior local use of the exact word in a technology class.
 
@@ -42,10 +42,10 @@ The refused Brazil **ORBII** class 9 record is not an active registration, but i
 
 Wordmark search for **Orbii** on the [USPTO Trademark Search](https://tmsearch.uspto.gov/search/) on 19 October 2026 returned two live pending results:
 
-| Mark | Official record | Status and goods/services shown by USPTO |
-| --- | --- | --- |
-| **ORBII** | [Serial 50032455](https://tsdr.uspto.gov/#caseNumber=50032455&caseSearchType=US_APPLICATION&caseType=DEFAULT&searchType=statusSearch) · [search detail](https://tmsearch.uspto.gov/search/search-results/50032455) | Live / pending (awaiting examination); filed 5 August 2026; owner ORBARCANA LLC. IC 014 bracelets; IC 042 temporary use of online non-downloadable chatbot software using AI for personalized astrology. |
-| **ORBII THE CRYSTAL BUDDY** | [Serial 99733091](https://tsdr.uspto.gov/#caseNumber=99733091&caseSearchType=US_APPLICATION&caseType=DEFAULT&searchType=statusSearch) · [search detail](https://tmsearch.uspto.gov/search/search-results/99733091) | Live / pending (published for opposition 22 September 2026); owner Kimberly A Hera. IC 016 children’s books / stickers; IC 028 toys. Less relevant category overlap than the class 42 filing. |
+| Mark                        | Official record                                                                                                                                                                                                    | Status and goods/services shown by USPTO                                                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ORBII**                   | [Serial 50032455](https://tsdr.uspto.gov/#caseNumber=50032455&caseSearchType=US_APPLICATION&caseType=DEFAULT&searchType=statusSearch) · [search detail](https://tmsearch.uspto.gov/search/search-results/50032455) | Live / pending (awaiting examination); filed 5 August 2026; owner ORBARCANA LLC. IC 014 bracelets; IC 042 temporary use of online non-downloadable chatbot software using AI for personalized astrology. |
+| **ORBII THE CRYSTAL BUDDY** | [Serial 99733091](https://tsdr.uspto.gov/#caseNumber=99733091&caseSearchType=US_APPLICATION&caseType=DEFAULT&searchType=statusSearch) · [search detail](https://tmsearch.uspto.gov/search/search-results/99733091) | Live / pending (published for opposition 22 September 2026); owner Kimberly A Hera. IC 016 children’s books / stickers; IC 028 toys. Less relevant category overlap than the class 42 filing.            |
 
 The pending class 42 **ORBII** filing is the USPTO result closest to a mobile software product.
 
@@ -55,23 +55,29 @@ The pending class 42 **ORBII** filing is the USPTO result closest to a mobile so
 
 ### Related foreign hit (TMview)
 
-| Mark | Record | Status and classes |
-| --- | --- | --- |
+| Mark      | Record                                                                                 | Status and classes                                                                                                                                                                            |
+| --------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Orbii** | [UK00004370525](https://www.tmdn.org/tmview/#/tmview/detail/GB500000004370525) (UKIPO) | Application opposed (status date 6 October 2026); Nice classes 9 and 42; applicant HSTE Limited; filed 9 April 2026. Goods include mobile application software; services include SaaS / PaaS. |
 
 This UK filing is outside the requested EUIPO/INPI/USPTO trio but is included because it is an exact word mark in software classes.
 
-## Three checked alternatives
+## Short-name exploration
 
-These are shortlist candidates, not cleared names. For each, the U.S. App Store catalog, Google Play search, USPTO Wordmark search, EUIPO eSearch, and TMview (Contains **Orbii**-style query for the candidate string) were checked on 19 October 2026. No exact app title surfaced for these three. USPTO Wordmark search returned no results for each. EUIPO eSearch and TMview returned no exact trade mark rows for **Orbitoday** or **OrbitRitual**. TMview showed one UK filing that contains “Returnloop” in a longer mark for product-return logistics (different field).
+**Rechecked:** 20 October 2026. **Current shortlist: zero candidates.** The creator rejected **Orbitoday**, **OrbitRitual**, and **ReturnLoop**; all three are withdrawn from the shortlist.
 
-| Candidate | Store search | Assessment |
-| --- | --- | --- |
-| **Orbitoday** | [App Store](https://itunes.apple.com/search?term=Orbitoday&entity=software&country=us&limit=20) · [Google Play](https://play.google.com/store/search?q=Orbitoday&c=apps) | Strongest working candidate from this pass: no exact title or exact mark surfaced; keeps the Orbit metaphor. |
-| **OrbitRitual** | [App Store](https://itunes.apple.com/search?term=OrbitRitual&entity=software&country=us&limit=20) · [Google Play](https://play.google.com/store/search?q=OrbitRitual&c=apps) | No exact title or exact mark surfaced. Matches the product’s daily ritual language; slightly longer. |
-| **ReturnLoop** | [App Store](https://itunes.apple.com/search?term=ReturnLoop&entity=software&country=us&limit=20) · [Google Play](https://play.google.com/store/search?q=ReturnLoop&c=apps) | No exact store title. Already used internally as the brand token / splash system (`return-loop`). TMview shows UK mark “Returnloop Product returns made easy” (UK00004408352, filed, classes 35/39/42) for reverse logistics — different goods, but a close spelling. |
+The new naming direction follows [Spec V2 #50](https://github.com/pedrotmr/orbii/issues/50): return to what matters, choose a small daily focus, and complete that commitment. Short names were explored through metaphors of renewal, rhythm, direction, path, and small steps. None survived the exact/close-name screen. These are rejected research leads, not recommendations or legally cleared names.
 
-For the alternatives, trademark checks used [INPI](https://busca.inpi.gov.br/pePI/) (unavailable — note above), [USPTO](https://tmsearch.uspto.gov/search/), [EUIPO](https://euipo.europa.eu/eSearch/), and [TMview](https://www.tmdn.org/tmview/). These searches are preliminary and do not establish legal availability; INPI’s [Manual de Marcas](https://manualdemarcas.inpi.gov.br/projects/manual/wiki/03_Como_formular_pedido_de_registro_ou_petição_de_marca) says search results are indicative and recommends multiple searches, including radical searches.
+### Short concepts screened out
+
+These five short, concept-led directions connect to renewal, gentle momentum, a chosen course, marking a path, and a sustainable rhythm. Apple Search API screens covered the U.S. and Brazil catalogs; Google Play searches covered the U.S. on 20 October 2026. Each idea surfaced an existing adjacent app, so none is a shortlist recommendation.
+
+- **Koru** — a growing spiral suggests renewal and gradual unfolding. Google Play already has [Koru](https://play.google.com/store/apps/details?id=com.koru.mobile), a habit tracker; Apple Brazil also returned [Koru Fit](https://apps.apple.com/br/app/koru-fit/id6755788413).
+- **Rill** — a small stream evokes steady movement built from small steps. Apple lists [Rill - Habit Tracker in the U.S.](https://apps.apple.com/us/app/rill-habit-tracker/id6803219708) and [Brazil](https://apps.apple.com/br/app/rill-habit-tracker/id6803219708).
+- **Vela** — a small light can symbolize the one thing in focus; the name also suggests keeping a course. Apple lists [Vela: Planner, Habits & Ideas](https://apps.apple.com/us/app/vela-planner-habits-ideas/id6783922107), which combines daily planning and habit tracking under that name.
+- **Cairn** — small markers gathered along a path suggest a chosen daily focus set. The name is already used by [Cairn - Hiking Safety Tracker](https://apps.apple.com/us/app/cairn-hiking-safety-tracker/id964300002); Google Play also lists [Cairn](https://play.google.com/store/apps/details?id=com.getcairn.app), an app built around habits and daily commitments.
+- **Pace** — a sustainable rhythm fits a small daily commitment. Apple already lists [Pace - Habit Tracker & Goals](https://apps.apple.com/us/app/pace-habit-tracker-goals/id6811940679), whose habit tracker also uses a small solar-system metaphor.
+
+Because these leads failed the store screen, USPTO, EUIPO, TMview, and INPI checks were not completed for them. They are research exclusions, not validated names. This pass supplies **no legally cleared name**; its empty shortlist reflects observed store conflicts and incomplete register coverage. Earlier Orbii findings and the original scope below retain their 19 October 2026 dates.
 
 ## Scope
 
