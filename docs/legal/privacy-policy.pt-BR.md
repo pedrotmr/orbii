@@ -4,7 +4,8 @@
 
 **Data de vigência (rascunho):** 19 de outubro de 2026  
 **Última atualização (rascunho):** 19 de outubro de 2026  
-**App:** Orbii (`app.orbii.mobile`)  
+**App:** Orbii — este rascunho cobre todas as variantes, incluindo produção (`app.orbii.mobile`) e builds de desenvolvimento / preview / TestFlight (`app.orbii.mobile.dev`).
+
 **Operador (rascunho):** Pedro Ramos / Orbii — **[ADVOGADO: confirmar nome legal, tipo de entidade e jurisdição]**  
 **Contato (rascunho):** **[ADVOGADO: confirmar e-mail monitorado de privacidade antes de publicar.]** Até lá, pedidos de privacidade e exclusão usam o e-mail público listado no perfil GitHub de [`pedrotmr`](https://github.com/pedrotmr).
 
@@ -57,7 +58,7 @@ Armazenamos no **Convex**, associados ao seu id Clerk:
 - **Perfil / preferências:** capacidade diária padrão, fuso horário salvo, sequência (streak), dias concluídos, última data local concluída, saldo de pontos, visibilidade de recompensas
 - **Hábitos (Órbita):** nome, glifo, categoria (`body`, `mind`, `learn`, `life`), ordem, valor em pontos
 - **Sessões do dia:** data local, fase do ritual, ids oferecidos / selecionados / comprometidos / concluídos, pontos ganhos e snapshots dos valores de pontos no momento do compromisso. Se um hábito comprometido for depois removido da Órbita enquanto aquele dia já estiver completo, o Orbii também guarda um snapshot do hábito (nome, glifo, categoria) na sessão do dia pela vida da conta
-- **Transações de pontos:** valor, tipo de origem (premiação de hábito, bônus de conclusão, resgate de recompensa), snapshot do nome da origem, data local
+- **Transações de pontos:** valor, tipo de origem (premiação de hábito, bônus de conclusão, resgate de recompensa), snapshot do nome da origem, data local e um `idempotencyKey` (embute a data local mais a chave do hábito em premiações/reversões, ou o id do documento da recompensa em resgates). Essas chaves permanecem pela vida da conta mesmo se o hábito for removido depois
 - **Recompensas:** nome, custo, status ativo/resgatado, carimbos de resgate quando aplicável
 - **Agentes conectados:** id e nome do cliente, id da aplicação OAuth, escopos concedidos, fingerprint do token, token de acesso criptografado, metadados de conexão / última atividade / revogação
 - **Registros de idempotência MCP** para deduplicação de ferramentas de escrita (ver §6): campos comuns incluem id do cliente, id do pedido e created-at; linhas de `add_habit` também guardam nome, glifo, categoria e habit key; linhas de `rereveal_today` / `commit_today` também guardam a data local
@@ -73,7 +74,7 @@ Somente no seu aparelho (não sincronizados com o Convex neste rascunho):
 - Preferência de tema (AsyncStorage)
 - Preferências de lembretes diários (AsyncStorage, por usuário)
 - Filas de notificações **locais** para lembretes de manhã/noite. Ao abrir o app ou voltar ao primeiro plano, o Orbii renova uma fila rolante de cerca de ~30 dias de agendamentos únicos enquanto os lembretes estiverem ativos. Avisos já agendados ainda podem disparar até serem entregues ou cancelados (por exemplo, quando ambos os lembretes estão desligados e a fila é sincronizada, ou a permissão de notificação é negada). Deixar o app fechado não cancela, por si só, avisos já no dispositivo.
-- Estado de **Live Activity** no iOS em dispositivos suportados (ActivityKit; atualizações locais; sem APNs). Após um compromisso bem-sucedido, o Orbii inicia a Live Activity automaticamente quando a plataforma permite (pode mostrar nomes de hábitos comprometidos na Lock Screen). O Orbii encerra ou atualiza quando o app roda de novo após complete, reoferecer ou idle — não há expiração configurada à meia-noite/em background. Se o app permanecer suspenso após a virada do dia local, a activity pode continuar até você dispensá-la ou o iOS expirar. A restauração está disponível em Orbit enquanto Hoje estiver ativo.
+- Estado de **Live Activity** no iOS em dispositivos suportados (ActivityKit; atualizações locais; sem APNs). Após um compromisso bem-sucedido, o Orbii inicia a Live Activity automaticamente quando a plataforma permite (pode mostrar nomes de hábitos comprometidos na Lock Screen). Quando o app sincroniza de novo após complete, reoferecer ou idle, o Orbii pede ao ActivityKit para encerrar a activity; na conclusão usa a política de dispensa **padrão do sistema**, então o iOS ainda pode exibir o conteúdo final (incluindo nomes de hábitos) na Lock Screen até o sistema remover ou você dispensar. Não há expiração configurada à meia-noite/em background. Se o app permanecer suspenso após a virada do dia local, a activity também pode continuar até dispensa ou expiração do iOS. A restauração está disponível em Orbit enquanto Hoje estiver ativo.
 - Material de sessão gerido pelo Clerk / Expo Secure Store
 
 Lembretes usam `expo-notifications` com **notificações remotas desativadas** na config do app. O texto dos lembretes não nomeia hábitos em aberto.

@@ -4,7 +4,8 @@
 
 **Effective date (draft):** 19 October 2026  
 **Last updated (draft):** 19 October 2026  
-**App:** Orbii (`app.orbii.mobile`)  
+**App:** Orbii — this draft covers every variant, including production (`app.orbii.mobile`) and development / preview / TestFlight builds (`app.orbii.mobile.dev`).
+
 **Operator (draft):** Pedro Ramos / Orbii — **[LAWYER: confirm legal name, entity type, and jurisdiction]**  
 **Contact (draft):** **[LAWYER: confirm a monitored privacy contact address before publish.]** Until then, privacy and deletion requests use the public email listed on the GitHub profile for [`pedrotmr`](https://github.com/pedrotmr).
 
@@ -57,7 +58,7 @@ We store the following in **Convex**, keyed to your Clerk user id:
 - **Profile / preferences:** default daily capacity, saved timezone, streak, completed-day count, last completed local date, points balance, rewards visibility
 - **Habits (Orbit):** name, glyph, category (`body`, `mind`, `learn`, `life`), order, point value
 - **Day sessions:** local calendar date, ritual phase, offered / selected / committed / completed habit ids, earned points, and committed point-value snapshots taken at commit. If a committed habit is later removed from the Orbit while that day is already complete, Orbii also keeps a habit snapshot (name, glyph, category) on the day session for the life of the account
-- **Point transactions:** amount, source type (habit award, completion bonus, reward redemption), source name snapshot, local date
+- **Point transactions:** amount, source type (habit award, completion bonus, reward redemption), source name snapshot, local date, and an `idempotencyKey` (embeds the local date plus habit key for habit awards/reversals, or the reward document id for redemptions). These keys remain for the life of the account even if the habit is later removed
 - **Rewards:** name, cost, active/redeemed status, redemption timestamps when applicable
 - **Connected agents:** client id and name, OAuth application id, granted scopes, token fingerprint, encrypted access token, connection / last-seen / revocation metadata
 - **MCP idempotency records** for write-tool deduplication (see §6): shared fields include client id, request id, and created-at; `add_habit` rows also keep name, glyph, category, and habit key; `rereveal_today` / `commit_today` rows also keep the local date
@@ -73,7 +74,7 @@ Stored only on your device (not synced to Convex as of this draft):
 - Theme preference (AsyncStorage)
 - Daily reminder on/off preferences (AsyncStorage, scoped per user id)
 - Scheduled **local** notification payloads for morning/evening reminders. When the app opens or returns to foreground, it refreshes a rolling queue of roughly ~30 days of one-off schedules while reminders stay enabled. Notices already scheduled can still fire until they are delivered or cancelled (for example when both reminders are off and the queue is synced, or notification permission is denied). Leaving the app closed does not by itself cancel notices already on the device.
-- **iOS Live Activity** state for Today’s Orbit on supported devices (ActivityKit; local updates; no APNs / server push). After a successful commit, Orbii starts the Live Activity automatically when the platform supports it (it may show committed habit names on the Lock Screen). Orbii ends or updates it when the app runs again after complete, re-reveal, or idle — there is no configured midnight/background expiration. If the app stays suspended across a local-day change, the activity can remain until you dismiss it or iOS expires it. Restore is available from Orbit while Today is active.
+- **iOS Live Activity** state for Today’s Orbit on supported devices (ActivityKit; local updates; no APNs / server push). After a successful commit, Orbii starts the Live Activity automatically when the platform supports it (it may show committed habit names on the Lock Screen). When the app syncs again after complete, re-reveal, or idle, Orbii calls ActivityKit to end the activity; on completion it uses the **system-default** dismissal policy, so iOS may still show the final completed content (including habit names) on the Lock Screen until the system removes it or you dismiss it. There is no configured midnight/background expiration. If the app stays suspended across a local-day change, the activity can likewise remain until dismiss or iOS expiry. Restore is available from Orbit while Today is active.
 - Auth session material managed by Clerk / Expo Secure Store on device
 
 Daily reminders use `expo-notifications` with **remote notifications disabled** in the app config. Reminder copy does not name open habits.
