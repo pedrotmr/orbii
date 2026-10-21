@@ -179,13 +179,19 @@ test("remote habit addition waits for a later reveal and removal scrubs today's 
     clerkUserId: "owner",
     localDate: "2026-10-10",
   });
-  await expect(
-    t.query(internal.day.getForRemoteMcp, { clerkUserId: "owner" }),
-  ).resolves.toMatchObject({
+  const nextDay = await t.query(internal.day.getForRemoteMcp, {
+    clerkUserId: "owner",
+  });
+  expect(nextDay).toMatchObject({
     localDate: "2026-10-10",
     phase: "reveal",
-    offeredHabits: [{ id: "read" }, { id: "new-habit", name: "Stretch" }],
   });
+  expect(nextDay.offeredHabits).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id: "read" }),
+      expect.objectContaining({ id: "new-habit", name: "Stretch" }),
+    ]),
+  );
 });
 
 test("remote committed habit snapshots preserve categories and omit unknown legacy categories", async () => {

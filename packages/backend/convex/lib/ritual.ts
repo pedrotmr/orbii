@@ -81,9 +81,10 @@ export const startReveal = (
   if (habits.length === 0) {
     throw new Error("Orbit is empty");
   }
-  const underserved = habits
-    .map((h) => h.id)
-    .filter((id) => !previousCommittedIds.includes(id));
+  const underserved = shuffle(
+    habits.map((h) => h.id).filter((id) => !previousCommittedIds.includes(id)),
+    random,
+  );
   const offeredIds = pickOfferIds(
     habits.map((h) => h.id),
     offerSizeFor(habits.length),
