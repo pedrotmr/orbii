@@ -92,11 +92,11 @@ describe("daily ritual", () => {
   });
 
   test("re-reveal can change the first two offered habits", () => {
-    const randomValues = [
-      0, 0, 0, 0, 0, 0.99, 0.99, 0.99, 0.99, 0.99, 0.5, 0.5, 0.5,
-    ];
-    let randomIndex = 0;
-    const random = () => randomValues[randomIndex++] ?? 0.5;
+    let seed = 0.15;
+    const random = () => {
+      seed = (seed + 0.17) % 1;
+      return seed;
+    };
     const { session: revealed } = startReveal(habits, [], "2026-08-24", random);
 
     const next = rereveal(habits, revealed, random);
