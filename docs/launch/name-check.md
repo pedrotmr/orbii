@@ -1,18 +1,18 @@
 # Product name check: Orbii
 
-**Checked:** 19 October 2026
+**Checked:** 19–21 October 2026
 
-**Decision:** Rename before a public App Store or Google Play listing.
+**Decision:** Keep Orbii for V2/TestFlight; do not rename without a replacement that clears the screen.
 
 ## Recommendation
 
-Do not ship a public store listing under the bare title **Orbii**. An exact App Store title is already live ([Orbii](https://apps.apple.com/us/app/orbii/id6803647562), Orbii LLC, Social Networking, released 10 September 2026). Google Play also surfaces multiple **Orbii** / **ORBII** apps, including the same social product and a women’s-safety app. A subtitle or long store name such as “Travel Phrases: Orbii” does not free the primary name field: Apple and Google search still collide on **Orbii**.
+Keep **Orbii** for the current V2/TestFlight audience. No replacement passed the short-name follow-up screen, and public store launch is outside the current V2 scope. For a future public listing, do not use the bare title **Orbii**: an exact App Store title is already live ([Orbii](https://apps.apple.com/us/app/orbii/id6803647562), Orbii LLC, Social Networking, released 10 September 2026), and Google Play surfaces multiple **Orbii** / **ORBII** apps, including the same social product and a women’s-safety app. A descriptive compound title could distinguish the listing text, but it would still use **Orbii** and would need availability and trademark review before release.
 
 Trademark screens add risk for software classes. USPTO shows a live pending **ORBII** filing in Nice class 42 (AI chatbot software). TMview shows a UK **Orbii** word mark in classes 9 and 42 (mobile application software / SaaS) with status “Application opposed.” EUIPO eSearch returned no **Orbii** trade mark. Brazil’s pePI / BuscaWeb were under maintenance during this check; TMview’s Brazil feed shows a prior **ORBII** class 9 filing that was refused.
 
-This matters for future public distribution, not for the current V2 audience. Spec [#50](https://github.com/pedrotmr/orbii/issues/50) keeps a public App Store launch out of scope; distribution remains TestFlight / trusted users. The production Expo variant in [`apps/mobile/app.config.js`](../../apps/mobile/app.config.js) is still named `Orbii`, and [#107](https://github.com/pedrotmr/orbii/pull/107) prepared store screenshots under that product name. Settle a distinct public name before any store metadata or App Store Connect record is created.
+This matters for future public distribution, not V2. Spec [#50](https://github.com/pedrotmr/orbii/issues/50) keeps a public App Store launch out of scope; distribution remains TestFlight / trusted users. The production Expo variant in [`apps/mobile/app.config.js`](../../apps/mobile/app.config.js) is still named `Orbii`, and [#107](https://github.com/pedrotmr/orbii/pull/107) prepared store screenshots under that product name. Reopen the public naming decision before creating store metadata or an App Store Connect record.
 
-**App Store usability of the name Orbii:** not cleanly usable for a public listing. Exact-title conflict with Orbii LLC is enough on its own. A distinguishing subtitle helps category clarity but does not remove the exact-name collision.
+**App Store usability of the name Orbii:** the bare title is not clean for a public listing; it remains usable for the current V2/TestFlight scope. A compound title might distinguish the store listing, but no title was reserved or checked in App Store Connect, and a subtitle does not resolve the trademark questions.
 
 ## App-store matches
 
@@ -63,7 +63,7 @@ This UK filing is outside the requested EUIPO/INPI/USPTO trio but is included be
 
 ## Short-name exploration
 
-**Rechecked:** 20 October 2026. **Current shortlist: zero candidates.** The creator rejected **Orbitoday**, **OrbitRitual**, and **ReturnLoop**; all three are withdrawn from the shortlist.
+**Rechecked:** 20–21 October 2026. **Current shortlist: zero candidates.** The creator rejected **Orbitoday**, **OrbitRitual**, and **ReturnLoop**; all three are withdrawn from the shortlist.
 
 The new naming direction follows [Spec V2 #50](https://github.com/pedrotmr/orbii/issues/50): return to what matters, choose a small daily focus, and complete that commitment. Short names were explored through metaphors of renewal, rhythm, direction, path, and small steps. None survived the exact/close-name screen. These are rejected research leads, not recommendations or legally cleared names.
 
@@ -77,8 +77,27 @@ These five short, concept-led directions connect to renewal, gentle momentum, a 
 - **Cairn** — small markers gathered along a path suggest a chosen daily focus set. The name is already used by [Cairn - Hiking Safety Tracker](https://apps.apple.com/us/app/cairn-hiking-safety-tracker/id964300002); Google Play also lists [Cairn](https://play.google.com/store/apps/details?id=com.getcairn.app), an app built around habits and daily commitments.
 - **Pace** — a sustainable rhythm fits a small daily commitment. Apple already lists [Pace - Habit Tracker & Goals](https://apps.apple.com/us/app/pace-habit-tracker-goals/id6811940679), whose habit tracker also uses a small solar-system metaphor.
 
+### Follow-up concepts screened out
+
+The second pass on 21 October explored “today is enough,” returning after a miss, gentle rhythm, and daily practice. These are research exclusions, not new shortlist entries:
+
+- **Feito** — small wins and a completed daily action. [Feito! - Pequenas Vitórias](https://apps.apple.com/br/app/feito-pequenas-vit%C3%B3rias/id6792930401) is a Brazilian micro-habit app built around small victories.
+- **Retoma** — returning without guilt. [Retoma](https://play.google.com/store/apps/details?id=com.afonsohlc.retoma) is already a Brazilian routine app whose core message is how quickly someone returns to what matters.
+- **Pacto** — a chosen commitment. [Pacto](https://apps.apple.com/br/app/pacto/id6755618334) is a promise-keeping app for daily and weekly habits; [Pactly](https://apps.apple.com/br/app/pactly-rastreador-de-h%C3%A1bitos/id6756091774) also uses pacts for habit commitments.
+- **Rumo** — a direction to return to. [Rumo](https://play.google.com/store/apps/details?id=com.rumobysf.app) directly positions itself around resuming healthy habits.
+- **Ritmo** — a sustainable daily cadence. [Ritmo](https://play.google.com/store/apps/details?id=com.diarioabitudini.app) is already a habit tracker.
+- **Pausa** — a moment to choose deliberately. [Pausa](https://play.google.com/store/apps/details?id=com.pausa10.app) uses the same “no guilt” and intentional-choice territory for app use; Apple also lists [Pausa: Screen Time & Focus](https://apps.apple.com/br/app/pausa-screen-time-focus/id6782609827).
+- **Lume** — a small light for what matters. [Lume](https://play.google.com/store/apps/details?id=com.novafutura.focuslume) is a focus and screen-time app that also calls itself a habit-control companion.
+- **Cerne** — returning to what is central. [Cerne: Know Yourself](https://play.google.com/store/apps/details?id=app.cerne.native) is a self-knowledge app that turns repeated themes into daily practice.
+- **Arete** — character built through practice. [Arete: Daily Practice](https://play.google.com/store/apps/details?id=com.bebetterhuman.arete) and [Arete - Journal & Habits](https://play.google.com/store/apps/details?id=com.theareteapp.app) already use the name for daily practice and habit tracking.
+- **Tino** — judgment about where to place attention. Apple lists [Tino: Stop Brainrot Be Present](https://apps.apple.com/us/app/tino-stop-brainrot-be-present/id6791889122) in Productivity.
+
+**Suffice** (seven letters; “what we choose today is enough”) did not surface as a matching app title in the Apple Search API or Google Play searches. It was not added: the [USPTO search](https://tmsearch.uspto.gov/search/) returned a cancelled exact mark for hair products and a registered **A SPICE TO SUFFICE** mark in class 30; [EUIPO eSearch](https://euipo.europa.eu/eSearch/#basic/1+1+1+1/100+100+100+100/Suffice) showed **Trade marks (0)**; [TMview](https://www.tmdn.org/tmview/#/tmview/results?page=1&pageSize=30&criteria=C&basicSearch=Suffice) showed a registered French **World Sufficency Lab** mark in classes 9 and 42 and a Brazil **Suffice** record in class 25 with status ended. The anonymous [INPI pePI](https://busca.inpi.gov.br/pePI/) flow reached a page with no searchable form during this pass, so Brazil’s current records were not independently verified there. That software-class similarity plus incomplete direct INPI coverage keeps **Suffice** out of the shortlist.
+
+The expanded store screen still produced no replacement recommendation. Keep **Orbii** for V2/TestFlight; before public distribution, revisit either a distinct name or a legally reviewed compound store title. No App Store Connect reservation or trademark filing was attempted.
+
 Because these leads failed the store screen, USPTO, EUIPO, TMview, and INPI checks were not completed for them. They are research exclusions, not validated names. This pass supplies **no legally cleared name**; its empty shortlist reflects observed store conflicts and incomplete register coverage. Earlier Orbii findings and the original scope below retain their 19 October 2026 dates.
 
 ## Scope
 
-This is a public-store and public-register screen, not a legal clearance opinion. Statuses are as displayed on 19 October 2026. I did not search domain availability, company names, social handles, unregistered use, or every national register. No application, filing, registration, App Store Connect record, or public message was submitted or sent.
+This is a public-store and public-register screen, not a legal clearance opinion. The original Orbii findings retain their 19 October 2026 check date; follow-up name screens were checked on 20–21 October 2026. I did not search domain availability, company names, social handles, unregistered use, or every national register. No application, filing, registration, App Store Connect record, or public message was submitted or sent.
