@@ -91,6 +91,21 @@ describe("daily ritual", () => {
     expect(session.committedIds).toEqual(revealed.offeredIds.slice(0, 4));
   });
 
+  test("re-reveal can change the first two offered habits", () => {
+    const randomValues = [
+      0, 0, 0, 0, 0, 0.99, 0.99, 0.99, 0.99, 0.99, 0.5, 0.5, 0.5,
+    ];
+    let randomIndex = 0;
+    const random = () => randomValues[randomIndex++] ?? 0.5;
+    const { session: revealed } = startReveal(habits, [], "2026-08-24", random);
+
+    const next = rereveal(habits, revealed, random);
+
+    expect(next.offeredIds.slice(0, 2)).not.toEqual(
+      revealed.offeredIds.slice(0, 2),
+    );
+  });
+
   test("re-reveal releases an incomplete commitment and its checklist", () => {
     const { session: revealed } = startReveal(
       habits,
