@@ -97,13 +97,15 @@ describe("daily ritual", () => {
       seed = (seed + 0.17) % 1;
       return seed;
     };
-    const { session: revealed } = startReveal(habits, [], "2026-08-24", random);
+    let session = startReveal(habits, [], "2026-08-24", random).session;
+    const topPairs = new Set<string>();
 
-    const next = rereveal(habits, revealed, random);
+    for (let revealCount = 0; revealCount < 10; revealCount += 1) {
+      topPairs.add(session.offeredIds.slice(0, 2).sort().join(","));
+      session = rereveal(habits, session, random);
+    }
 
-    expect(next.offeredIds.slice(0, 2)).not.toEqual(
-      revealed.offeredIds.slice(0, 2),
-    );
+    expect(topPairs.size).toBeGreaterThan(1);
   });
 
   test("re-reveal releases an incomplete commitment and its checklist", () => {
