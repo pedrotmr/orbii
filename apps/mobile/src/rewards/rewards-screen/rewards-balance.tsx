@@ -12,10 +12,10 @@ export default function RewardsBalance({ balance }: RewardsBalanceProps) {
   return (
     <View style={styles.heading}>
       <Text accessibilityRole="header" selectable style={styles.title}>
-        {formatPoints(balance)}
+        Rewards
       </Text>
       <Text style={styles.subtitle}>
-        Your points count toward every reward.
+        {formatPoints(balance)} to spend across rewards
       </Text>
     </View>
   );
@@ -23,7 +23,7 @@ export default function RewardsBalance({ balance }: RewardsBalanceProps) {
 
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
-    heading: { gap: space[2] },
+    heading: { gap: space[1] },
     title: {
       color: colors.ink,
       fontSize: 34,
@@ -32,5 +32,10 @@ const createStyles = (colors: Palette) =>
       letterSpacing: -1,
       fontVariant: ["tabular-nums"],
     },
-    subtitle: { color: colors.muted, fontSize: 16, lineHeight: 24 },
+    subtitle: {
+      color: colors.muted,
+      fontSize: 16,
+      lineHeight: 24,
+      fontVariant: ["tabular-nums"],
+    },
   });

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbii Rewards prototype: Ready and in progress</title>
+<style>
+  /* Theme values copy packages/tokens/src/native.ts (lightColors, darkColors). Spacing, radius and type use its space, radius and fontSize scales. */
+  .light {
+    color-scheme: light;
+    --bg: #F5F5F3; --bg-mid: #ECEDE9; --surface: #FEFEFC; --ink: #252923;
+    --muted: #60655C; --line: #D6D9D1; --primary: #B54420; --primary-deep: #A33A18;
+    --primary-soft: #FAE9DF; --success-soft: #E8EFDF; --on-primary: #FFFBF7;
+    --focus: #CE5628; --track: #E3E6DE;
+  }
+  .dark {
+    color-scheme: dark;
+    --bg: #181B18; --bg-mid: #222621; --surface: #242923; --ink: #F0F2E9;
+    --muted: #B1B8AB; --line: #41483D; --primary: #FFA77C; --primary-deep: #FFB48F;
+    --primary-soft: #452E23; --success-soft: #303B26; --on-primary: #331D12;
+    --focus: #FFA77C; --track: #373F32;
+  }
+  :root {
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px;
+    --r-lg: 16px; --r-full: 999px;
+    --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-md: 1rem; --fs-lg: 1.125rem; --fs-2xl: 1.625rem;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #E2E4DE; color: #252923; font-family: var(--font);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  .sheet { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: var(--s8); padding: var(--s6); }
+  .device { width: 390px; max-width: 100%; }
+  figcaption { margin-bottom: var(--s2); font-size: var(--fs-sm); line-height: 1.43; font-weight: 600; text-align: center; }
+  svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  button, summary, .tab { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .phone {
+    position: relative; display: flex; flex-direction: column; width: 100%; height: 844px;
+    overflow: hidden; border-radius: 44px; background: var(--bg); color: var(--ink);
+    outline: 1px solid var(--line);
+  }
+  .status {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    height: 54px; padding-inline: 36px 30px; font-size: var(--fs-md); font-weight: 600;
+  }
+  .battery { width: 25px; height: 12px; border: 1.5px solid currentColor; border-radius: 4px; }
+  .screen {
+    flex: 1; display: flex; flex-direction: column; gap: var(--s6);
+    padding: var(--s4) var(--s6) var(--s6); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+
+  h1 { font-size: 2.125rem; line-height: 1.18; font-weight: 700; letter-spacing: -0.03em; text-wrap: balance; }
+  .head { display: flex; flex-direction: column; gap: var(--s4); }
+  .balance { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); }
+  .points { font-size: var(--fs-2xl); line-height: 1.23; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .unit { font-size: var(--fs-md); font-weight: 600; letter-spacing: 0; color: var(--muted); }
+  .caption { margin-top: var(--s1); font-size: var(--fs-sm); line-height: 1.43; color: var(--muted); text-wrap: pretty; }
+
+  .pill {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s1);
+    min-height: 44px; border: 1px solid transparent; border-radius: var(--r-full);
+    font-size: var(--fs-md); font-weight: 600; white-space: nowrap;
+  }
+  .pill svg { width: 20px; height: 20px; stroke-width: 2.2; }
+  .add { padding-inline: var(--s3) var(--s4); background: var(--primary-soft); color: var(--primary); }
+  .add:active { opacity: 0.75; }
+  .redeem { padding-inline: var(--s5); background: var(--primary); color: var(--on-primary); }
+  .redeem:active { background: var(--primary-deep); }
+
+  section { display: flex; flex-direction: column; gap: var(--s3); }
+  h2 { font-size: var(--fs-lg); line-height: 1.33; font-weight: 700; text-wrap: balance; }
+  .group { list-style: none; border-radius: var(--r-lg); background: var(--surface); }
+  .group.ready { background: var(--success-soft); }
+  .row { position: relative; display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4); }
+  .row + .row::before, .history li::before {
+    content: ""; position: absolute; inset-block-start: 0; inset-inline: var(--s4) 0;
+    height: 1px; background: var(--line);
+  }
+  .top { display: flex; align-items: flex-start; margin-block: -11px; margin-inline-end: -12px; }
+  .name {
+    flex: 1; min-width: 0; padding-block: 11px; padding-inline-end: var(--s2);
+    font-size: var(--fs-md); line-height: 1.375; font-weight: 600; overflow-wrap: anywhere;
+  }
+  .icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-full); color: var(--muted); }
+  .icon svg { width: 20px; height: 20px; }
+  .icon:active { background: var(--bg-mid); }
+  @media (hover: hover) { .icon:hover { background: var(--bg-mid); } }
+  .track { height: 6px; overflow: hidden; border-radius: var(--r-full); background: var(--track); }
+  .track span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+  @media (forced-colors: active) {
+    .track { border: 1px solid CanvasText; }
+    .track span { forced-color-adjust: none; background: CanvasText; }
+    .tab[aria-current="page"] .glyph { border: 1px solid CanvasText; }
+  }
+  .foot {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--s2) var(--s3); font-size: var(--fs-sm); line-height: 1.43; font-variant-numeric: tabular-nums;
+  }
+  .cost { font-weight: 600; }
+  .togo { font-weight: 500; color: var(--muted); }
+
+  details { border-radius: var(--r-lg); background: var(--surface); }
+  summary {
+    display: flex; align-items: center; gap: var(--s2); min-height: 56px; padding: var(--s3) var(--s4);
+    list-style: none; cursor: pointer; border-radius: var(--r-lg);
+    font-size: var(--fs-md); line-height: 1.375; font-weight: 600;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:focus-visible { outline-offset: -2px; }
+  .count { margin-inline-start: auto; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+  summary svg { width: 18px; height: 18px; color: var(--muted); }
+  details[open] summary svg { transform: rotate(180deg); }
+  .history { list-style: none; }
+  .history li {
+    position: relative; display: flex; align-items: center; gap: var(--s3);
+    min-height: 64px; padding: var(--s3) var(--s4); font-size: var(--fs-sm); line-height: 1.43;
+  }
+  .history .what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .history .title { font-size: var(--fs-md); line-height: 1.375; font-weight: 600; overflow-wrap: anywhere; }
+  .history .when, .history .spent { color: var(--muted); }
+  .history .spent { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .tabs {
+    flex: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: var(--s2) var(--s2) 30px; background: var(--bg); border-top: 1px solid var(--line);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px;
+    color: var(--muted); font-size: var(--fs-xs); line-height: 1.25; font-weight: 600; text-decoration: none;
+  }
+  .tab .glyph { display: grid; place-items: center; width: 56px; height: 30px; border-radius: var(--r-full); }
+  .tab svg { width: 22px; height: 22px; }
+  .tab[aria-current="page"] { color: var(--primary); }
+  .tab[aria-current="page"] .glyph { background: var(--primary-soft); }
+  .home {
+    position: absolute; inset-block-end: 8px; left: 50%; width: 134px; height: 5px;
+    margin-left: -67px; border-radius: 3px; background: var(--ink);
+  }
+
+  @media (max-width: 430px) {
+    .sheet { padding: var(--s6) 0 0; gap: var(--s6); }
+    .phone { border-radius: 0; outline: 0; }
+  }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <figure class="device light">
+    <figcaption>Light</figcaption>
+    <div class="phone">
+      <div class="status" aria-hidden="true"><span>9:41</span><span class="battery"></span></div>
+      <div class="screen">
+        <header class="head">
+          <h1>Your rewards</h1>
+          <div>
+            <div class="balance">
+              <p class="points"><span class="sr">Balance: </span>740<span class="unit"> pts</span></p>
+              <button class="pill add" type="button" aria-label="Add reward"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>Add</button>
+            </div>
+            <p class="caption">All your rewards share this balance. Redeeming one leaves less for the others.</p>
+          </div>
+        </header>
+
+        <section aria-labelledby="ready-light">
+          <h2 id="ready-light">Ready to redeem</h2>
+          <ul class="group ready" role="list">
+        <li class="row">
+          <div class="top">
+            <p class="name">Apple Magic Mouse</p>
+            <button class="icon" type="button" aria-label="Edit Apple Magic Mouse"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icon" type="button" aria-label="Delete Apple Magic Mouse"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+          </div>
+          <div class="foot">
+            <span class="cost">600 pts</span>
+            <button class="pill redeem" type="button" aria-label="Redeem Apple Magic Mouse">Redeem</button>
+          </div>
+        </li>
+        <li class="row">
+          <div class="top">
+            <p class="name">Sushi night</p>
+            <button class="icon" type="button" aria-label="Edit Sushi night"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icon" type="button" aria-label="Delete Sushi night"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+          </div>
+          <div class="foot">
+            <span class="cost">400 pts</span>
+            <button class="pill redeem" type="button" aria-label="Redeem Sushi night">Redeem</button>
+          </div>
+        </li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="progress-light">
+          <h2 id="progress-light">In progress</h2>
+          <ul class="group" role="list">
+        <li class="row">
+          <div class="top">
+            <p class="name">Running shoes</p>
+            <button class="icon" type="button" aria-label="Edit Running shoes"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icon" type="button" aria-label="Delete Running shoes"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+          </div>
+          <div class="track" role="progressbar" aria-label="Running shoes" aria-valuemin="0" aria-valuemax="1200" aria-valuenow="740" aria-valuetext="740 of 1,200 points"><span style="width: 62%"></span></div>
+          <div class="foot">
+            <span class="cost">1,200 pts</span>
+            <span class="togo">460 pts to go</span>
+          </div>
+        </li>
+          </ul>
+        </section>
+
+        <details>
+          <summary>Redeemed<span class="count">3<span class="sr"> rewards</span></span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <ul class="history" role="list">
+            <li><span class="what"><span class="title">Cinema evening</span><span class="when">Oct 12, 2026</span></span><span class="spent">−250 pts</span></li>
+            <li><span class="what"><span class="title">A new novel</span><span class="when">Oct 3, 2026</span></span><span class="spent">−180 pts</span></li>
+            <li><span class="what"><span class="title">Massage</span><span class="when">Sep 21, 2026</span></span><span class="spent">−500 pts</span></li>
+          </ul>
+        </details>
+      </div>
+
+      <nav class="tabs" aria-label="Tabs, light theme">
+        <a class="tab" href="#today"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></span>Today</a>
+        <a class="tab" href="#orbit"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>Orbit</a>
+        <a class="tab" href="#rewards" aria-current="page"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg></span>Rewards</a>
+        <a class="tab" href="#settings"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></span>Settings</a>
+      </nav>
+      <div class="home" aria-hidden="true"></div>
+    </div>
+  </figure>
+  <figure class="device dark" aria-hidden="true" inert>
+    <figcaption>Dark (visual reference)</figcaption>
+    <div class="phone">
+      <div class="status" aria-hidden="true"><span>9:41</span><span class="battery"></span></div>
+      <div class="screen">
+        <header class="head">
+          <h1>Your rewards</h1>
+          <div>
+            <div class="balance">
+              <p class="points"><span class="sr">Balance: </span>740<span class="unit"> pts</span></p>
+              <button class="pill add" type="button" aria-label="Add reward"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>Add</button>
+            </div>
+            <p class="caption">All your rewards share this balance. Redeeming one leaves less for the others.</p>
+          </div>
+        </header>
+
+        <section aria-labelledby="ready-dark">
+          <h2 id="ready-dark">Ready to redeem</h2>
+          <ul class="group ready" role="list">
+        <li class="row">
+          <div class="top">
+            <p class="name">Apple Magic Mouse</p>
+            <button class="icon" type="button" aria-label="Edit Apple Magic Mouse"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icon" type="button" aria-label="Delete Apple Magic Mouse"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+          </div>
+          <div class="foot">
+            <span class="cost">600 pts</span>
+            <button class="pill redeem" type="button" aria-label="Redeem Apple Magic Mouse">Redeem</button>
+          </div>
+        </li>
+        <li class="row">
+          <div class="top">
+            <p class="name">Sushi night</p>
+            <button class="icon" type="button" aria-label="Edit Sushi night"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icon" type="button" aria-label="Delete Sushi night"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+          </div>
+          <div class="foot">
+            <span class="cost">400 pts</span>
+            <button class="pill redeem" type="button" aria-label="Redeem Sushi night">Redeem</button>
+          </div>
+        </li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="progress-dark">
+          <h2 id="progress-dark">In progress</h2>
+          <ul class="group" role="list">
+        <li class="row">
+          <div class="top">
+            <p class="name">Running shoes</p>
+            <button class="icon" type="button" aria-label="Edit Running shoes"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="icon" type="button" aria-label="Delete Running shoes"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button>
+          </div>
+          <div class="track" role="progressbar" aria-label="Running shoes" aria-valuemin="0" aria-valuemax="1200" aria-valuenow="740" aria-valuetext="740 of 1,200 points"><span style="width: 62%"></span></div>
+          <div class="foot">
+            <span class="cost">1,200 pts</span>
+            <span class="togo">460 pts to go</span>
+          </div>
+        </li>
+          </ul>
+        </section>
+
+        <details>
+          <summary>Redeemed<span class="count">3<span class="sr"> rewards</span></span><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+          <ul class="history" role="list">
+            <li><span class="what"><span class="title">Cinema evening</span><span class="when">Oct 12, 2026</span></span><span class="spent">−250 pts</span></li>
+            <li><span class="what"><span class="title">A new novel</span><span class="when">Oct 3, 2026</span></span><span class="spent">−180 pts</span></li>
+            <li><span class="what"><span class="title">Massage</span><span class="when">Sep 21, 2026</span></span><span class="spent">−500 pts</span></li>
+          </ul>
+        </details>
+      </div>
+
+      <nav class="tabs" aria-label="Tabs, dark theme">
+        <a class="tab" href="#today"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></span>Today</a>
+        <a class="tab" href="#orbit"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>Orbit</a>
+        <a class="tab" href="#rewards" aria-current="page"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg></span>Rewards</a>
+        <a class="tab" href="#settings"><span class="glyph"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></span>Settings</a>
+      </nav>
+      <div class="home" aria-hidden="true"></div>
+    </div>
+  </figure>
+</main>
+</body>
+</html>

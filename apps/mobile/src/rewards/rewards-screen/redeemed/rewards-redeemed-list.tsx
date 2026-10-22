@@ -1,5 +1,5 @@
 import type { PaginationStatus } from "convex/react";
-import { type Palette, radius, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import type { RedeemedReward } from "../../rewards-types";
 import GhostButton from "../../../components/ghost-button";
@@ -67,12 +67,13 @@ const createStyles = (colors: Palette) =>
       justifyContent: "center",
       paddingHorizontal: space[4],
     },
-    label: { color: colors.muted, fontSize: 14, fontWeight: "500" },
-    list: {
-      borderRadius: radius.lg,
-      borderCurve: "continuous",
-      backgroundColor: colors.surface,
+    label: {
+      color: colors.muted,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "500",
     },
+    list: { width: "100%" },
     placeholder: {
       color: colors.muted,
       fontSize: 14,

@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { type Palette, radius, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ActiveReward } from "../../rewards-types";
 import GhostButton from "../../../components/ghost-button";
@@ -105,30 +105,32 @@ const createStyles = (colors: Palette) =>
       alignItems: "center",
       justifyContent: "space-between",
       gap: space[3],
-      paddingStart: space[4],
     },
     heading: { minHeight: 48, flexShrink: 1, justifyContent: "center" },
-    label: { color: colors.muted, fontSize: 14, fontWeight: "500" },
+    label: {
+      color: colors.muted,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "500",
+    },
     add: {
       minHeight: 48,
       flexDirection: "row",
       alignItems: "center",
       gap: space[1],
       paddingStart: space[3],
-      paddingEnd: space[4],
-      borderRadius: radius.full,
     },
     addPressed: { backgroundColor: colors.primarySoft },
-    addLabel: { color: colors.primary, fontSize: 15, fontWeight: "600" },
-    disabled: { opacity: 0.5 },
-    list: {
-      borderRadius: radius.lg,
-      borderCurve: "continuous",
-      backgroundColor: colors.surface,
+    addLabel: {
+      color: colors.primary,
+      fontSize: 15,
+      lineHeight: 20,
+      fontWeight: "600",
     },
+    disabled: { opacity: 0.5 },
+    list: { width: "100%" },
     empty: {
       gap: space[1],
-      paddingHorizontal: space[4],
       paddingVertical: space[5],
     },
     emptyTitle: {

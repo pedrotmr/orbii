@@ -62,7 +62,6 @@ const createStyles = (colors: Palette) =>
       flexDirection: "row",
       alignItems: "center",
       gap: space[4],
-      paddingHorizontal: space[4],
       paddingVertical: space[3],
     },
     separated: {
@@ -80,6 +79,7 @@ const createStyles = (colors: Palette) =>
     cost: {
       color: colors.muted,
       fontSize: 15,
+      lineHeight: 20,
       fontWeight: "600",
       fontVariant: ["tabular-nums"],
     },

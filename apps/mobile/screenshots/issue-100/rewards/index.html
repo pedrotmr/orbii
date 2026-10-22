@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Orbii · Rewards design review</title>
+    <style>
+      :root {
+        --surface: var(--card);
+        --surface-soft: var(--secondary);
+        --ink: var(--foreground);
+        --muted: var(--muted-foreground);
+        --line: var(--border);
+        --brand: var(--accent);
+        --brand-soft: var(--accent-surface);
+        --green: var(--success-foreground);
+        --green-soft: var(--success);
+        --font: var(--font-sans);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--brand); text-underline-offset: 3px; }
+      .page { max-width: 1120px; margin: 0 auto; padding: 36px 0 72px; }
+      .eyebrow { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+      h1 { margin: 10px 0 8px; font-size: clamp(32px, 5vw, 48px); line-height: 1.04; letter-spacing: -.045em; }
+      h2 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.025em; }
+      h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+      p { margin: 0; color: var(--muted); line-height: 1.55; }
+      .intro { max-width: 760px; font-size: 16px; }
+      .status { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 8px 12px; border-radius: 999px; background: var(--green-soft); color: var(--green); font-size: 13px; font-weight: 700; }
+      .status::before { content: "✓"; font-size: 15px; }
+      .section { margin-top: 48px; }
+      .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+      .section-heading p { font-size: 14px; }
+      .winner { display: grid; grid-template-columns: minmax(240px, .82fr) minmax(280px, 1fr); align-items: start; gap: 32px; }
+      .screen-image { display: block; width: 100%; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); }
+      .winner-copy { display: grid; gap: 18px; padding-top: 8px; }
+      .winner-copy p { font-size: 15px; }
+      .decision-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+      .decision-list li { display: flex; gap: 10px; color: var(--muted); line-height: 1.45; }
+      .decision-list li::before { content: "•"; color: var(--brand); font-weight: 800; }
+      .link-row { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; font-weight: 600; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 16px; }
+      .design { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+      .design img { display: block; width: 100%; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; background: var(--surface-soft); }
+      .design-copy { display: grid; gap: 9px; padding: 16px; }
+      .design-copy p { min-height: 66px; font-size: 13px; line-height: 1.45; }
+      .tag { justify-self: start; padding: 5px 9px; border-radius: 999px; background: var(--surface-soft); color: var(--muted); font-size: 11px; font-weight: 700; }
+      .tag.winner-tag { background: var(--brand-soft); color: var(--brand); }
+      .score-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+      table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13px; }
+      th, td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+      th { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+      tbody tr:last-child td { border-bottom: 0; }
+      td:first-child { font-weight: 700; }
+      .score { font-variant-numeric: tabular-nums; font-weight: 700; }
+      .selected-row { background: var(--brand-soft); }
+      .note { margin-top: 12px; font-size: 13px; }
+      .review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+      .review-item { display: grid; align-content: start; gap: 7px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+      .review-item strong { font-size: 14px; }
+      .review-item p { font-size: 13px; }
+      .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; counter-reset: step; }
+      .step { position: relative; min-height: 112px; padding: 17px 16px 16px 52px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--muted); line-height: 1.45; }
+      .step::before { counter-increment: step; content: counter(step, decimal-leading-zero); position: absolute; top: 17px; left: 16px; color: var(--brand); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .queue { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      .queue span { padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 13px; }
+      .footnote { max-width: 800px; font-size: 13px; }
+      @media (max-width: 680px) {
+        .page { padding: 28px 0 48px; }
+        .section { margin-top: 36px; }
+        .winner { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+        .winner .screen-image { max-width: 390px; margin: 0 auto; }
+        .section-heading { display: block; }
+        .section-heading p { margin-top: 6px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <div class="eyebrow">Orbii · Issue #100</div>
+        <h1>Rewards, made calmer.</h1>
+        <p class="intro">Five screen structures were compared against the V2 rewards rules and Orbii’s native token system. The selected direction keeps the shared balance in view, makes the next useful action clear, and removes repeated explanations.</p>
+        <div class="status">Selected: Quiet Ledger, refined</div>
+      </header>
+
+      <section class="section" aria-labelledby="selected-heading">
+        <div class="section-heading">
+          <h2 id="selected-heading">The selected direction</h2>
+          <p><a href="https://github.com/pedrotmr/orbii/issues/50">Spec V2</a> · <a href="https://github.com/pedrotmr/orbii/issues/100">Issue #100</a></p>
+        </div>
+        <div class="winner">
+          <a href="previews/quiet-ledger-selected-390-light.png" aria-label="Open the selected Quiet Ledger preview at full size"><img class="screen-image" src="previews/quiet-ledger-selected-390-light.png" alt="Quiet Ledger Rewards screen with the balance under the title, Add reward at the top, progress rings, and Redeemed history." /></a>
+          <div class="winner-copy">
+            <p><strong>Why it won:</strong> the Quiet Ledger base scored <strong>86/100</strong> in the independent design review. The final direction keeps its compact single-column hierarchy and adds the reviewer’s recommendations: balance wording that explains sharing and Add reward at the top.</p>
+            <ul class="decision-list">
+              <li>“Rewards” leads the page; one short line explains the points available across rewards.</li>
+              <li>Every active reward keeps its cost and progress together. Ready items get the only Redeem buttons.</li>
+              <li>Add reward moves to the top beside Active, using Balance First’s clearer placement.</li>
+              <li>Edit and delete stay behind one overflow menu; Redeemed stays a quiet, read-only list.</li>
+            </ul>
+            <div class="link-row">
+              <a href="previews/quiet-ledger-selected-390-light.png">390px light preview</a>
+              <a href="previews/quiet-ledger-selected-320-dark.png">320px dark preview</a>
+              <a href="balance-first/rewards-light.png">Balance First native reference</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="variants-heading">
+        <div class="section-heading">
+          <h2 id="variants-heading">Five concepts</h2>
+          <p>Same shared-balance rules, different screen structures; samples show representative reward data.</p>
+        </div>
+        <div class="cards">
+          <article class="design">
+            <a href="previews/quiet-ledger.png"><img src="previews/quiet-ledger.png" alt="Original Quiet Ledger candidate screenshot." /></a>
+            <div class="design-copy"><span class="tag winner-tag">Selected base · 86/100</span><h3>Quiet Ledger</h3><p>The most compact candidate. Review refinements moved Add reward up and made the shared balance explicit.</p><a href="previews/quiet-ledger-selected-390-light.png">View selected refinement</a><a href="prototypes/quiet-ledger.html">Open original concept</a></div>
+          </article>
+          <article class="design">
+            <a href="previews/closest-goal.png"><img src="previews/closest-goal.png" alt="Closest Goal Rewards prototype." /></a>
+            <div class="design-copy"><span class="tag">81/100</span><h3>Closest Goal</h3><p>A focused redeem card gives one reward a clear primary action, but uses more space and hides the history at 320px.</p><a href="prototypes/closest-goal.html">Open HTML prototype</a></div>
+          </article>
+          <article class="design">
+            <a href="previews/ready-in-progress.png"><img src="previews/ready-in-progress.png" alt="Ready and Growing Rewards prototype." /></a>
+            <div class="design-copy"><span class="tag">71/100</span><h3>Ready and In Progress</h3><p>Eligibility groups scan clearly, but exposed edit/delete controls add clutter and ready rewards need progress too.</p><a href="prototypes/ready-in-progress.html">Open HTML prototype</a></div>
+          </article>
+          <article class="design">
+            <a href="previews/goal-collection.png"><img src="previews/goal-collection.png" alt="Goal Collection two-column Rewards prototype." /></a>
+            <div class="design-copy"><span class="tag">59/100 · fails layout gate</span><h3>Goal Collection</h3><p>The two-column catalog is distinct, but Add reward collides with the bottom tabs at 320px and the grid feels card-heavy.</p><a href="prototypes/goal-collection.html">Open HTML prototype</a></div>
+          </article>
+          <article class="design">
+            <a href="previews/baseline.png"><img src="previews/baseline.png" alt="Before: Rewards screen with balance card, repeated balance explanation, and full reward cards." /></a>
+            <div class="design-copy"><span class="tag">Before</span><h3>Current screen</h3><p>Balance, cost, progress, and eligibility compete across cards, with the shared-balance rule repeated below them.</p><a href="previews/baseline.png">Open baseline screenshot</a></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="score-heading">
+        <div class="section-heading">
+          <h2 id="score-heading">Comparative score</h2>
+          <p>Higher is better. Criteria total 100 points.</p>
+        </div>
+        <div class="score-wrap">
+          <table>
+            <thead><tr><th>Design</th><th>Hierarchy / 25</th><th>Task clarity / 20</th><th>Native fit / 20</th><th>Accessibility / 20</th><th>Polish / 15</th><th>Total</th></tr></thead>
+            <tbody>
+              <tr class="selected-row"><td>Quiet Ledger · reviewed base</td><td>24</td><td>16</td><td>16</td><td>17</td><td>13</td><td class="score">86</td></tr>
+              <tr><td>Balance First</td><td>22</td><td>18</td><td>19</td><td>14</td><td>12</td><td class="score">85</td></tr>
+              <tr><td>Closest Goal</td><td>20</td><td>19</td><td>15</td><td>14</td><td>13</td><td class="score">81</td></tr>
+              <tr><td>Ready and In Progress</td><td>18</td><td>16</td><td>14</td><td>13</td><td>10</td><td class="score">71</td></tr>
+              <tr><td>Goal Collection</td><td>15</td><td>13</td><td>11</td><td>8</td><td>12</td><td class="score">59</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">Scores are comparative visual judgments, not usability-study results; accessibility scores are provisional. The refined winner has browser previews at 390px light and 320px dark. The native 320pt layout, current VoiceOver/TalkBack tree, and Android action sheet have not been verified in a simulator.</p>
+      </section>
+
+      <section class="section" aria-labelledby="better-heading">
+        <div class="section-heading">
+          <h2 id="better-heading">Better review cascade</h2>
+          <p>Applied in order to the selected screen.</p>
+        </div>
+        <div class="review-grid">
+          <article class="review-item"><strong>1 · Accessibility</strong><p>Each row exposes a labeled progress value. Redeem and edit/delete are separate named buttons with 44pt targets; the SVG ring is decorative. Current simulator tree and TalkBack remain unverified.</p></article>
+          <article class="review-item"><strong>2 · Layout</strong><p>Rows align progress, reward name, cost, status, and actions. At 320px, Redeem moves below the status and the Redeemed heading remains visible. The app scaffold still hides the scroll indicator.</p></article>
+          <article class="review-item"><strong>3 · Writing</strong><p>“645 points to spend across rewards” states the shared balance in one line. Buttons start with verbs; progress is short; confirmation names the reward.</p></article>
+          <article class="review-item"><strong>4 · Typography</strong><p>System font only: 34pt screen title, 17pt reward names, 14pt metadata, and 15pt action labels. Point values use tabular numerals; long names wrap in the 320px preview.</p></article>
+          <article class="review-item"><strong>5 · Colors</strong><p>Uses Orbii semantic tokens in both schemes. Redeem text is 4.67:1 light and 6.64:1 dark on its tonal surface; progress rings are 4.36:1 and 5.77:1 on track.</p></article>
+          <article class="review-item"><strong>6 · UI</strong><p>One icon family, continuous list rows, separators only between rewards, and no added shadows or animation. Edit and delete use the native iOS action sheet and Android alert.</p></article>
+        </div>
+        <p class="note">Post-implementation review used Better Interface as the synthesis pass, then checked Typography, Layout, Accessibility, Writing, Colors, and UI individually. The 390px light and 320px dark HTML previews have no console errors. Contrast ratios are measured against the native palette; simulator behavior after this visual revision remains to verify. Impeccable product/distill removed the eyebrow, wallet card, repeated explanation, and duplicate point values. Frontend Design and Design Taste kept the result specific to Orbii’s tokens instead of a generic dashboard.</p>
+      </section>
+
+      <section class="section" aria-labelledby="process-heading">
+        <div class="section-heading">
+          <h2 id="process-heading">Repeat this for the next screens</h2>
+          <p>Keep one screen per PR; issue #100 remains open.</p>
+        </div>
+        <div class="steps">
+          <div class="step">Read the screen request and product constraints from GitHub Issues.</div>
+          <div class="step">Write the screen’s user job, primary action, and information to remove.</div>
+          <div class="step">Use Impeccable to distill hierarchy, then create five structural HTML variants with Orbii tokens.</div>
+          <div class="step">Preview at 390px and 320px in light and dark; run the Better cascade before choosing.</div>
+          <div class="step">Get one independent design review, choose a base, and record why the other options lost.</div>
+          <div class="step">Implement natively, verify dynamic text/accessibility and the key states, then run repo gates.</div>
+        </div>
+        <div class="queue" aria-label="Next screens">
+          <span>Daily Focus settings</span><span>Setup · Your pace</span><span>Today phases</span><span>Orbit list</span><span>Points history</span><span>Habit create/edit</span><span>Notifications</span><span>Theme and capacity settings</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="footnote">Screenshots use sample data. The refined Quiet Ledger direction is implemented in Expo; the other concepts are stand-alone HTML previews and are not imported into production. The browser prototypes demonstrate layout and tokens, not native interaction. VoiceOver/TalkBack and the final 320pt native layout still need device verification. No new product rule was added; the approved spec remains the source of truth.</p>
+      </section>
+    </main>
+  </body>
+</html>
