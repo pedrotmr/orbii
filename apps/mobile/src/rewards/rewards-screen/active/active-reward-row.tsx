@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import type { ActiveReward } from "../../rewards-types";
 import { useTheme, useThemedStyles } from "../../../theme/use-theme";
+import { formatPoints } from "../../rewards-utils";
 import RedeemRewardButton from "./redeem-reward-button";
 import RewardProgressRing from "./reward-progress-ring";
 
@@ -43,8 +44,8 @@ export default function ActiveRewardRow({
   const remaining = reward.pointsRemaining.toLocaleString();
   const stacked = width < STACKED_WIDTH || fontScale >= STACKED_FONT_SCALE;
   const progressLabel = reward.isEligible
-    ? `${reward.name}, ${cost} points, ready to redeem`
-    : `${reward.name}, ${cost} points, ${remaining} points to go`;
+    ? `${reward.name}, ${formatPoints(reward.cost)}, ready to redeem`
+    : `${reward.name}, ${formatPoints(reward.cost)}, ${formatPoints(reward.pointsRemaining)} to go`;
 
   const openOptions = () => {
     if (process.env.EXPO_OS === "ios") {
@@ -108,7 +109,7 @@ export default function ActiveRewardRow({
         {stacked && reward.isEligible ? (
           <RedeemRewardButton
             busy={busy}
-            cost={cost}
+            cost={reward.cost}
             name={reward.name}
             onRedeem={onRedeem}
           />
@@ -118,7 +119,7 @@ export default function ActiveRewardRow({
         {!stacked && reward.isEligible ? (
           <RedeemRewardButton
             busy={busy}
-            cost={cost}
+            cost={reward.cost}
             name={reward.name}
             onRedeem={onRedeem}
           />

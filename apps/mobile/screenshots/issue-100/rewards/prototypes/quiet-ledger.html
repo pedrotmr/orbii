@@ -257,8 +257,13 @@ h2 { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--muted); 
     if (!background) {
       return null;
     }
+    const probe = document.createElement("span");
+    probe.style.cssText = "position:absolute;visibility:hidden;color:var(--background)";
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
     const context = document.createElement("canvas").getContext("2d");
-    context.fillStyle = background;
+    context.fillStyle = color;
     context.fillRect(0, 0, 1, 1);
     const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
     return 0.2126 * r + 0.7152 * g + 0.0722 * b < 128 ? "dark" : "light";

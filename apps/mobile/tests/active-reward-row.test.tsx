@@ -34,12 +34,15 @@ test("active reward row shows its cost and shared-balance progress", async () =>
     />,
   );
 
-  expect(screen.getByLabelText("Quiet Saturday, 380 points")).toBeOnTheScreen();
-  expect(screen.getByText("380 pts")).toBeOnTheScreen();
-  expect(screen.getByText("135 pts to go")).toBeOnTheScreen();
   expect(
-    screen.getByRole("progressbar", { name: "Quiet Saturday progress" }).props
-      .accessibilityValue,
+    screen.getByLabelText("Quiet Saturday, 380 points, 135 points to go"),
+  ).toBeOnTheScreen();
+  expect(screen.getByText("380 pts")).toBeOnTheScreen();
+  expect(screen.getByText("135 to go")).toBeOnTheScreen();
+  expect(
+    screen.getByRole("progressbar", {
+      name: "Quiet Saturday, 380 points, 135 points to go",
+    }).props.accessibilityValue,
   ).toEqual({ min: 0, max: 100, now: 64 });
   expect(screen.queryByRole("button", { name: /^Redeem/ })).toBeNull();
 });
@@ -162,7 +165,45 @@ test("active reward row shows zero progress for an invalid zero cost", async () 
 
   expect(
     screen.getByRole("progressbar", {
-      name: "Invalid imported reward progress",
+      name: "Invalid imported reward, 0 points, 0 points to go",
     }).props.accessibilityValue,
   ).toEqual({ min: 0, max: 100, now: 0 });
 });
+
+test.each([false, true])(
+  "one-point rewards use singular accessible labels (eligible: %s)",
+  async (isEligible) => {
+    await render(
+      <ActiveRewardRow
+        reward={{
+          ...growingReward,
+          cost: 1,
+          pointsProgress: isEligible ? 1 : 0,
+          pointsRemaining: isEligible ? 0 : 1,
+          isEligible,
+        }}
+        busy={false}
+        last
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+        onRedeem={jest.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("progressbar", {
+        name: isEligible
+          ? "Quiet Saturday, 1 point, ready to redeem"
+          : "Quiet Saturday, 1 point, 1 point to go",
+      }),
+    ).toBeOnTheScreen();
+
+    if (isEligible) {
+      expect(
+        screen.getByRole("button", {
+          name: "Redeem Quiet Saturday for 1 point",
+        }),
+      ).toBeOnTheScreen();
+    }
+  },
+);

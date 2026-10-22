@@ -120,7 +120,7 @@ const createStyles = (colors: Palette) =>
       gap: space[1],
       paddingStart: space[3],
     },
-    addPressed: { backgroundColor: colors.primarySoft },
+    addPressed: { opacity: 0.75 },
     addLabel: {
       color: colors.primary,
       fontSize: 15,

@@ -84,12 +84,12 @@ beforeEach(() => {
   });
 });
 
-test("the shared balance leads the screen as its heading", async () => {
+test("the rewards heading explains the shared spendable balance", async () => {
   await render(<RewardsScreen />);
 
-  expect(screen.getByRole("header", { name: "250 points" })).toBeOnTheScreen();
+  expect(screen.getByRole("header", { name: "Rewards" })).toBeOnTheScreen();
   expect(
-    screen.getByText("Your points count toward every reward."),
+    screen.getByText("250 points to spend across rewards"),
   ).toBeOnTheScreen();
 });
 

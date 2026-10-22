@@ -2,6 +2,7 @@ import { type Palette, space } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import type { RedeemedReward } from "../../rewards-types";
 import { useThemedStyles } from "../../../theme/use-theme";
+import { formatPoints } from "../../rewards-utils";
 
 interface RedeemedRewardRowProps {
   reward: RedeemedReward;
@@ -16,7 +17,10 @@ const redeemedDateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 const formatRedeemedDate = (localDate: string) => {
-  return redeemedDateFormatter.format(new Date(`${localDate}T12:00:00.000Z`));
+  const date = new Date(`${localDate}T12:00:00.000Z`);
+  return Number.isNaN(date.getTime())
+    ? null
+    : redeemedDateFormatter.format(date);
 };
 
 export default function RedeemedRewardRow({
@@ -29,8 +33,8 @@ export default function RedeemedRewardRow({
     ? formatRedeemedDate(reward.redeemedLocalDate)
     : null;
   const accessibilityLabel = date
-    ? `${reward.name}, redeemed ${date} for ${cost} points`
-    : `${reward.name}, redeemed for ${cost} points`;
+    ? `${reward.name}, redeemed ${date} for ${formatPoints(reward.cost)}`
+    : `${reward.name}, redeemed for ${formatPoints(reward.cost)}`;
 
   return (
     <View

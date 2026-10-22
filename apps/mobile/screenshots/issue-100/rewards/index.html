@@ -7,21 +7,23 @@
     <title>Orbii · Rewards design review</title>
     <style>
       :root {
-        --surface: var(--card);
-        --surface-soft: var(--secondary);
-        --ink: var(--foreground);
-        --muted: var(--muted-foreground);
-        --line: var(--border);
-        --brand: var(--accent);
-        --brand-soft: var(--accent-surface);
-        --green: var(--success-foreground);
-        --green-soft: var(--success);
-        --font: var(--font-sans);
+        color-scheme: light dark;
+        --surface: var(--card, light-dark(#FEFEFC, #242923));
+        --surface-soft: var(--secondary, light-dark(#ECEDE9, #222621));
+        --ink: var(--foreground, light-dark(#252923, #F0F2E9));
+        --muted: var(--muted-foreground, light-dark(#60655C, #B1B8AB));
+        --line: var(--border, light-dark(#D6D9D1, #41483D));
+        --brand: var(--accent, light-dark(#B54420, #FFA77C));
+        --brand-soft: var(--accent-surface, light-dark(#FAE9DF, #452E23));
+        --green: var(--success-foreground, light-dark(#43662F, #B9CD94));
+        --green-soft: var(--success, light-dark(#E8EFDF, #303B26));
+        --font: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
       }
 
       * { box-sizing: border-box; }
       body {
         margin: 0;
+        background: var(--background, light-dark(#F5F5F3, #181B18));
         color: var(--ink);
         font-family: var(--font);
         -webkit-font-smoothing: antialiased;
@@ -118,10 +120,14 @@
 
       <section class="section" aria-labelledby="variants-heading">
         <div class="section-heading">
-          <h2 id="variants-heading">Five concepts</h2>
+          <h2 id="variants-heading">Five concepts and baseline</h2>
           <p>Same shared-balance rules, different screen structures; samples show representative reward data.</p>
         </div>
         <div class="cards">
+          <article class="design">
+            <a href="balance-first/rewards-light.png"><img src="balance-first/rewards-light.png" alt="Balance First native Rewards concept." /></a>
+            <div class="design-copy"><span class="tag">85/100</span><h3>Balance First</h3><p>The shared balance leads the screen, with Add reward at the top. Its placement informed the selected refinement.</p><a href="balance-first/rewards-light.png">Open native reference</a></div>
+          </article>
           <article class="design">
             <a href="previews/quiet-ledger.png"><img src="previews/quiet-ledger.png" alt="Original Quiet Ledger candidate screenshot." /></a>
             <div class="design-copy"><span class="tag winner-tag">Selected base · 86/100</span><h3>Quiet Ledger</h3><p>The most compact candidate. Review refinements moved Add reward up and made the shared balance explicit.</p><a href="previews/quiet-ledger-selected-390-light.png">View selected refinement</a><a href="prototypes/quiet-ledger.html">Open original concept</a></div>

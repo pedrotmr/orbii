@@ -1,5 +1,5 @@
 import type { PaginationStatus } from "convex/react";
-import { type Palette, space } from "@orbii/tokens";
+import { type Palette } from "@orbii/tokens";
 import { StyleSheet, Text, View } from "react-native";
 import type { RedeemedReward } from "../../rewards-types";
 import GhostButton from "../../../components/ghost-button";
@@ -65,7 +65,6 @@ const createStyles = (colors: Palette) =>
     header: {
       minHeight: 48,
       justifyContent: "center",
-      paddingHorizontal: space[4],
     },
     label: {
       color: colors.muted,
@@ -78,6 +77,5 @@ const createStyles = (colors: Palette) =>
       color: colors.muted,
       fontSize: 14,
       lineHeight: 20,
-      paddingHorizontal: space[4],
     },
   });

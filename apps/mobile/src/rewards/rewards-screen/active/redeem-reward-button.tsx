@@ -2,10 +2,11 @@ import { type Palette, radius, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { selectionFeedback } from "../../../components/controls/feedback";
 import { useThemedStyles } from "../../../theme/use-theme";
+import { formatPoints } from "../../rewards-utils";
 
 interface RedeemRewardButtonProps {
   busy: boolean;
-  cost: string;
+  cost: number;
   name: string;
   onRedeem: () => void;
 }
@@ -21,7 +22,7 @@ export default function RedeemRewardButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Redeem ${name} for ${cost} points`}
+      accessibilityLabel={`Redeem ${name} for ${formatPoints(cost)}`}
       accessibilityState={{ disabled: busy }}
       disabled={busy}
       onPress={() => {
@@ -43,7 +44,11 @@ export default function RedeemRewardButton({
 
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
-    target: { minHeight: 44, justifyContent: "center" },
+    target: {
+      minHeight: 44,
+      justifyContent: "center",
+      alignSelf: "flex-start",
+    },
     button: {
       minHeight: 36,
       justifyContent: "center",
