@@ -2,7 +2,7 @@ import { beforeEach, expect, jest, test } from "@jest/globals";
 import { api } from "@orbii/backend";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { Alert } from "react-native";
+import { ActionSheetIOS, Alert } from "react-native";
 import type { ActiveReward } from "../src/rewards/rewards-types";
 import RewardsScreen from "../src/rewards/rewards-screen";
 
@@ -47,23 +47,50 @@ const redeemedPage = {
 const redeemReward = jest.fn(
   async (_args: { rewardId: ActiveReward["id"] }) => undefined,
 );
+const deleteReward = jest.fn(
+  async (_args: { rewardId: ActiveReward["id"] }) => undefined,
+);
 const noOp = jest.fn(async () => undefined);
+
+const mockPages = (active: unknown, redeemed: unknown) => {
+  jest.mocked(usePaginatedQuery).mockImplementation((reference) => {
+    return (reference as unknown as string) ===
+      (api.rewards.list as unknown as string)
+      ? (active as never)
+      : (redeemed as never);
+  });
+};
 
 beforeEach(() => {
   jest.spyOn(Alert, "alert").mockImplementation(() => {});
   jest.mocked(useQuery).mockReturnValue({ pointsBalance: 250 } as never);
-  jest.mocked(usePaginatedQuery).mockImplementation((reference) => {
-    return (reference as unknown as string) ===
-      (api.rewards.list as unknown as string)
-      ? (activePage as never)
-      : (redeemedPage as never);
-  });
+  mockPages(activePage, redeemedPage);
   jest.mocked(useMutation).mockImplementation((reference) => {
-    return (reference as unknown as string) ===
+    if (
+      (reference as unknown as string) ===
       (api.rewards.redeem as unknown as string)
-      ? (redeemReward as never)
-      : (noOp as never);
+    ) {
+      return redeemReward as never;
+    }
+
+    if (
+      (reference as unknown as string) ===
+      (api.rewards.deleteReward as unknown as string)
+    ) {
+      return deleteReward as never;
+    }
+
+    return noOp as never;
   });
+});
+
+test("the rewards heading explains the shared spendable balance", async () => {
+  await render(<RewardsScreen />);
+
+  expect(screen.getByRole("header", { name: "Rewards" })).toBeOnTheScreen();
+  expect(
+    screen.getByText("250 points to spend across rewards"),
+  ).toBeOnTheScreen();
 });
 
 test("eligible reward redemption requires explicit confirmation and shows the cost and remaining balance", async () => {
@@ -74,8 +101,8 @@ test("eligible reward redemption requires explicit confirmation and shows the co
   );
 
   expect(Alert.alert).toHaveBeenCalledWith(
-    "Redeem this reward?",
-    "Spend 100 of your 250 points on A concert? You’ll have 150 points left. This can’t be undone.",
+    "Redeem “A concert”?",
+    "Spend 100 of your 250 points? You’ll have 150 points left. This can’t be undone.",
     expect.any(Array),
   );
   expect(redeemReward).not.toHaveBeenCalled();
@@ -89,16 +116,51 @@ test("eligible reward redemption requires explicit confirmation and shows the co
   expect(redeemReward).toHaveBeenCalledWith({ rewardId: reward.id });
 });
 
+test("deleting from the options sheet asks first and keeps the balance", async () => {
+  jest
+    .spyOn(ActionSheetIOS, "showActionSheetWithOptions")
+    .mockImplementation((_options, choose) => choose(1));
+
+  await render(<RewardsScreen />);
+
+  await fireEvent.press(
+    screen.getByRole("button", { name: "Edit or delete A concert" }),
+  );
+
+  expect(Alert.alert).toHaveBeenCalledWith(
+    "Delete “A concert”?",
+    "This can’t be undone. Your point balance stays the same.",
+    expect.any(Array),
+  );
+  expect(deleteReward).not.toHaveBeenCalled();
+
+  const buttons = jest.mocked(Alert.alert).mock.lastCall?.[2];
+  await act(async () => {
+    buttons?.find((button) => button.text === "Delete reward")?.onPress?.();
+    await Promise.resolve();
+  });
+
+  expect(deleteReward).toHaveBeenCalledWith({ rewardId: reward.id });
+});
+
+test("an empty active list explains what a reward does", async () => {
+  mockPages({ ...activePage, results: [] }, redeemedPage);
+
+  await render(<RewardsScreen />);
+
+  expect(screen.getByText("No rewards yet")).toBeOnTheScreen();
+  expect(
+    screen.getByText("Add one, and your points will count toward it."),
+  ).toBeOnTheScreen();
+  expect(screen.getByRole("button", { name: "Add reward" })).toBeEnabled();
+  expect(screen.getByText("Nothing redeemed yet.")).toBeOnTheScreen();
+});
+
 test("active goals render while redeemed reward history loads", async () => {
-  jest.mocked(usePaginatedQuery).mockImplementation((reference) => {
-    return (reference as unknown as string) ===
-      (api.rewards.list as unknown as string)
-      ? (activePage as never)
-      : ({
-          results: [],
-          status: "LoadingFirstPage",
-          loadMore: jest.fn(),
-        } as never);
+  mockPages(activePage, {
+    results: [],
+    status: "LoadingFirstPage",
+    loadMore: jest.fn(),
   });
 
   await render(<RewardsScreen />);

@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rewards prototype: Closest goal</title>
+    <style>
+      /* Tokens from packages/tokens/src/native.ts: lightColors, darkColors, space, radius, fontSize. */
+      :root {
+        --bg: #f5f5f3;
+        --bg-mid: #ecede9;
+        --surface: #fefefc;
+        --ink: #252923;
+        --muted: #60655c;
+        --line: #d6d9d1;
+        --primary: #b54420;
+        --primary-soft: #fae9df;
+        --success: #43662f;
+        --track: #e3e6de;
+        --focus: #ce5628;
+        --button-fill: #b54420;
+        --on-button: #fffbf7;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --radius-lg: 16px;
+        --radius-full: 999px;
+        --font-sm: 14px;
+        --font-md: 16px;
+        --font-xl: 22px;
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #181b18;
+        --bg-mid: #222621;
+        --surface: #242923;
+        --ink: #f0f2e9;
+        --muted: #b1b8ab;
+        --line: #41483d;
+        --primary: #ffa77c;
+        --primary-soft: #452e23;
+        --success: #b9cd94;
+        --track: #373f32;
+        --focus: #ffa77c;
+        --button-fill: #b54420;
+        --on-button: #fffbf7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+      }
+
+      body {
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, system-ui,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+        border: 0;
+        background: none;
+        padding: 0;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      .phone {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 390px;
+        height: 844px;
+        margin: 0 auto;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      .status-bar {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 54px;
+        padding: 0 30px 0 36px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+
+      .status-icons {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      main {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: var(--space-6);
+        padding: var(--space-4) var(--space-6) var(--space-6);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+
+      .header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+
+      .title-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 48px;
+        column-gap: var(--space-3);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 34px;
+        line-height: 1.18;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      .add {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        min-height: 48px;
+        margin-inline-end: calc(var(--space-3) * -1);
+        padding-block: 0;
+        padding-inline: 10px var(--space-3);
+        border-radius: var(--radius-full);
+        color: var(--primary);
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .add:active,
+      .edit:active {
+        background: var(--primary-soft);
+      }
+
+      .balance {
+        margin: 0;
+        color: var(--muted);
+        font-size: var(--font-md);
+        line-height: 1.5;
+        text-wrap: pretty;
+      }
+
+      .balance strong {
+        color: var(--ink);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+
+      h2 {
+        margin: 0;
+        padding: 0 var(--space-4);
+        color: var(--muted);
+        font-size: var(--font-sm);
+        font-weight: 500;
+      }
+
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        padding: var(--space-5) var(--space-4);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+      }
+
+      .card-title {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .card-name {
+        flex: 1;
+        margin: 0;
+        font-size: var(--font-xl);
+        line-height: 1.27;
+        font-weight: 700;
+        letter-spacing: -0.014em;
+        overflow-wrap: anywhere;
+      }
+
+      .edit {
+        min-width: 44px;
+        min-height: 44px;
+        margin-block: calc(var(--space-2) * -1);
+        margin-inline-end: calc(var(--space-3) * -1);
+        padding: 0 var(--space-3);
+        border-radius: var(--radius-full);
+        color: var(--primary);
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .progress {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+
+      .track {
+        overflow: hidden;
+        height: 6px;
+        border-radius: var(--radius-full);
+        background: var(--track);
+      }
+
+      .track.regular {
+        height: 8px;
+      }
+
+      .fill {
+        height: 100%;
+        border-radius: var(--radius-full);
+        background: var(--primary);
+      }
+
+      .fill.ready {
+        background: var(--success);
+      }
+
+      .numbers {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-1) var(--space-3);
+        font-size: var(--font-md);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .ready-label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        color: var(--success);
+        font-weight: 600;
+      }
+
+      .cost {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .redeem {
+        min-height: 48px;
+        border-radius: var(--radius-full);
+        background: var(--button-fill);
+        color: var(--on-button);
+        font-size: var(--font-md);
+        font-weight: 600;
+      }
+
+      .redeem:active {
+        filter: brightness(0.92);
+      }
+
+      .list {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        list-style: none;
+      }
+
+      .list li {
+        position: relative;
+      }
+
+      .list li + li::before {
+        content: "";
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline: var(--space-4) 0;
+        height: 0.5px;
+        background: var(--line);
+        pointer-events: none;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        width: 100%;
+        min-height: 64px;
+        padding: var(--space-3) var(--space-4);
+        text-align: start;
+      }
+
+      .row-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: var(--space-2);
+        min-width: 0;
+      }
+
+      .chevron {
+        color: var(--muted);
+      }
+
+      [dir="rtl"] .chevron {
+        transform: scaleX(-1);
+      }
+
+      .row:active {
+        background: var(--bg-mid);
+      }
+
+      .row:focus-visible {
+        outline-offset: -2px;
+        border-radius: var(--radius-lg);
+      }
+
+      .row-title {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        width: 100%;
+      }
+
+      .row-name {
+        flex: 1;
+        font-size: var(--font-md);
+        line-height: 1.375;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+
+      .row-cost {
+        font-size: 15px;
+        line-height: 1.47;
+        font-weight: 500;
+      }
+
+      .row-progress {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-1) var(--space-3);
+        width: 100%;
+      }
+
+      .row-progress .track {
+        flex: 1 1 96px;
+      }
+
+      .to-go {
+        min-width: 104px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.38;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        text-align: end;
+      }
+
+      .history {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        min-height: 60px;
+        padding: var(--space-3) var(--space-4);
+      }
+
+      .history-copy {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .history-name {
+        overflow-wrap: anywhere;
+        font-size: 15px;
+        line-height: 1.33;
+        font-weight: 600;
+      }
+
+      .history-date {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.38;
+      }
+
+      .history-cost {
+        color: var(--muted);
+        font-size: var(--font-sm);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .tab-bar {
+        display: grid;
+        flex: none;
+        grid-template-columns: repeat(4, 1fr);
+        min-height: 83px;
+        padding: 6px var(--space-2) 0;
+        border-top: 0.5px solid var(--line);
+        background: var(--bg);
+      }
+
+      .tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        min-height: 49px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 500;
+        text-decoration: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .tab-icon {
+        display: flex;
+        padding: 2px 16px;
+        border-radius: var(--radius-full);
+      }
+
+      .tab[aria-current="page"] {
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .tab[aria-current="page"] .tab-icon {
+        background: var(--primary-soft);
+      }
+
+      svg {
+        flex: none;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Explicit theme: ?theme=dark|light wins, then a host-forced color-scheme, then the system setting.
+      (() => {
+        const root = document.documentElement;
+        const requested = new URLSearchParams(location.search).get("theme");
+        const hostScheme = getComputedStyle(root).colorScheme;
+        const systemDark = matchMedia("(prefers-color-scheme: dark)").matches;
+        const dark =
+          requested === "dark" ||
+          (requested !== "light" && (hostScheme === "dark" || systemDark));
+        root.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
+    <div class="phone">
+      <div class="status-bar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="status-icons">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+            <rect x="0" y="8" width="3" height="4" rx="1" />
+            <rect x="5" y="5.5" width="3" height="6.5" rx="1" />
+            <rect x="10" y="3" width="3" height="9" rx="1" />
+            <rect x="15" y="0" width="3" height="12" rx="1" />
+          </svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+            <path d="M8 2.5c2.4 0 4.6.9 6.3 2.5l1.3-1.4A11 11 0 0 0 8 .6 11 11 0 0 0 .4 3.6L1.7 5A9 9 0 0 1 8 2.5Zm0 3.8c1.4 0 2.6.5 3.6 1.4l1.3-1.4A7 7 0 0 0 8 4.4a7 7 0 0 0-4.9 1.9l1.3 1.4c1-.9 2.2-1.4 3.6-1.4Zm0 3.7a1.9 1.9 0 0 1 1.3.5L8 12l-1.3-1.5A1.9 1.9 0 0 1 8 10Z" />
+          </svg>
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none">
+            <rect x="0.5" y="0.5" width="22" height="12" rx="3.5" stroke="currentColor" opacity="0.4" />
+            <rect x="2" y="2" width="19" height="9" rx="2" fill="currentColor" />
+            <path d="M24.5 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="currentColor" opacity="0.4" />
+          </svg>
+        </span>
+      </div>
+
+      <main>
+        <header class="header">
+          <div class="title-row">
+            <h1>Rewards</h1>
+            <button class="add" type="button" aria-label="Add reward">
+              <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+              Add
+            </button>
+          </div>
+          <p class="balance">
+            <strong>640 pts</strong> count toward every reward
+          </p>
+        </header>
+
+        <section aria-labelledby="closest-heading">
+          <h2 id="closest-heading">Closest reward</h2>
+          <div class="card">
+            <div class="card-title">
+              <p class="card-name">Apple Magic Mouse</p>
+              <button class="edit" type="button" aria-label="Edit Apple Magic Mouse">Edit</button>
+            </div>
+            <div class="progress">
+              <div
+                class="track regular"
+                role="progressbar"
+                aria-label="Apple Magic Mouse progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="100"
+              >
+                <div class="fill ready" style="width: 100%"></div>
+              </div>
+              <p class="numbers">
+                <span class="ready-label">
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                    <circle cx="9" cy="9" r="8" fill="currentColor" />
+                    <path d="m5.5 9.2 2.3 2.3 4.7-5" stroke="var(--surface)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Ready to redeem
+                </span>
+                <span class="cost">600 pts</span>
+              </p>
+            </div>
+            <button class="redeem" type="button" aria-label="Redeem Apple Magic Mouse for 600 points">Redeem</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="more-heading">
+          <h2 id="more-heading">More rewards · closest first</h2>
+          <ul class="list">
+            <li>
+              <button class="row" type="button" aria-label="Concert tickets, 900 points, 260 points to go">
+                <span class="row-body"><span class="row-title">
+                  <span class="row-name">Concert tickets</span>
+                  <span class="row-cost cost">900 pts</span>
+                </span>
+                <span class="row-progress" aria-hidden="true">
+                  <span class="track"><span class="fill" style="display: block; width: 71%"></span></span>
+                  <span class="to-go">260 pts to go</span>
+                </span></span>
+                <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            </li>
+            <li>
+              <button class="row" type="button" aria-label="New running shoes, 1,200 points, 560 points to go">
+                <span class="row-body"><span class="row-title">
+                  <span class="row-name">New running shoes</span>
+                  <span class="row-cost cost">1,200 pts</span>
+                </span>
+                <span class="row-progress" aria-hidden="true">
+                  <span class="track"><span class="fill" style="display: block; width: 53%"></span></span>
+                  <span class="to-go">560 pts to go</span>
+                </span></span>
+                <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            </li>
+            <li>
+              <button class="row" type="button" aria-label="Weekend in Lisbon with friends, 2,400 points, 1,760 points to go">
+                <span class="row-body"><span class="row-title">
+                  <span class="row-name">Weekend in Lisbon with friends</span>
+                  <span class="row-cost cost">2,400 pts</span>
+                </span>
+                <span class="row-progress" aria-hidden="true">
+                  <span class="track"><span class="fill" style="display: block; width: 27%"></span></span>
+                  <span class="to-go">1,760 pts to go</span>
+                </span></span>
+                <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="redeemed-heading">
+          <h2 id="redeemed-heading">Redeemed</h2>
+          <ul class="list">
+            <li class="history">
+              <span class="history-copy">
+                <span class="history-name">Coffee beans</span>
+                <time class="history-date" datetime="2026-10-12">Oct 12, 2026</time>
+              </span>
+              <span class="history-cost">−150 pts</span>
+            </li>
+            <li class="history">
+              <span class="history-copy">
+                <span class="history-name">Cabin weekend</span>
+                <time class="history-date" datetime="2026-09-28">Sep 28, 2026</time>
+              </span>
+              <span class="history-cost">−175 pts</span>
+            </li>
+          </ul>
+        </section>
+      </main>
+
+      <nav class="tab-bar" aria-label="Tabs">
+        <a class="tab" href="#today">
+          <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+            <circle cx="13" cy="13" r="10" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3" />
+            <circle cx="13" cy="13" r="5" fill="currentColor" />
+          </svg></span>
+          Today
+        </a>
+        <a class="tab" href="#orbit">
+          <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="8" cy="8" r="4" />
+            <circle cx="18" cy="8" r="4" />
+            <circle cx="8" cy="18" r="4" />
+            <circle cx="18" cy="18" r="4" />
+          </svg></span>
+          Orbit
+        </a>
+        <a class="tab" href="#rewards" aria-current="page">
+          <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <rect x="4" y="10" width="18" height="12" rx="2" />
+            <path d="M3 7h20v3H3zM13 7v15M13 7c-1.5-3-6-3.5-6-1s4 1 6 1Zm0 0c1.5-3 6-3.5 6-1s-4 1-6 1Z" />
+          </svg></span>
+          Rewards
+        </a>
+        <a class="tab" href="#settings">
+          <span class="tab-icon"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 7h18M4 13h18M4 19h18" />
+            <circle cx="9" cy="7" r="2.5" fill="var(--bg)" />
+            <circle cx="17" cy="13" r="2.5" fill="var(--bg)" />
+            <circle cx="11" cy="19" r="2.5" fill="var(--bg)" />
+          </svg></span>
+          Settings
+        </a>
+      </nav>
+    </div>
+  </body>
+</html>

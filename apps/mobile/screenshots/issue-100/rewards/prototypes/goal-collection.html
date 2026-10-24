@@ -1,0 +1,536 @@
+<!doctype html>
+<!--
+  PROTOTYPE · issue #100 · Rewards · Goal Collection concept.
+  Static mock with sample data. Colors, spacing, radii and type sizes come from
+  packages/tokens/src/native.ts and the native Rewards screen. Not production code.
+  Theme: ?theme=light|dark, else the host theme, else the system setting.
+-->
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rewards · Goal Collection · Orbii prototype</title>
+<style>
+  /* lightColors from packages/tokens/src/native.ts */
+  :root,
+  [data-theme="light"] {
+    color-scheme: light;
+    --o-bg: #F5F5F3;
+    --o-bgMid: #ECEDE9;
+    --o-bgDeep: #E2E4DE;
+    --o-surface: #FEFEFC;
+    --o-ink: #252923;
+    --o-muted: #60655C;
+    --o-line: #D6D9D1;
+    --o-primary: #B54420;
+    --o-primarySoft: #FAE9DF;
+    --o-buttonFill: #B54420;
+    --o-onButton: #FFFBF7;
+    --o-focus: #CE5628;
+    --o-track: #E3E6DE;
+  }
+
+  /* darkColors from packages/tokens/src/native.ts */
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --o-bg: #181B18;
+    --o-bgMid: #222621;
+    --o-bgDeep: #2D332C;
+    --o-surface: #242923;
+    --o-ink: #F0F2E9;
+    --o-muted: #B1B8AB;
+    --o-line: #41483D;
+    --o-primary: #FFA77C;
+    --o-primarySoft: #452E23;
+    --o-buttonFill: #B54420;
+    --o-onButton: #FFFBF7;
+    --o-focus: #FFA77C;
+    --o-track: #373F32;
+  }
+
+  :root { --o-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui, sans-serif; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 24px 0;
+    color: var(--o-ink);
+    font-family: var(--o-font);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button, a { font: inherit; color: inherit; background: none; border: 0; text-align: start; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+  :focus-visible { outline: 2px solid var(--o-focus); outline-offset: 2px; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Device: 390 × 844 with a fixed height; edge to edge below 430px wide, down to 320px. */
+  .device {
+    position: relative;
+    width: min(390px, 100%);
+    height: 844px;
+    overflow: hidden;
+    border-radius: 44px;
+    background: var(--o-bg);
+    color: var(--o-ink);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.16);
+    container: screen / inline-size;
+  }
+
+  .status {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 2;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px 0 36px;
+    background: var(--o-bg);
+    font: 600 17px/22px var(--o-font);
+  }
+
+  .status svg { display: block; }
+
+  .scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 70px 24px 116px;
+    scrollbar-width: none;
+  }
+
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Header: the title and one balance line. */
+  .header { display: flex; flex-direction: column; gap: 4px; }
+
+  h1 { font: 700 34px/40px var(--o-font); letter-spacing: -1px; }
+
+  .balance { font: 400 17px/24px var(--o-font); color: var(--o-muted); }
+
+  .balance strong { font-weight: 700; color: var(--o-ink); font-variant-numeric: tabular-nums; }
+
+  /* The collection: two-up slots that always close with the add slot. */
+  .collection {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    list-style: none;
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--o-line);
+    border-radius: 16px;
+    background: var(--o-surface);
+  }
+
+  .tile-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .tile-body:active { background: var(--o-bgDeep); }
+
+  .ring { display: block; width: 44px; height: 44px; flex: none; }
+
+  .ring .track { fill: none; stroke: var(--o-track); stroke-width: 4; }
+
+  .ring .arc { fill: none; stroke: var(--o-primary); stroke-width: 4; stroke-linecap: round; }
+
+  .ring .glyph { fill: none; stroke: var(--o-muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  .ring.ready .track { fill: var(--o-primarySoft); stroke: var(--o-primary); }
+
+  .ring.ready .glyph { stroke: var(--o-primary); stroke-width: 2.4; }
+
+  .copy { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  .name { font: 600 16px/21px var(--o-font); color: var(--o-ink); overflow-wrap: anywhere; }
+
+  .cost { font: 400 14px/19px var(--o-font); color: var(--o-muted); font-variant-numeric: tabular-nums; }
+
+  .status-line {
+    margin-top: auto;
+    padding-top: 12px;
+    font: 500 14px/19px var(--o-font);
+    color: var(--o-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tile-footer { padding: 0 16px 16px; }
+
+  .redeem {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--o-buttonFill);
+    color: var(--o-onButton);
+    font: 600 15px/20px var(--o-font);
+    text-align: center;
+  }
+
+  .redeem:active { opacity: 0.85; }
+
+  .add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    min-height: 132px;
+    padding: 16px;
+    border: 1.5px dashed var(--o-line);
+    border-radius: 16px;
+    color: var(--o-primary);
+    font: 600 15px/20px var(--o-font);
+  }
+
+  .add:active { background: var(--o-primarySoft); }
+
+  .add-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: var(--o-primarySoft);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tile { transition: scale 120ms cubic-bezier(0.33, 1, 0.68, 1); }
+
+    .tile:has(.tile-body:active) { scale: 0.985; }
+  }
+
+  /* Redeemed: a quiet ledger under the collection. */
+  .redeemed { display: flex; flex-direction: column; gap: 4px; padding-top: 16px; }
+
+  h2 { font: 700 20px/26px var(--o-font); }
+
+  .ledger { list-style: none; }
+
+  .ledger li {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--o-line);
+  }
+
+  .ledger .entry { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  .ledger .date { font: 400 13px/18px var(--o-font); color: var(--o-muted); }
+
+  .ledger .amount { font: 600 15px/20px var(--o-font); color: var(--o-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Native tab bar, floating as on iOS 26. */
+  .tabs {
+    position: absolute;
+    inset: auto 20px 22px;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 5px;
+    border-radius: 999px;
+    background: var(--o-surface);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.16);
+  }
+
+  .tabs a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 52px;
+    border-radius: 999px;
+    color: var(--o-ink);
+    font: 500 11px/13px var(--o-font);
+    text-align: center;
+  }
+
+  .tabs a[aria-current="page"] { background: var(--o-bgMid); color: var(--o-primary); }
+
+  .tabs svg { display: block; width: 26px; height: 26px; }
+
+  .tab-glyph { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .tab-knob { fill: var(--o-surface); stroke: currentColor; stroke-width: 1.8; }
+
+  .tab-dots { fill: none; stroke: var(--o-surface); stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 0 3.3; }
+
+  .home-indicator {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    z-index: 2;
+    width: 134px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--o-ink);
+    translate: -50% 0;
+  }
+
+  /* Prototype chrome, outside the product screen. */
+  .proto {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 12px;
+    padding: 0 16px;
+    font: 400 13px/18px var(--o-font);
+    color: var(--o-muted);
+  }
+
+  .proto button { min-height: 32px; padding: 0 12px; border: 1px solid var(--o-line); border-radius: 999px; color: var(--o-ink); }
+
+  .proto button[aria-pressed="true"] { background: var(--o-ink); color: var(--o-bg); }
+
+  /* Below 356px the two-up grid can't keep a 148px slot: one column, ring beside the copy. */
+  @container screen (max-width: 355.98px) {
+    .collection { grid-template-columns: minmax(0, 1fr); }
+
+    .tile-body { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; column-gap: 12px; }
+
+    .status-line { margin-top: 0; padding-top: 0; }
+
+    .add { flex-direction: row; min-height: 64px; }
+  }
+
+  @media (max-width: 430px) {
+    body { padding: 0 0 16px; }
+
+    .device { width: 100%; border-radius: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<main class="device" aria-label="Orbii Rewards screen">
+  <div class="status" aria-hidden="true">
+    <span>9:41</span>
+    <svg width="78" height="13" viewBox="0 0 78 13">
+      <g fill="currentColor">
+        <rect x="0" y="9" width="3.2" height="4" rx="1"/>
+        <rect x="5" y="6.5" width="3.2" height="6.5" rx="1"/>
+        <rect x="10" y="4" width="3.2" height="9" rx="1"/>
+        <rect x="15" y="1.5" width="3.2" height="11.5" rx="1"/>
+        <path d="M33 3.2a11 11 0 0 1 14.6 0l-1.5 1.6a8.8 8.8 0 0 0-11.6 0zM35.5 6a7.4 7.4 0 0 1 9.6 0l-1.5 1.6a5.2 5.2 0 0 0-6.6 0zM38 8.8a3.6 3.6 0 0 1 4.6 0l-2.3 2.5z"/>
+        <rect x="53" y="1.5" width="22" height="10.5" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.4"/>
+        <rect x="55" y="3.5" width="18" height="6.5" rx="1.6"/>
+        <rect x="76.2" y="4.8" width="1.6" height="3.8" rx="0.8" opacity="0.4"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="scroll">
+    <header class="header">
+      <h1>Rewards</h1>
+      <p class="balance"><strong>240 <span aria-hidden="true">pts</span><span class="sr-only">points</span></strong> to spend on any reward</p>
+    </header>
+
+    <p id="tile-hint" class="sr-only">Edit or delete this reward</p>
+    <ul class="collection" aria-label="Your rewards">
+      <li class="tile">
+        <button type="button" class="tile-body" aria-label="Cinema night, 120 points, ready to redeem" aria-describedby="tile-hint">
+          <svg class="ring ready" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="track" cx="22" cy="22" r="20"/>
+            <path class="glyph" d="M15.5 22.5l4.5 4.5 8.5-9.5"/>
+          </svg>
+          <span class="copy">
+            <span class="name">Cinema night</span>
+            <span class="cost">120 pts</span>
+          </span>
+        </button>
+        <div class="tile-footer">
+          <button type="button" class="redeem" aria-label="Redeem Cinema night for 120 points">Redeem</button>
+        </div>
+      </li>
+
+      <li class="tile">
+        <button type="button" class="tile-body" aria-label="Apple Magic Mouse, 600 points, 360 points to go" aria-describedby="tile-hint">
+          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="track" cx="22" cy="22" r="20"/>
+            <circle class="arc" cx="22" cy="22" r="20" stroke-dasharray="50.27 125.66" transform="rotate(-90 22 22)"/>
+            <path class="glyph" d="M13 17.5h18v4.5H13zM14.5 22h15v9.5h-15zM22 17.5v14M22 17.5c-.6-2.6-2.4-4.2-4-3.6-1.4.5-1 2.6 1.2 3.1.9.3 1.9.4 2.8.5zM22 17.5c.6-2.6 2.4-4.2 4-3.6 1.4.5 1 2.6-1.2 3.1-.9.3-1.9.4-2.8.5z"/>
+          </svg>
+          <span class="copy">
+            <span class="name">Apple Magic Mouse</span>
+            <span class="cost">600 pts</span>
+            <span class="status-line">360 pts to go</span>
+          </span>
+        </button>
+      </li>
+
+      <li class="tile">
+        <button type="button" class="tile-body" aria-label="A slow Saturday, 200 points, ready to redeem" aria-describedby="tile-hint">
+          <svg class="ring ready" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="track" cx="22" cy="22" r="20"/>
+            <path class="glyph" d="M15.5 22.5l4.5 4.5 8.5-9.5"/>
+          </svg>
+          <span class="copy">
+            <span class="name">A slow Saturday</span>
+            <span class="cost">200 pts</span>
+          </span>
+        </button>
+        <div class="tile-footer">
+          <button type="button" class="redeem" aria-label="Redeem A slow Saturday for 200 points">Redeem</button>
+        </div>
+      </li>
+
+      <li class="tile">
+        <button type="button" class="tile-body" aria-label="Weekend trip to Lisbon, 2,500 points, 2,260 points to go" aria-describedby="tile-hint">
+          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="track" cx="22" cy="22" r="20"/>
+            <circle class="arc" cx="22" cy="22" r="20" stroke-dasharray="12.06 125.66" transform="rotate(-90 22 22)"/>
+            <path class="glyph" d="M13 17.5h18v4.5H13zM14.5 22h15v9.5h-15zM22 17.5v14M22 17.5c-.6-2.6-2.4-4.2-4-3.6-1.4.5-1 2.6 1.2 3.1.9.3 1.9.4 2.8.5zM22 17.5c.6-2.6 2.4-4.2 4-3.6 1.4.5 1 2.6-1.2 3.1-.9.3-1.9.4-2.8.5z"/>
+          </svg>
+          <span class="copy">
+            <span class="name">Weekend trip to Lisbon</span>
+            <span class="cost">2,500 pts</span>
+            <span class="status-line">2,260 pts to go</span>
+          </span>
+        </button>
+      </li>
+
+      <li class="tile">
+        <button type="button" class="tile-body" aria-label="New running shoes, 900 points, 660 points to go" aria-describedby="tile-hint">
+          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="track" cx="22" cy="22" r="20"/>
+            <circle class="arc" cx="22" cy="22" r="20" stroke-dasharray="33.51 125.66" transform="rotate(-90 22 22)"/>
+            <path class="glyph" d="M13 17.5h18v4.5H13zM14.5 22h15v9.5h-15zM22 17.5v14M22 17.5c-.6-2.6-2.4-4.2-4-3.6-1.4.5-1 2.6 1.2 3.1.9.3 1.9.4 2.8.5zM22 17.5c.6-2.6 2.4-4.2 4-3.6 1.4.5 1 2.6-1.2 3.1-.9.3-1.9.4-2.8.5z"/>
+          </svg>
+          <span class="copy">
+            <span class="name">New running shoes</span>
+            <span class="cost">900 pts</span>
+            <span class="status-line">660 pts to go</span>
+          </span>
+        </button>
+      </li>
+
+      <li>
+        <button type="button" class="add">
+          <span class="add-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+          Add reward
+        </button>
+      </li>
+    </ul>
+
+    <section class="redeemed" aria-labelledby="redeemed-title">
+      <h2 id="redeemed-title">Redeemed</h2>
+      <ul class="ledger">
+        <li>
+          <span class="entry"><span class="name">Fancy coffee</span><span class="date">Oct 12, 2026</span></span>
+          <span class="amount"><span aria-hidden="true">−40 pts</span><span class="sr-only">40 points</span></span>
+        </li>
+        <li>
+          <span class="entry"><span class="name">Cabin weekend</span><span class="date">Oct 10, 2026</span></span>
+          <span class="amount"><span aria-hidden="true">−175 pts</span><span class="sr-only">175 points</span></span>
+        </li>
+        <li>
+          <span class="entry"><span class="name">Concert tickets</span><span class="date">Sep 28, 2026</span></span>
+          <span class="amount"><span aria-hidden="true">−300 pts</span><span class="sr-only">300 points</span></span>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <nav class="tabs" aria-label="Tabs">
+    <a href="#today">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="currentColor"/><circle class="tab-dots" cx="14" cy="14" r="6"/></svg>
+      Today
+    </a>
+    <a href="#orbit">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><g class="tab-glyph"><circle cx="8.5" cy="8.5" r="4.3"/><circle cx="19.5" cy="8.5" r="4.3"/><circle cx="8.5" cy="19.5" r="4.3"/><circle cx="19.5" cy="19.5" r="4.3"/></g></svg>
+      Orbit
+    </a>
+    <a href="#rewards" aria-current="page">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><path class="tab-glyph" d="M4.5 10h19v5h-19zM6 15h16v9H6zM14 10v14M14 10c-.8-3.2-3-5.2-5-4.5-1.7.6-1.2 3.2 1.5 3.9 1.2.4 2.4.5 3.5.6zM14 10c.8-3.2 3-5.2 5-4.5 1.7.6 1.2 3.2-1.5 3.9-1.2.4-2.4.5-3.5.6z"/></svg>
+      Rewards
+    </a>
+    <a href="#settings">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><path class="tab-glyph" d="M4 8h20M4 14h20M4 20h20"/><circle class="tab-knob" cx="17" cy="8" r="2.6"/><circle class="tab-knob" cx="10" cy="14" r="2.6"/><circle class="tab-knob" cx="15.5" cy="20" r="2.6"/></svg>
+      Settings
+    </a>
+  </nav>
+  <div class="home-indicator" aria-hidden="true"></div>
+</main>
+
+<div class="proto">
+  <span>Goal Collection · sample data</span>
+  <span role="group" aria-label="Prototype theme">
+    <button type="button" data-set-theme="light" aria-pressed="true">Light</button>
+    <button type="button" data-set-theme="dark" aria-pressed="false">Dark</button>
+  </span>
+</div>
+
+<script>
+  (() => {
+    const root = document.documentElement;
+    const buttons = document.querySelectorAll("[data-set-theme]");
+
+    const apply = (theme) => {
+      root.dataset.theme = theme;
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.setTheme === theme));
+      });
+    };
+
+    // T3 injects its live theme as --background; use its lightness when it exists.
+    const hostTheme = () => {
+      if (!getComputedStyle(root).getPropertyValue("--background").trim()) {
+        return null;
+      }
+
+      const probe = document.createElement("span");
+      probe.style.cssText = "position:absolute;visibility:hidden;color:var(--background)";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      const context = canvas.getContext("2d");
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+      const lightness = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+      return lightness < 0.5 ? "dark" : "light";
+    };
+
+    const requested = new URLSearchParams(location.search).get("theme");
+    const systemTheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const theme = requested === "light" || requested === "dark" ? requested : hostTheme() ?? systemTheme;
+
+    apply(theme);
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => apply(button.dataset.setTheme));
+    });
+  })();
+</script>
+</body>
+</html>

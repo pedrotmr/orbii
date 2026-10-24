@@ -59,12 +59,9 @@ export default function RewardForm({
             contentContainerStyle={styles.sheetContent}
           >
             <View style={styles.heading}>
-              <View style={styles.headingCopy}>
-                <Text style={styles.eyebrow}>YOUR NEXT LITTLE GOAL</Text>
-                <Text accessibilityRole="header" style={styles.title}>
-                  {draft.rewardId ? "Edit reward" : "Add a reward"}
-                </Text>
-              </View>
+              <Text accessibilityRole="header" style={styles.title}>
+                {draft.rewardId ? "Edit reward" : "Add reward"}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close reward editor"
@@ -108,9 +105,6 @@ export default function RewardForm({
                 <Text style={styles.points}>points</Text>
               </View>
             </View>
-            <Text style={styles.hint}>
-              Use a positive whole number. Every reward shares the same balance.
-            </Text>
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {!validCost && cost.length > 0 ? (
               <Text style={styles.error}>
@@ -155,15 +149,10 @@ const createStyles = (colors: Palette) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-    },
-    headingCopy: { gap: space[1] },
-    eyebrow: {
-      color: colors.muted,
-      fontSize: 11,
-      fontWeight: "700",
-      letterSpacing: 1,
+      gap: space[3],
     },
     title: {
+      flex: 1,
       color: colors.ink,
       fontSize: 25,
       fontWeight: "700",
@@ -207,6 +196,5 @@ const createStyles = (colors: Palette) =>
       fontSize: 17,
     },
     points: { color: colors.muted, fontSize: 14 },
-    hint: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-    error: { color: colors.danger, fontSize: 14, lineHeight: 20 },
+    error: { color: colors.primaryDeep, fontSize: 14, lineHeight: 20 },
   });
