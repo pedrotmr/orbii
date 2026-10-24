@@ -1,4 +1,4 @@
-import { radius, type Palette, space } from "@orbii/tokens";
+import { type Palette, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import type { TodayHabit } from "../today-habit";
@@ -80,13 +80,12 @@ export default function TodayRevealPhase({
       </Pressable>
 
       <View style={styles.list}>
-        {offeredHabits.map((habit, index) => (
+        {offeredHabits.map((habit) => (
           <TodayOfferRow
             key={habit.id}
             habit={habit}
             selected={selectedIds.includes(habit.id)}
             disabled={busy}
-            last={index === offeredHabits.length - 1}
             onToggle={() => onToggle(habit.id)}
           />
         ))}
@@ -169,11 +168,7 @@ const createStyles = (colors: Palette) =>
       fontSize: 14,
       fontWeight: "600",
     },
-    list: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      overflow: "hidden",
-    },
+    list: { gap: space[2] },
     footer: { gap: space[2], marginTop: "auto", paddingTop: space[2] },
     selection: {
       color: colors.muted,
