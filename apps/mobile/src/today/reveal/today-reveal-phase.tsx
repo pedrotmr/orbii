@@ -18,6 +18,18 @@ interface TodayRevealPhaseProps {
   onShuffle: () => void;
 }
 
+const getPickGuidance = (offerSize: number) => {
+  if (offerSize === 0) {
+    return "No habits offered";
+  }
+
+  if (offerSize === 1) {
+    return "Pick the habit";
+  }
+
+  return `Pick 1–${offerSize}`;
+};
+
 export default function TodayRevealPhase({
   usualCount,
   selectedIds,
@@ -30,10 +42,7 @@ export default function TodayRevealPhase({
 }: TodayRevealPhaseProps) {
   const styles = useThemedStyles(createStyles);
   const count = selectedIds.length;
-  const pickGuidance =
-    offeredHabits.length === 1
-      ? "Pick the habit"
-      : "Pick 1–" + offeredHabits.length;
+  const pickGuidance = getPickGuidance(offeredHabits.length);
   return (
     <Animated.View
       entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}

@@ -48,7 +48,9 @@ export default function TodayOfferRow({
       <View style={styles.leading}>
         <HabitIcon glyph={habit.glyph} selected={selected} size={36} />
         <View style={styles.copy}>
-          <Text style={styles.name}>{habit.name}</Text>
+          <Text numberOfLines={1} style={styles.name}>
+            {habit.name}
+          </Text>
           <Text style={styles.points}>{habit.pointValue} points</Text>
         </View>
       </View>

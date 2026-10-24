@@ -92,3 +92,22 @@ test("single-habit offer keeps the pick guidance accurate", async () => {
     screen.getByText("Pick the habit; your usual 2 is just a guide."),
   ).toBeOnTheScreen();
 });
+
+test("empty offer does not show an invalid pick range", async () => {
+  await render(
+    <TodayRevealPhase
+      usualCount={2}
+      selectedIds={[]}
+      offeredHabits={[]}
+      busy={false}
+      onToggle={jest.fn()}
+      onCommit={jest.fn()}
+      onShuffle={jest.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText("No habits offered; your usual 2 is just a guide."),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText("Pick 1–0")).not.toBeOnTheScreen();
+});
