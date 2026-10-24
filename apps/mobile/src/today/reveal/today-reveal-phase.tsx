@@ -168,10 +168,7 @@ const createStyles = (colors: Palette) =>
       fontSize: 14,
       fontWeight: "600",
     },
-    list: {
-      flexDirection: "column",
-      gap: space[2],
-    },
+    list: { gap: space[2] },
     footer: { gap: space[2], marginTop: "auto", paddingTop: space[2] },
     selection: {
       color: colors.muted,
