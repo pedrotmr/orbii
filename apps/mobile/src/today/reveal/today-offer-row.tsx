@@ -69,7 +69,7 @@ export default function TodayOfferRow({
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     row: {
-      width: "48%",
+      width: "100%",
       minHeight: 88,
       alignItems: "flex-start",
       justifyContent: "flex-end",

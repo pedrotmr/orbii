@@ -79,7 +79,7 @@ export default function TodayRevealPhase({
         <Text style={styles.refreshLabel}>Refresh the offer →</Text>
       </Pressable>
 
-      <View style={styles.grid}>
+      <View style={styles.list}>
         {offeredHabits.map((habit) => (
           <TodayOfferRow
             key={habit.id}
@@ -168,10 +168,8 @@ const createStyles = (colors: Palette) =>
       fontSize: 14,
       fontWeight: "600",
     },
-    grid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      justifyContent: "space-between",
+    list: {
+      flexDirection: "column",
       gap: space[2],
     },
     footer: { gap: space[2], marginTop: "auto", paddingTop: space[2] },
