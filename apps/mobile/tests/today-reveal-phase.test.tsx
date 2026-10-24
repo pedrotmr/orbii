@@ -50,6 +50,13 @@ test("usual count is guidance and every offered habit stays selectable", async (
     />,
   );
 
+  expect(
+    screen.getByRole("checkbox", {
+      name: "Walk, 10 points",
+      checked: true,
+    }),
+  ).toBeOnTheScreen();
+
   const thirdHabit = screen.getByRole("checkbox", {
     name: "Journal, 20 points",
   });
