@@ -1,5 +1,10 @@
 import { expect, jest, test } from "@jest/globals";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react-native";
 import TodayRevealPhase from "../src/today/reveal/today-reveal-phase";
 
 const offeredHabits = [
@@ -25,14 +30,16 @@ test("usual count is guidance and every offered habit stays selectable", async (
     />,
   );
 
-  expect(screen.getByText("Your usual")).toBeOnTheScreen();
-  expect(screen.getByText("2")).toBeOnTheScreen();
   expect(
-    screen.getByRole("checkbox", {
-      name: "Walk, 10 points",
-      checked: false,
-    }),
+    screen.getByText("Pick 1–5; your usual 2 is just a guide."),
   ).toBeOnTheScreen();
+  const walkHabit = screen.getByRole("checkbox", {
+    name: "Walk, 10 points",
+    checked: false,
+  });
+  expect(walkHabit).toBeOnTheScreen();
+  expect(within(walkHabit).getByText("Walk")).toBeOnTheScreen();
+  expect(within(walkHabit).getByText("10 points")).toBeOnTheScreen();
   expect(screen.getAllByText("10 points")).toHaveLength(3);
   expect(
     screen.getByRole("button", { name: "Commit today’s Orbit" }),
@@ -66,4 +73,22 @@ test("usual count is guidance and every offered habit stays selectable", async (
   expect(
     screen.getByRole("button", { name: "Commit today’s Orbit" }),
   ).toBeEnabled();
+});
+
+test("single-habit offer keeps the pick guidance accurate", async () => {
+  await render(
+    <TodayRevealPhase
+      usualCount={2}
+      selectedIds={[]}
+      offeredHabits={[offeredHabits[0]]}
+      busy={false}
+      onToggle={jest.fn()}
+      onCommit={jest.fn()}
+      onShuffle={jest.fn()}
+    />,
+  );
+
+  expect(
+    screen.getByText("Pick the habit; your usual 2 is just a guide."),
+  ).toBeOnTheScreen();
 });

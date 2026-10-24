@@ -30,27 +30,23 @@ export default function TodayRevealPhase({
 }: TodayRevealPhaseProps) {
   const styles = useThemedStyles(createStyles);
   const count = selectedIds.length;
+  const pickGuidance =
+    offeredHabits.length === 1
+      ? "Pick the habit"
+      : "Pick 1–" + offeredHabits.length;
   return (
     <Animated.View
       entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
       style={styles.block}
     >
       <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>Today’s offer</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            Make room for today.
-          </Text>
-          <Text style={styles.sub}>
-            Pick the habits you want. One is enough; all {offeredHabits.length}{" "}
-            are okay too.
-          </Text>
-        </View>
-        <View style={styles.usualCard}>
-          <Text style={styles.usualLabel}>Your usual</Text>
-          <Text style={styles.usualCount}>{usualCount}</Text>
-          <Text style={styles.usualHint}>just a guide</Text>
-        </View>
+        <Text style={styles.eyebrow}>Today</Text>
+        <Text accessibilityRole="header" style={styles.title}>
+          Choose your focus.
+        </Text>
+        <Text style={styles.sub}>
+          {pickGuidance}; your usual {usualCount} is just a guide.
+        </Text>
       </View>
 
       {releasedCount !== null ? (
@@ -106,19 +102,15 @@ export default function TodayRevealPhase({
 }
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
-    block: { gap: space[2], flexGrow: 1 },
+    block: { gap: space[3], flexGrow: 1 },
     header: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: space[2],
+      gap: space[1],
     },
-    headerCopy: { flex: 1, gap: space[2] },
     eyebrow: {
       color: colors.muted,
-      fontSize: 12,
-      fontWeight: "700",
-      letterSpacing: 0.8,
-      textTransform: "uppercase",
+      fontSize: 13,
+      fontWeight: "600",
+      letterSpacing: 0.2,
     },
     title: {
       fontSize: 29,
@@ -128,24 +120,6 @@ const createStyles = (colors: Palette) =>
       letterSpacing: -0.9,
     },
     sub: { fontSize: 14, lineHeight: 20, color: colors.muted },
-    usualCard: {
-      minWidth: 72,
-      alignItems: "center",
-      paddingHorizontal: space[2],
-      paddingVertical: space[3],
-      borderWidth: 1,
-      borderColor: colors.line,
-      borderRadius: 16,
-      backgroundColor: colors.surface,
-    },
-    usualLabel: { color: colors.muted, fontSize: 11 },
-    usualCount: {
-      color: colors.ink,
-      fontSize: 25,
-      lineHeight: 30,
-      fontWeight: "700",
-    },
-    usualHint: { color: colors.muted, fontSize: 10 },
     releaseNote: {
       paddingHorizontal: space[3],
       paddingVertical: space[2],

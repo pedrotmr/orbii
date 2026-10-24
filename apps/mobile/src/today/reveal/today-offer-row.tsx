@@ -47,11 +47,11 @@ export default function TodayOfferRow({
     >
       <View style={styles.leading}>
         <HabitIcon glyph={habit.glyph} selected={selected} size={36} />
-        <Text numberOfLines={1} style={styles.name}>
-          {habit.name}
-        </Text>
+        <View style={styles.copy}>
+          <Text style={styles.name}>{habit.name}</Text>
+          <Text style={styles.points}>{habit.pointValue} points</Text>
+        </View>
       </View>
-      <Text style={styles.points}>{habit.pointValue} points</Text>
       <View
         accessible={false}
         accessibilityElementsHidden
@@ -75,10 +75,10 @@ export default function TodayOfferRow({
 const createStyles = (colors: Palette) =>
   StyleSheet.create({
     row: {
-      minHeight: 60,
+      minHeight: 68,
       flexDirection: "row",
       alignItems: "center",
-      gap: space[2],
+      gap: space[3],
       paddingHorizontal: space[3],
       paddingVertical: space[2],
       backgroundColor: colors.surface,
@@ -98,21 +98,18 @@ const createStyles = (colors: Palette) =>
       alignItems: "center",
       gap: space[3],
     },
+    copy: { flex: 1, minWidth: 0, gap: space[1] },
     name: {
-      flex: 1,
-      minWidth: 0,
       fontSize: 16,
       lineHeight: 20,
       color: colors.ink,
       fontWeight: "600",
     },
     points: {
-      minWidth: 66,
       color: colors.primary,
       fontSize: 12,
       lineHeight: 16,
       fontWeight: "600",
-      textAlign: "right",
     },
     selection: {
       width: 24,
