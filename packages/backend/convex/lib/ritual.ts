@@ -244,11 +244,6 @@ export const previousLocalDate = (localDate: string) => {
   return dt.toISOString().slice(0, 10);
 };
 
-/**
- * Apply streak rule B after a day becomes complete.
- * - At most one completion credit per localDate
- * - If last completed was yesterday → streak+1; else streak = 1
- */
 export const applyCompletionStats = (stats: UserStats, localDate: string) => {
   if (stats.lastCompletedLocalDate === localDate) {
     return stats;
@@ -285,10 +280,6 @@ export const revertCompletionStats = (
   };
 };
 
-/**
- * When opening a new local date, if the previous calendar day was not completed,
- * streak is broken (set to 0) until the next completion.
- */
 export const applyMissedDayGap = (stats: UserStats, todayLocalDate: string) => {
   if (!stats.lastCompletedLocalDate) {
     return stats.streak === 0 ? stats : { ...stats, streak: 0 };

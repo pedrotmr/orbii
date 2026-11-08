@@ -4,7 +4,6 @@ import { useTheme } from "../theme/use-theme";
 import ReturnLoopMark from "./brand-mark/return-loop-mark";
 
 interface BrandMarkProps {
-  /** Slightly larger brand for welcome/auth. */
   large?: boolean;
 }
 

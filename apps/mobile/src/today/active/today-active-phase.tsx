@@ -1,7 +1,7 @@
 import { type Palette, space } from "@orbii/tokens";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
-import type { TodayHabit } from "../today-habit";
+import type { TodayHabit } from "../../orbit-day/today-habit";
 import GhostButton from "../../components/ghost-button";
 import FocusOrbit from "../../components/ritual/focus-orbit";
 import { useThemedStyles } from "../../theme/use-theme";

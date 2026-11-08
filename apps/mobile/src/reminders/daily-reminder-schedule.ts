@@ -1,5 +1,6 @@
+import { localDateInTimezone, type DayPhase } from "@orbii/backend";
+
 export type DailyReminderKind = "morning" | "evening";
-export type DailyReminderPhase = "idle" | "reveal" | "active" | "complete";
 
 export interface DailyReminderPreferences {
   morning: boolean;
@@ -17,7 +18,7 @@ interface BuildDailyReminderScheduleArgs {
   now: Date;
   timeZone: string;
   preferences: DailyReminderPreferences;
-  phase: DailyReminderPhase;
+  phase: DayPhase;
   days?: number;
 }
 
@@ -42,20 +43,6 @@ export const formatDailyReminderTime = (kind: DailyReminderKind) => {
 const REMINDER_COPY: Record<DailyReminderKind, string> = {
   morning: "Ready to choose today's Orbit?",
   evening: "Want to finish today's Orbit?",
-};
-
-const getLocalDate = (date: Date, timeZone: string) => {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = Object.fromEntries(
-    parts.map(({ type, value }) => [type, value]),
-  );
-
-  return values.year + "-" + values.month + "-" + values.day;
 };
 
 const getLocalDateTimeParts = (date: Date, timeZone: string) => {
@@ -128,7 +115,7 @@ export const buildDailyReminderSchedule = ({
   phase,
   days = 30,
 }: BuildDailyReminderScheduleArgs) => {
-  const firstLocalDate = getLocalDate(now, timeZone);
+  const firstLocalDate = localDateInTimezone(timeZone, now.getTime());
   const reminders: ScheduledDailyReminder[] = [];
 
   for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {

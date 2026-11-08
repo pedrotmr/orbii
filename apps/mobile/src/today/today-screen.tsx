@@ -1,5 +1,5 @@
 import { api } from "@orbii/backend";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useMemo, useRef, useState } from "react";
 import BootSpinner from "../components/boot-spinner";
 import { completionFeedback } from "../components/controls/feedback";
@@ -11,14 +11,14 @@ import {
 } from "../live-activity/orbit-live-activity";
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
-import { todayLocalInTimezone, useTodayLocal } from "../local-date";
+import { resolveTodayHabits } from "../orbit-day/today-habit";
+import { useOrbitDay } from "../orbit-day/use-orbit-day";
 import TodayActivePhase from "./active/today-active-phase";
 import TodayHeader from "./chrome/today-header";
 import TodayCompletePhase from "./complete/today-complete-phase";
 import TodayIdlePhase from "./idle/today-idle-phase";
 import TodayRevealPhase from "./reveal/today-reveal-phase";
 import TodayEmptyOrbit from "./states/today-empty-orbit";
-import { resolveTodayHabits } from "./today-habit";
 
 export default function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
@@ -28,13 +28,15 @@ export default function TodayScreen() {
   } | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const busyRef = useRef(false);
-  const user = useQuery(api.users.get, {});
-  const localDate = useTodayLocal(user?.timezone);
-  const timezone = user?.timezone?.trim();
-  const isLocalDateReady =
-    user !== undefined &&
-    user !== null &&
-    (!timezone || localDate === todayLocalInTimezone(timezone));
+  const { user, localDate, day, habits, committedHabits, ready } =
+    useOrbitDay();
+  useSyncOrbitLiveActivity({
+    ready,
+    localDate,
+    phase: day?.session.phase,
+    committedHabits,
+    completedIds: day?.session.completedIds ?? [],
+  });
 
   const startReveal = useMutation(api.day.startRevealMutation);
   const toggleSelect = useMutation(api.day.toggleSelect);
@@ -42,44 +44,15 @@ export default function TodayScreen() {
   const toggleComplete = useMutation(api.day.toggleComplete);
   const rereveal = useMutation(api.day.rereveal);
 
-  const day = useQuery(api.day.get, { localDate });
-  const habits = useQuery(api.habits.list, {});
   const offeredIds = day?.session.offeredIds;
-  const committedIds = day?.session.committedIds;
 
   const offeredHabits = useMemo(() => {
     return resolveTodayHabits(offeredIds, habits);
   }, [offeredIds, habits]);
 
-  const committedHabits = useMemo(() => {
-    return resolveTodayHabits(
-      committedIds,
-      habits,
-      day?.session.committedPointValues,
-      day?.session.committedHabitSnapshots,
-    );
-  }, [
-    committedIds,
-    day?.session.committedHabitSnapshots,
-    day?.session.committedPointValues,
-    habits,
-  ]);
-
   const selectedHabits = useMemo(() => {
     return resolveTodayHabits(day?.session.selectedIds, habits);
   }, [day?.session.selectedIds, habits]);
-
-  useSyncOrbitLiveActivity({
-    ready:
-      isLocalDateReady &&
-      day !== undefined &&
-      day !== null &&
-      habits !== undefined,
-    localDate,
-    phase: day?.session.phase,
-    committedHabits,
-    completedIds: day?.session.completedIds ?? [],
-  });
 
   const run = async (fn: () => Promise<unknown>) => {
     if (busyRef.current) {
@@ -193,12 +166,14 @@ export default function TodayScreen() {
           canReshuffle={habits.length > 0}
           onToggle={(habitId) =>
             void run(async () => {
-              await toggleComplete({ localDate, habitId });
-              if (
-                !day.session.completedIds.includes(habitId) &&
+              const wasCompleted = day.session.completedIds.includes(habitId);
+              const completesOrbitWithoutResult =
+                !wasCompleted &&
                 day.session.completedIds.length + 1 ===
-                  day.session.committedIds.length
-              ) {
+                  day.session.committedIds.length;
+              const result = await toggleComplete({ localDate, habitId });
+
+              if (result?.completedOrbit ?? completesOrbitWithoutResult) {
                 completionFeedback();
               }
             })

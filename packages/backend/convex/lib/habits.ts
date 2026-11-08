@@ -1,4 +1,9 @@
-export type HabitCategory = "body" | "mind" | "learn" | "life";
+export const HABIT_CATEGORIES = ["body", "mind", "learn", "life"] as const;
+
+export type HabitCategory = (typeof HABIT_CATEGORIES)[number];
+
+export const MAX_HABIT_NAME_LENGTH = 50;
+export const MAX_HABIT_GLYPH_LENGTH = 50;
 
 export interface Habit {
   id: string;

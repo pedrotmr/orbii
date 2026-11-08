@@ -1,7 +1,7 @@
 import { type Palette, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
-import type { TodayHabit } from "../today-habit";
+import type { TodayHabit } from "../../orbit-day/today-habit";
 import { selectionFeedback } from "../../components/controls/feedback";
 import PrimaryButton from "../../components/primary-button";
 import { useThemedStyles } from "../../theme/use-theme";

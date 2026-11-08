@@ -1,4 +1,7 @@
-import type { HabitCategory } from "@orbii/backend";
+import {
+  HABIT_CATEGORIES,
+  type HabitCategory,
+} from "@orbii/backend/habit-domain";
 
 interface HabitSymbolDefinition {
   id: string;
@@ -7,12 +10,7 @@ interface HabitSymbolDefinition {
   keywords: readonly string[];
 }
 
-export const habitCategories: HabitCategory[] = [
-  "body",
-  "mind",
-  "learn",
-  "life",
-];
+export const habitCategories: HabitCategory[] = [...HABIT_CATEGORIES];
 
 export const habitSymbols = [
   {

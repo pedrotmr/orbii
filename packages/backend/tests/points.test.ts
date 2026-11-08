@@ -305,10 +305,11 @@ test("a commitment snapshot awards once per saved session date across edits and 
     habitId: "walk",
   });
   await owner.mutation(api.day.commit, { localDate: firstSessionDate });
-  await owner.mutation(api.day.toggleComplete, {
+  const completion = await owner.mutation(api.day.toggleComplete, {
     localDate: firstSessionDate,
     habitId: "walk",
   });
+  expect(completion).toEqual({ completedOrbit: true });
   await expect(
     owner.query(api.day.get, { localDate: firstSessionDate }),
   ).resolves.toMatchObject({ earnedPoints: 20 });

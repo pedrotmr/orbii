@@ -1,3 +1,4 @@
+import { localDateInTimezone } from "@orbii/backend";
 import { useEffect, useState } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 
@@ -9,30 +10,14 @@ export const deviceTimezone = () => {
   }
 };
 
-export const todayLocalInTimezone = (timeZone: string) => {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-};
-
-export const todayLocal = () => todayLocalInTimezone(deviceTimezone());
-
 const msUntilNextLocalMidnight = (timeZone: string) => {
   const now = Date.now();
-  const today = todayLocalInTimezone(timeZone);
+  const today = localDateInTimezone(timeZone, now);
   const nextMinute = now - (now % 60_000) + 60_000;
 
   for (let minute = 0; minute < 60 * 26; minute += 1) {
     const candidate = nextMinute + minute * 60_000;
-    const date = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(candidate));
+    const date = localDateInTimezone(timeZone, candidate);
 
     if (date !== today) {
       return candidate - now;
@@ -42,15 +27,23 @@ const msUntilNextLocalMidnight = (timeZone: string) => {
   return 60_000;
 };
 
+export const isLocalDateReady = (
+  localDate: string,
+  timeZone?: string | null,
+) => {
+  const currentTimezone = timeZone?.trim() || deviceTimezone();
+  return localDate === localDateInTimezone(currentTimezone);
+};
+
 /** Calendar date that advances on foreground resume and at timezone midnight. */
 export const useTodayLocal = (timeZone?: string | null) => {
   const tz =
     timeZone && timeZone.trim().length > 0 ? timeZone.trim() : deviceTimezone();
-  const [localDate, setLocalDate] = useState(() => todayLocalInTimezone(tz));
+  const [localDate, setLocalDate] = useState(() => localDateInTimezone(tz));
 
   useEffect(() => {
     const sync = () => {
-      const next = todayLocalInTimezone(tz);
+      const next = localDateInTimezone(tz);
       setLocalDate((prev) => (prev === next ? prev : next));
     };
 

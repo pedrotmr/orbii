@@ -1,13 +1,15 @@
 import { v } from "convex/values";
-import type { Habit, HabitCategory } from "./lib/habits";
+import type { Doc } from "./_generated/dataModel";
 import {
   internalMutation,
   internalQuery,
   mutation,
   query,
   type MutationCtx,
+  type QueryCtx,
 } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
+import { listHabitsForUser } from "./lib/habit_data";
 import {
   completionBonusReversalIdempotencyKey,
   getCompletionBonus,
@@ -20,7 +22,10 @@ import {
   insertSessionPointAward,
   insertSessionPointTransaction,
 } from "./lib/points";
-import { REMOTE_MCP_REQUEST_RETENTION_MS } from "./lib/remote_mcp_idempotency";
+import {
+  findLiveRemoteMcpRequest,
+  REMOTE_MCP_REQUEST_RETENTION_MS,
+} from "./lib/remote_mcp_idempotency";
 import {
   applyCompletionStats,
   applyMissedDayGap,
@@ -35,10 +40,13 @@ import {
 } from "./lib/ritual";
 import { localDateInTimezone, requireSavedTimezoneToday } from "./lib/timezone";
 
-const requireUser = async (ctx: { db: any }, clerkUserId: string) => {
+const requireUser = async (
+  ctx: QueryCtx | MutationCtx,
+  clerkUserId: string,
+) => {
   const user = await ctx.db
     .query("users")
-    .withIndex("by_clerkUserId", (q: any) => q.eq("clerkUserId", clerkUserId))
+    .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
     .unique();
 
   if (!user) {
@@ -48,50 +56,20 @@ const requireUser = async (ctx: { db: any }, clerkUserId: string) => {
   return user;
 };
 
-const listHabits = async (ctx: { db: any }, clerkUserId: string) => {
-  const rows = await ctx.db
-    .query("habits")
-    .withIndex("by_clerkUserId", (q: any) => q.eq("clerkUserId", clerkUserId))
-    .collect();
-  const habits: Habit[] = rows.map((row: any) => ({
-    id: row.habitKey,
-    name: row.name,
-    glyph: row.glyph,
-    category: row.category,
-    pointValue: getHabitPointValue(row.pointValue, row.habitKey),
-  }));
-
-  return habits;
-};
-
 const getSessionDoc = async (
-  ctx: { db: any },
+  ctx: QueryCtx | MutationCtx,
   clerkUserId: string,
   localDate: string,
 ) => {
   return await ctx.db
     .query("daySessions")
-    .withIndex("by_clerkUserId_localDate", (q: any) =>
+    .withIndex("by_clerkUserId_localDate", (q) =>
       q.eq("clerkUserId", clerkUserId).eq("localDate", localDate),
     )
     .unique();
 };
 
-const sessionFromDoc = (doc: {
-  localDate: string;
-  phase: DaySession["phase"];
-  offeredIds: string[];
-  selectedIds: string[];
-  committedIds: string[];
-  completedIds: string[];
-  committedPointValues?: { habitId: string; points: number }[];
-  committedHabitSnapshots?: {
-    habitId: string;
-    name: string;
-    glyph: string;
-    category?: HabitCategory;
-  }[];
-}) => {
+const sessionFromDoc = (doc: Doc<"daySessions">) => {
   return {
     localDate: doc.localDate,
     phase: doc.phase,
@@ -152,7 +130,7 @@ export const getForRemoteMcp = internalQuery({
     const localDate = localDateInTimezone(user.timezone);
     const doc = await getSessionDoc(ctx, args.clerkUserId, localDate);
     const session = doc ? sessionFromDoc(doc) : emptyDay(localDate);
-    const habits = await listHabits(ctx, args.clerkUserId);
+    const habits = await listHabitsForUser(ctx, args.clerkUserId);
     const habitsById = new Map(habits.map((habit) => [habit.id, habit]));
 
     return {
@@ -206,7 +184,7 @@ const startRevealForUser = async (
     user.timezone,
   );
 
-  const habits = await listHabits(ctx, clerkUserId);
+  const habits = await listHabitsForUser(ctx, clerkUserId);
   const existing = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
   if (existing?.phase === "complete") {
@@ -337,7 +315,7 @@ const commitForUser = async (
   }
 
   const next = ritualCommit(sessionFromDoc(doc));
-  const habits = await listHabits(ctx, clerkUserId);
+  const habits = await listHabitsForUser(ctx, clerkUserId);
   const habitsById = new Map(habits.map((habit) => [habit.id, habit]));
   const committedPointValues = next.committedIds.map((habitId) => {
     const habit = habitsById.get(habitId);
@@ -381,19 +359,20 @@ export const commitForRemoteMcp = internalMutation({
       )
       .collect();
 
-    for (const request of expiredRequests) {
-      await ctx.db.delete(request._id);
-    }
-
-    const existingRequest = await ctx.db
-      .query("remoteMcpCommitRequests")
-      .withIndex("by_clerkUserId_clientId_requestId", (q) =>
-        q
-          .eq("clerkUserId", args.clerkUserId)
-          .eq("clientId", args.clientId)
-          .eq("requestId", args.requestId),
-      )
-      .unique();
+    const existingRequest = await findLiveRemoteMcpRequest(
+      ctx,
+      expiredRequests,
+      () =>
+        ctx.db
+          .query("remoteMcpCommitRequests")
+          .withIndex("by_clerkUserId_clientId_requestId", (q) =>
+            q
+              .eq("clerkUserId", args.clerkUserId)
+              .eq("clientId", args.clientId)
+              .eq("requestId", args.requestId),
+          )
+          .unique(),
+    );
 
     if (existingRequest) {
       return;
@@ -435,7 +414,7 @@ const toggleCompleteForUser = async (
     completed !== undefined &&
     before.completedIds.includes(args.habitId) === completed
   ) {
-    return;
+    return { completedOrbit: false };
   }
 
   const next = ritualToggleComplete(before, args.habitId);
@@ -565,12 +544,18 @@ const toggleCompleteForUser = async (
       lastCompletedLocalDate: stats.lastCompletedLocalDate,
     });
   }
+
+  return { completedOrbit };
 };
 
 export const toggleComplete = mutation({
   args: { localDate: v.string(), habitId: v.string() },
   handler: async (ctx, args) => {
-    await toggleCompleteForUser(ctx, await requireClerkUserId(ctx), args);
+    return await toggleCompleteForUser(
+      ctx,
+      await requireClerkUserId(ctx),
+      args,
+    );
   },
 });
 
@@ -582,7 +567,12 @@ export const setCompleteForRemoteMcp = internalMutation({
     completed: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await toggleCompleteForUser(ctx, args.clerkUserId, args, args.completed);
+    return await toggleCompleteForUser(
+      ctx,
+      args.clerkUserId,
+      args,
+      args.completed,
+    );
   },
 });
 
@@ -596,7 +586,7 @@ const rerevealForUser = async (
     args.localDate,
     user.timezone,
   );
-  const habits = await listHabits(ctx, clerkUserId);
+  const habits = await listHabitsForUser(ctx, clerkUserId);
   const doc = await getSessionDoc(ctx, clerkUserId, sessionLocalDate);
 
   if (!doc) {
@@ -633,19 +623,20 @@ export const rerevealForRemoteMcp = internalMutation({
       )
       .collect();
 
-    for (const request of expiredRequests) {
-      await ctx.db.delete(request._id);
-    }
-
-    const existingRequest = await ctx.db
-      .query("remoteMcpRerevealRequests")
-      .withIndex("by_clerkUserId_clientId_requestId", (q) =>
-        q
-          .eq("clerkUserId", args.clerkUserId)
-          .eq("clientId", args.clientId)
-          .eq("requestId", args.requestId),
-      )
-      .unique();
+    const existingRequest = await findLiveRemoteMcpRequest(
+      ctx,
+      expiredRequests,
+      () =>
+        ctx.db
+          .query("remoteMcpRerevealRequests")
+          .withIndex("by_clerkUserId_clientId_requestId", (q) =>
+            q
+              .eq("clerkUserId", args.clerkUserId)
+              .eq("clientId", args.clientId)
+              .eq("requestId", args.requestId),
+          )
+          .unique(),
+    );
 
     if (existingRequest) {
       return;

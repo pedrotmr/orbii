@@ -20,7 +20,7 @@ import type {
 } from "./daily-reminder-schedule";
 import {
   deviceTimezone,
-  todayLocalInTimezone,
+  isLocalDateReady as isCurrentLocalDate,
   useTodayLocal,
 } from "../local-date";
 import {
@@ -66,11 +66,11 @@ export function DailyRemindersProvider({
   const user = useQuery(api.users.get, {});
   const localDate = useTodayLocal(user?.timezone);
   const timezone = user?.timezone?.trim() || deviceTimezone();
-  const isLocalDateReady =
+  const dateIsReady =
     user !== undefined &&
     user !== null &&
-    localDate === todayLocalInTimezone(timezone);
-  const day = useQuery(api.day.get, isLocalDateReady ? { localDate } : "skip");
+    isCurrentLocalDate(localDate, timezone);
+  const day = useQuery(api.day.get, dateIsReady ? { localDate } : "skip");
   const phase = day?.session.phase;
   const [preferences, setPreferences] = useState(emptyDailyReminderPreferences);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,7 +179,7 @@ export function DailyRemindersProvider({
     if (
       isLoading ||
       user === undefined ||
-      !isLocalDateReady ||
+      !dateIsReady ||
       phase === undefined
     ) {
       return;
@@ -214,7 +214,7 @@ export function DailyRemindersProvider({
   }, [
     appOpenRevision,
     isLoading,
-    isLocalDateReady,
+    dateIsReady,
     phase,
     preferences,
     timezone,
