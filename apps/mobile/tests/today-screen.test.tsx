@@ -136,6 +136,36 @@ test("completion feedback follows the transition returned by Convex", async () =
   });
 });
 
+test("completion feedback stays silent when Convex reports no completed Orbit", async () => {
+  day.session.phase = "active";
+  day.session.completedIds = [];
+  let resolveToggleComplete:
+    ((result: { completedOrbit: boolean }) => void) | undefined;
+  toggleComplete.mockReturnValue(
+    new Promise((resolve) => {
+      resolveToggleComplete = resolve;
+    }),
+  );
+
+  await render(<TodayScreen />);
+  await fireEvent.press(
+    screen.getByRole("checkbox", { name: "Read, 20 points" }),
+  );
+  await waitFor(() => {
+    expect(toggleComplete).toHaveBeenCalledTimes(1);
+  });
+
+  resolveToggleComplete?.({ completedOrbit: false });
+
+  await waitFor(() => {
+    expect(
+      screen.getByRole("checkbox", { name: "Read, 20 points" }).props
+        .accessibilityState?.disabled,
+    ).toBe(false);
+  });
+  expect(completionFeedback).not.toHaveBeenCalled();
+});
+
 test("unchecking a completed habit restarts the active Live Activity state", async () => {
   await render(<TodayScreen />);
 
