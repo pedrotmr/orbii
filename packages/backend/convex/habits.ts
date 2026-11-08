@@ -6,12 +6,15 @@ import {
   mutation,
   query,
   type MutationCtx,
-  type QueryCtx,
 } from "./_generated/server";
 import { requireClerkUserId } from "./lib/auth";
+import { listHabitsForUser } from "./lib/habit_data";
 import {
+  HABIT_CATEGORIES,
+  MAX_HABIT_GLYPH_LENGTH,
+  MAX_HABIT_NAME_LENGTH,
+  type HabitCategory,
   nextHabitOrder,
-  sortHabitsByOrder,
   starterHabitPointValue,
   STARTER_HABITS,
 } from "./lib/habits";
@@ -21,19 +24,17 @@ import {
   insertCompletionBonus,
   validateHabitPointValue,
 } from "./lib/points";
-import { REMOTE_MCP_REQUEST_RETENTION_MS } from "./lib/remote_mcp_idempotency";
+import {
+  findLiveRemoteMcpRequest,
+  REMOTE_MCP_REQUEST_RETENTION_MS,
+} from "./lib/remote_mcp_idempotency";
 import { applyCompletionStats, scrubHabitFromSession } from "./lib/ritual";
 import { requireSavedTimezoneToday } from "./lib/timezone";
 
-const MAX_HABIT_NAME_LENGTH = 50;
-const MAX_HABIT_GLYPH_LENGTH = 50;
 const HABITS_PER_ORDER_BACKFILL_BATCH = 20;
 
 const habitCategoryValidator = v.union(
-  v.literal("body"),
-  v.literal("mind"),
-  v.literal("learn"),
-  v.literal("life"),
+  ...HABIT_CATEGORIES.map((category) => v.literal(category)),
 );
 
 const validateHabitDetails = (nameInput: string, glyphInput: string) => {
@@ -41,7 +42,9 @@ const validateHabitDetails = (nameInput: string, glyphInput: string) => {
   const glyph = glyphInput.trim();
 
   if (name.length === 0 || name.length > MAX_HABIT_NAME_LENGTH) {
-    throw new Error("Habit name must be between 1 and 50 characters");
+    throw new Error(
+      `Habit name must be between 1 and ${MAX_HABIT_NAME_LENGTH} characters`,
+    );
   }
 
   if (glyph.length === 0 || glyph.length > MAX_HABIT_GLYPH_LENGTH) {
@@ -49,24 +52,6 @@ const validateHabitDetails = (nameInput: string, glyphInput: string) => {
   }
 
   return { name, glyph };
-};
-
-const listHabitsForUser = async (
-  ctx: QueryCtx | MutationCtx,
-  clerkUserId: string,
-) => {
-  const rows = await ctx.db
-    .query("habits")
-    .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", clerkUserId))
-    .collect();
-
-  return sortHabitsByOrder(rows).map((row) => ({
-    id: row.habitKey,
-    name: row.name,
-    glyph: row.glyph,
-    category: row.category,
-    pointValue: getHabitPointValue(row.pointValue, row.habitKey),
-  }));
 };
 
 export const list = query({
@@ -90,7 +75,7 @@ const addHabitForUser = async (
     habitKey: string;
     name: string;
     glyph: string;
-    category: "body" | "mind" | "learn" | "life";
+    category: HabitCategory;
     pointValue?: number;
   },
 ) => {
@@ -171,19 +156,20 @@ export const addForRemoteMcp = internalMutation({
         )
         .collect();
 
-      for (const request of expiredRequests) {
-        await ctx.db.delete(request._id);
-      }
-
-      const existingRequest = await ctx.db
-        .query("remoteMcpHabitRequests")
-        .withIndex("by_clerkUserId_clientId_requestId", (q) =>
-          q
-            .eq("clerkUserId", args.clerkUserId)
-            .eq("clientId", clientId)
-            .eq("requestId", requestId),
-        )
-        .unique();
+      const existingRequest = await findLiveRemoteMcpRequest(
+        ctx,
+        expiredRequests,
+        () =>
+          ctx.db
+            .query("remoteMcpHabitRequests")
+            .withIndex("by_clerkUserId_clientId_requestId", (q) =>
+              q
+                .eq("clerkUserId", args.clerkUserId)
+                .eq("clientId", clientId)
+                .eq("requestId", requestId),
+            )
+            .unique(),
+      );
 
       if (existingRequest) {
         if (

@@ -1,5 +1,10 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { HABIT_CATEGORIES } from "./lib/habits";
+
+const habitCategoryValidator = v.union(
+  ...HABIT_CATEGORIES.map((category) => v.literal(category)),
+);
 
 export default defineSchema({
   users: defineTable({
@@ -18,12 +23,7 @@ export default defineSchema({
     habitKey: v.string(),
     name: v.string(),
     glyph: v.string(),
-    category: v.union(
-      v.literal("body"),
-      v.literal("mind"),
-      v.literal("learn"),
-      v.literal("life"),
-    ),
+    category: habitCategoryValidator,
     order: v.optional(v.number()),
     pointValue: v.optional(v.number()),
   })
@@ -58,14 +58,7 @@ export default defineSchema({
           habitId: v.string(),
           name: v.string(),
           glyph: v.string(),
-          category: v.optional(
-            v.union(
-              v.literal("body"),
-              v.literal("mind"),
-              v.literal("learn"),
-              v.literal("life"),
-            ),
-          ),
+          category: v.optional(habitCategoryValidator),
         }),
       ),
     ),
@@ -134,12 +127,7 @@ export default defineSchema({
     requestId: v.string(),
     name: v.string(),
     glyph: v.string(),
-    category: v.union(
-      v.literal("body"),
-      v.literal("mind"),
-      v.literal("learn"),
-      v.literal("life"),
-    ),
+    category: habitCategoryValidator,
     habitKey: v.string(),
     createdAt: v.number(),
   })
