@@ -19,9 +19,9 @@ export const findLiveRemoteMcpRequest = async <
   expiredRequests: Request[],
   findExisting: () => Promise<Request | null>,
 ) => {
-  for (const request of expiredRequests) {
-    await ctx.db.delete(request._id);
-  }
+  await Promise.all(
+    expiredRequests.map((request) => ctx.db.delete(request._id)),
+  );
 
   return await findExisting();
 };
