@@ -306,7 +306,7 @@ export const executeRemoteMcpTool = async (
   ctx: ActionCtx,
   name: string,
   args: Record<string, unknown>,
-  context: RemoteMcpToolContext,
+  context: Omit<RemoteMcpToolContext, "toolName">,
 ) => {
   const tool = definitions.find((definition) => definition.name === name);
 
