@@ -91,6 +91,7 @@ const toggleComplete = jest.fn(
 beforeEach(() => {
   availableHabits = [habit];
   day.session.phase = "complete";
+  day.session.committedIds = [habit.id];
   day.session.completedIds = [habit.id];
   day.session.committedHabitSnapshots = [];
   toggleComplete.mockClear();
@@ -157,6 +158,44 @@ test("completion feedback stays silent when Convex reports no completed Orbit", 
 
   resolveToggleComplete?.({ completedOrbit: false });
 
+  await waitFor(() => {
+    expect(
+      screen.getByRole("checkbox", { name: "Read, 20 points" }).props
+        .accessibilityState?.disabled,
+    ).toBe(false);
+  });
+  expect(completionFeedback).not.toHaveBeenCalled();
+});
+
+test("legacy null responses still signal completion after the final checkoff", async () => {
+  day.session.phase = "active";
+  day.session.completedIds = [];
+  toggleComplete.mockResolvedValue(null as never);
+
+  await render(<TodayScreen />);
+  await fireEvent.press(
+    screen.getByRole("checkbox", { name: "Read, 20 points" }),
+  );
+
+  await waitFor(() => {
+    expect(completionFeedback).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("legacy null responses stay silent when unchecking a completed habit", async () => {
+  day.session.phase = "active";
+  day.session.committedIds = [habit.id, "habit-2"];
+  day.session.completedIds = [habit.id];
+  toggleComplete.mockResolvedValue(null as never);
+
+  await render(<TodayScreen />);
+  await fireEvent.press(
+    screen.getByRole("checkbox", { name: "Read, 20 points" }),
+  );
+
+  await waitFor(() => {
+    expect(toggleComplete).toHaveBeenCalledTimes(1);
+  });
   await waitFor(() => {
     expect(
       screen.getByRole("checkbox", { name: "Read, 20 points" }).props

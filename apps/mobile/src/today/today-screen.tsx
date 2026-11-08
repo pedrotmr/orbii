@@ -166,8 +166,14 @@ export default function TodayScreen() {
           canReshuffle={habits.length > 0}
           onToggle={(habitId) =>
             void run(async () => {
+              const wasCompleted = day.session.completedIds.includes(habitId);
+              const completesOrbitWithoutResult =
+                !wasCompleted &&
+                day.session.completedIds.length + 1 ===
+                  day.session.committedIds.length;
               const result = await toggleComplete({ localDate, habitId });
-              if (result.completedOrbit) {
+
+              if (result?.completedOrbit ?? completesOrbitWithoutResult) {
                 completionFeedback();
               }
             })
