@@ -27,7 +27,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => require("./support/navigation").router,
 }));
 jest.mock("../src/local-date", () => ({
-  todayLocalInTimezone: () => "2026-10-09",
+  isLocalDateReady: () => true,
   useTodayLocal: () => "2026-10-09",
 }));
 jest.mock("../src/live-activity/use-sync-orbit-live-activity", () => ({

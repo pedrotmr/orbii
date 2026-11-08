@@ -1,7 +1,7 @@
 import { api } from "@orbii/backend";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import BootSpinner from "../components/boot-spinner";
 import ScreenScaffold from "../components/layout/screen-scaffold";
@@ -13,20 +13,20 @@ import {
 } from "../live-activity/orbit-live-activity";
 import { createOrbitLiveActivityContent } from "../live-activity/orbit-live-activity-content";
 import { useSyncOrbitLiveActivity } from "../live-activity/use-sync-orbit-live-activity";
-import { todayLocalInTimezone, useTodayLocal } from "../local-date";
-import { resolveTodayHabits } from "../today/today-habit";
+import { useOrbitDay } from "../orbit-day/use-orbit-day";
 import OrbitContent from "./body/orbit-content";
 
 export default function OrbitScreen() {
-  const user = useQuery(api.users.get, {});
-  const localDate = useTodayLocal(user?.timezone);
-  const timezone = user?.timezone?.trim();
-  const isLocalDateReady =
-    user !== undefined &&
-    user !== null &&
-    (!timezone || localDate === todayLocalInTimezone(timezone));
-  const day = useQuery(api.day.get, { localDate });
-  const habits = useQuery(api.habits.list, {});
+  const { user, localDate, day, habits, committedHabits, ready } =
+    useOrbitDay();
+  useSyncOrbitLiveActivity({
+    ready,
+    localDate,
+    phase: day?.session.phase,
+    committedHabits,
+    completedIds: day?.session.completedIds ?? [],
+  });
+
   const removeHabit = useMutation(api.habits.remove);
   const reorderHabits = useMutation(api.habits.reorder).withOptimisticUpdate(
     (localStore, args) => {
@@ -56,32 +56,6 @@ export default function OrbitScreen() {
   const [liveActivityAvailability, setLiveActivityAvailability] = useState<
     "checking" | "available" | "active" | "unavailable"
   >("checking");
-
-  const committedHabits = useMemo(() => {
-    return resolveTodayHabits(
-      day?.session.committedIds,
-      habits,
-      day?.session.committedPointValues,
-      day?.session.committedHabitSnapshots,
-    );
-  }, [
-    day?.session.committedHabitSnapshots,
-    day?.session.committedIds,
-    day?.session.committedPointValues,
-    habits,
-  ]);
-
-  useSyncOrbitLiveActivity({
-    ready:
-      isLocalDateReady &&
-      day !== undefined &&
-      day !== null &&
-      habits !== undefined,
-    localDate,
-    phase: day?.session.phase,
-    committedHabits,
-    completedIds: day?.session.completedIds ?? [],
-  });
 
   useFocusEffect(
     useCallback(() => {

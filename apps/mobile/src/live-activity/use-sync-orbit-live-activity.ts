@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { TodayHabit } from "../today/today-habit";
+import type { TodayHabit } from "../orbit-day/today-habit";
 import {
   endOrbitLiveActivity,
   updateExistingOrbitLiveActivity,

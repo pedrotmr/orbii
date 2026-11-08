@@ -1,5 +1,5 @@
 import { brandColors, darkColors, space } from "@orbii/tokens";
-import type { TodayHabit } from "../today/today-habit";
+import type { TodayHabit } from "../orbit-day/today-habit";
 
 export interface OrbitLiveActivityHabit {
   id: string;

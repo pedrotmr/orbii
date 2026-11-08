@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import { useMutation, useQuery } from "convex/react";
+import { completionFeedback } from "../src/components/controls/feedback";
 import {
   isOrbitLiveActivitySupported,
   startOrbitLiveActivity,
@@ -31,8 +32,12 @@ jest.mock("convex/react", () => ({
   useMutation: jest.fn(),
   useQuery: jest.fn(),
 }));
+jest.mock("../src/components/controls/feedback", () => ({
+  completionFeedback: jest.fn(),
+  selectionFeedback: jest.fn(),
+}));
 jest.mock("../src/local-date", () => ({
-  todayLocalInTimezone: () => "2026-10-09",
+  isLocalDateReady: () => true,
   useTodayLocal: () => "2026-10-09",
 }));
 jest.mock("../src/today/states/today-empty-orbit", () => ({
@@ -78,13 +83,19 @@ const day = {
 };
 
 const toggleComplete = jest.fn(
-  async (_args: { localDate: string; habitId: string }) => undefined,
+  async (_args: { localDate: string; habitId: string }) => ({
+    completedOrbit: false,
+  }),
 );
 
 beforeEach(() => {
   availableHabits = [habit];
+  day.session.phase = "complete";
+  day.session.completedIds = [habit.id];
   day.session.committedHabitSnapshots = [];
   toggleComplete.mockClear();
+  jest.mocked(completionFeedback).mockClear();
+  toggleComplete.mockResolvedValue({ completedOrbit: false });
   jest.mocked(isOrbitLiveActivitySupported).mockClear();
   jest.mocked(isOrbitLiveActivitySupported).mockResolvedValue(true);
   jest.mocked(startOrbitLiveActivity).mockClear();
@@ -107,6 +118,21 @@ beforeEach(() => {
     }
 
     return jest.fn(async () => undefined) as never;
+  });
+});
+
+test("completion feedback follows the transition returned by Convex", async () => {
+  day.session.phase = "active";
+  day.session.completedIds = [];
+  toggleComplete.mockResolvedValue({ completedOrbit: true });
+
+  await render(<TodayScreen />);
+  await fireEvent.press(
+    screen.getByRole("checkbox", { name: "Read, 20 points" }),
+  );
+
+  await waitFor(() => {
+    expect(completionFeedback).toHaveBeenCalledTimes(1);
   });
 });
 

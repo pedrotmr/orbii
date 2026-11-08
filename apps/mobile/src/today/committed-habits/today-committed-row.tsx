@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { type Palette, radius, space } from "@orbii/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
-import type { TodayHabit } from "../today-habit";
+import type { TodayHabit } from "../../orbit-day/today-habit";
 import { selectionFeedback } from "../../components/controls/feedback";
 import { usePressMotion } from "../../components/controls/use-press-motion";
 import HabitIcon from "../../components/habits/habit-icon";

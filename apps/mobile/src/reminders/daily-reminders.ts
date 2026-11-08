@@ -1,10 +1,10 @@
+import type { DayPhase } from "@orbii/backend";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import {
   buildDailyReminderSchedule,
   type DailyReminderKind,
-  type DailyReminderPhase,
   type DailyReminderPreferences,
 } from "./daily-reminder-schedule";
 
@@ -106,7 +106,7 @@ export const cancelDailyReminderQueue = async () => {
 interface SyncDailyReminderQueueArgs {
   timeZone: string;
   preferences: DailyReminderPreferences;
-  phase: DailyReminderPhase;
+  phase: DayPhase;
   now?: Date;
 }
 
